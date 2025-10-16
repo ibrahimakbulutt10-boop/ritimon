@@ -29,6 +29,45 @@ function sendMessage() {
   }
 }
 
+messageInput.addEventListener("keypress", (e) => {
+  if (e.key === "Enter") sendMessage();
+});
+
+emojiPanel.addEventListener("click", (e) => {
+  if (e.target.textContent) {
+    messageInput.value += e.target.textContent;
+    messageInput.focus();
+  }
+});
+
+function toggleEmoji() {
+  emojiPanel.style.display = emojiPanel.style.display === "none" ? "block" : "none";
+}
+
+function toggleSound() {
+  equalizer.style.display = equalizer.style.display === "none" ? "block" : "none";
+}
+
+function toggleTheme() {
+  document.body.classList.toggle("dark-theme");
+}
+
+function toggleFont() {
+  document.body.classList.toggle("alt-font");
+}
+
+function toggleSize() {
+  document.body.classList.toggle("large-text");
+}
+
+function updateTrack() {
+  const newTrack = document.getElementById("trackInput").value.trim();
+  if (newTrack) {
+    currentTrack.textContent = newTrack;
+    socket.emit("track update", newTrack);
+  }
+}
+
 socket.on("chat message", (msg) => {
   const p = document.createElement("p");
   p.textContent = msg;
@@ -47,14 +86,4 @@ socket.on("onlineCount", (count) => {
 socket.on("totalCount", (count) => {
   totalCount.textContent = count;
 });
-
-function updateTrack() {
-  const newTrack = document.getElementById("trackInput").value.trim();
-  if (newTrack) {
-    currentTrack.textContent = newTrack;
-    socket.emit("track update", newTrack);
-  }
-}
-
-function toggle
 
