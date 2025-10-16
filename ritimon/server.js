@@ -2,10 +2,8 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const path = require('path');
-const Database = require('./database');
-const session = require('express-session');
-const bcrypt = require('bcrypt');
-const { v4: uuidv4 } = require('uuid');
+const multer = require('multer');
+const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
@@ -17,29 +15,51 @@ const io = socketIo(server, {
 });
 
 const PORT = process.env.PORT || 3000;
-const db = new Database();
 
-// Session configuration
-app.use(session({
-  secret: 'ritimon-fm-secret-key-2025',
-  resave: false,
-  saveUninitialized: false,
-  cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 } // 24 hours
-}));
-
+// Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Store active users and radio status
-let activeUsers = new Map();
-let radioStatus = {
-  isLive: false,
-  currentSong: 'RitimON FM - Yayın Dışı',
-  djName: '',
-  listeners: 0,
-  volume: 50
-};
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = path.join(__dirname, 'uploads');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 50 * 1024 * 1024 // 50MB limit
+  },
+  fileFilter: function (req, file, cb) {
+    // Allow audio files
+    if (file.mimetype.startsWith('audio/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Sadece ses dosyaları yüklenebilir!'), false);
+    }
+  }
+});
+
+// Memory storage for app state
+let onlineUsers = new Map();
+let activeDJs = new Map();
+let bannedUsers = new Set();
+let mutedUsers = new Map();
+let currentSong = 'Müzik yükleniyor...';
+let currentDJ = 'DJ bekleniyor';
+let isLive = false;
+let serverStartTime = Date.now();
 
 // Routes
 app.get('/', (req, res) => {
@@ -50,190 +70,306 @@ app.get('/main-chat', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'main-chat.html'));
 });
 
+app.get('/chat-room', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'chat-room.html'));
+});
+
 app.get('/dj', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'dj.html'));
 });
 
-// User authentication
-app.post('/api/login', async (req, res) => {
-  const { username, password } = req.body;
-  
-  try {
-    const user = await db.getUserByUsername(username);
-    
-    if (!user) {
-      // Create new user
-      const hashedPassword = await bcrypt.hash(password, 10);
-      const newUser = await db.createUser({
-        id: uuidv4(),
-        username,
-        password: hashedPassword,
-        role: 'user',
-        color: getRandomColor()
-      });
-      
-      req.session.user = newUser;
-      res.json({ success: true, user: { id: newUser.id, username: newUser.username, role: newUser.role, color: newUser.color } });
-    } else {
-      // Verify existing user
-      const validPassword = await bcrypt.compare(password, user.password);
-      if (validPassword) {
-        req.session.user = user;
-        res.json({ success: true, user: { id: user.id, username: user.username, role: user.role, color: user.color } });
-      } else {
-        res.json({ success: false, message: 'Yanlış şifre!' });
-      }
-    }
-  } catch (error) {
-    console.error('Login error:', error);
-    res.json({ success: false, message: 'Giriş sırasında hata oluştu!' });
-  }
+app.get('/login', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
-app.post('/api/logout', (req, res) => {
-  req.session.destroy();
-  res.json({ success: true });
+// API Endpoints
+app.get('/api/status', (req, res) => {
+  res.json({
+    onlineUsers: onlineUsers.size,
+    activeDJs: activeDJs.size,
+    currentSong: currentSong,
+    currentDJ: currentDJ,
+    isLive: isLive,
+    uptime: Math.floor((Date.now() - serverStartTime) / 1000)
+  });
+});
+
+// File upload endpoint
+app.post('/api/upload', upload.single('musicFile'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'Dosya yüklenmedi' });
+    }
+
+    console.log('Dosya yüklendi:', req.file.filename);
+    
+    res.json({
+      success: true,
+      filename: req.file.filename,
+      originalName: req.file.originalname,
+      size: req.file.size,
+      path: req.file.path
+    });
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({ error: 'Dosya yükleme hatası' });
+  }
 });
 
 // Socket.io connection handling
 io.on('connection', (socket) => {
-  console.log('Kullanıcı bağlandı:', socket.id);
+  console.log('Yeni bağlantı:', socket.id);
 
-  socket.on('user-join', (userData) => {
-    activeUsers.set(socket.id, {
-      id: userData.id,
-      username: userData.username,
-      role: userData.role,
-      color: userData.color,
-      joinTime: new Date()
-    });
-    
-    // Update listeners count
-    radioStatus.listeners = activeUsers.size;
+  // User join
+  socket.on('join', (data) => {
+    if (bannedUsers.has(data.nickname)) {
+      socket.emit('banned', { message: 'Bu odadan yasaklandınız!' });
+      return;
+    }
+
+    const user = {
+      id: socket.id,
+      nickname: data.nickname,
+      joinTime: new Date().toISOString(),
+      isOnline: true,
+      isDJ: false,
+      warnings: 0
+    };
+
+    onlineUsers.set(socket.id, user);
     
     // Notify all users
-    io.emit('user-list', Array.from(activeUsers.values()));
-    io.emit('radio-status', radioStatus);
+    io.emit('userJoined', user);
+    io.emit('userList', Array.from(onlineUsers.values()));
     
-    // Send welcome message
-    io.emit('chat-message', {
-      id: uuidv4(),
-      username: 'Sistem',
-      message: `${userData.username} odaya katıldı! 🎵`,
-      timestamp: new Date(),
-      type: 'system'
-    });
+    console.log(`${data.nickname} sohbete katıldı`);
   });
 
-  socket.on('chat-message', (data) => {
-    const user = activeUsers.get(socket.id);
+  // Chat message
+  socket.on('chat message', (data) => {
+    const user = onlineUsers.get(socket.id);
     if (!user) return;
-    
-    const message = {
-      id: uuidv4(),
-      username: user.username,
-      message: data.message,
-      timestamp: new Date(),
-      color: user.color,
-      role: user.role,
-      type: 'user'
-    };
-    
-    // Save to database
-    db.saveMessage(message);
-    
-    // Broadcast message
-    io.emit('chat-message', message);
-  });
 
-  // DJ Controls
-  socket.on('dj-control', (data) => {
-    const user = activeUsers.get(socket.id);
-    if (!user || (user.role !== 'dj' && user.role !== 'admin')) return;
-    
-    switch (data.action) {
-      case 'start-broadcast':
-        radioStatus.isLive = true;
-        radioStatus.djName = user.username;
-        radioStatus.currentSong = data.songTitle || 'Canlı Yayın';
-        break;
-        
-      case 'stop-broadcast':
-        radioStatus.isLive = false;
-        radioStatus.djName = '';
-        radioStatus.currentSong = 'RitimON FM - Yayın Dışı';
-        break;
-        
-      case 'change-song':
-        if (radioStatus.isLive) {
-          radioStatus.currentSong = data.songTitle;
-        }
-        break;
-        
-      case 'set-volume':
-        radioStatus.volume = data.volume;
-        break;
+    // Check if user is muted
+    if (mutedUsers.has(user.nickname)) {
+      const muteInfo = mutedUsers.get(user.nickname);
+      if (Date.now() < muteInfo.until) {
+        socket.emit('muted', { 
+          message: `${Math.ceil((muteInfo.until - Date.now()) / 60000)} dakika daha susturulmusunuz!` 
+        });
+        return;
+      } else {
+        mutedUsers.delete(user.nickname);
+      }
     }
-    
-    io.emit('radio-status', radioStatus);
-    
-    // Broadcast DJ action
-    io.emit('chat-message', {
-      id: uuidv4(),
-      username: 'DJ Sistemi',
-      message: getDJActionMessage(data.action, user.username, data),
-      timestamp: new Date(),
-      type: 'dj-action'
-    });
+
+    const messageData = {
+      id: socket.id,
+      nickname: user.nickname,
+      text: data.text,
+      timestamp: data.timestamp,
+      isDJ: activeDJs.has(socket.id),
+      warnings: user.warnings
+    };
+
+    io.emit('chat message', messageData);
+    console.log(`[${user.nickname}]: ${data.text}`);
   });
 
-  socket.on('disconnect', () => {
-    const user = activeUsers.get(socket.id);
-    if (user) {
-      activeUsers.delete(socket.id);
-      radioStatus.listeners = activeUsers.size;
+  // DJ login
+  socket.on('dj login', (data) => {
+    const user = onlineUsers.get(socket.id);
+    if (!user) return;
+
+    activeDJs.set(socket.id, {
+      nickname: data.nickname,
+      loginTime: new Date().toISOString()
+    });
+
+    user.isDJ = true;
+    onlineUsers.set(socket.id, user);
+
+    io.emit('dj login', { nickname: data.nickname });
+    io.emit('userList', Array.from(onlineUsers.values()));
+    
+    console.log(`${data.nickname} DJ olarak giriş yaptı`);
+  });
+
+  // DJ logout
+  socket.on('dj logout', (data) => {
+    const user = onlineUsers.get(socket.id);
+    if (!user) return;
+
+    activeDJs.delete(socket.id);
+    user.isDJ = false;
+    onlineUsers.set(socket.id, user);
+
+    io.emit('dj logout', { nickname: data.nickname });
+    io.emit('userList', Array.from(onlineUsers.values()));
+    
+    console.log(`${data.nickname} DJ panelinden çıktı`);
+  });
+
+  // DJ play song
+  socket.on('dj play', (data) => {
+    const dj = activeDJs.get(socket.id);
+    if (!dj) return;
+
+    currentSong = data.song;
+    currentDJ = dj.nickname;
+    isLive = true;
+
+    io.emit('now playing', {
+      song: data.song,
+      dj: dj.nickname
+    });
+
+    console.log(`${dj.nickname} şarkı değiştirdi: ${data.song}`);
+  });
+
+  // DJ stop
+  socket.on('dj stop', () => {
+    const dj = activeDJs.get(socket.id);
+    if (!dj) return;
+
+    currentSong = 'Müzik yükleniyor...';
+    currentDJ = 'DJ bekleniyor';
+    isLive = false;
+
+    io.emit('stop playing', { dj: dj.nickname });
+    console.log(`${dj.nickname} müzik çalmayı durdurdu`);
+  });
+
+  // DJ announcement
+  socket.on('dj announcement', (data) => {
+    const dj = activeDJs.get(socket.id);
+    if (!dj) return;
+
+    io.emit('announcement', {
+      dj: dj.nickname,
+      text: data.text,
+      timestamp: new Date().toISOString()
+    });
+
+    console.log(`${dj.nickname} duyuru yaptı: ${data.text}`);
+  });
+
+  // Moderation actions (DJ only)
+  socket.on('warnUser', (data) => {
+    const dj = activeDJs.get(socket.id);
+    if (!dj) return;
+
+    // Find target user
+    const targetUser = Array.from(onlineUsers.values()).find(u => u.nickname === data.targetNickname);
+    if (targetUser) {
+      targetUser.warnings++;
+      onlineUsers.set(targetUser.id, targetUser);
       
-      io.emit('user-list', Array.from(activeUsers.values()));
-      io.emit('radio-status', radioStatus);
-      
-      io.emit('chat-message', {
-        id: uuidv4(),
-        username: 'Sistem',
-        message: `${user.username} odadan ayrıldı! 👋`,
-        timestamp: new Date(),
-        type: 'system'
+      io.emit('userWarned', {
+        targetNickname: data.targetNickname,
+        djNickname: dj.nickname,
+        reason: data.reason,
+        warnings: targetUser.warnings
       });
     }
+  });
+
+  socket.on('muteUser', (data) => {
+    const dj = activeDJs.get(socket.id);
+    if (!dj) return;
+
+    const muteUntil = Date.now() + (data.duration * 60 * 1000);
+    mutedUsers.set(data.targetNickname, {
+      until: muteUntil,
+      reason: data.reason,
+      djNickname: dj.nickname
+    });
+
+    io.emit('userMuted', {
+      targetNickname: data.targetNickname,
+      djNickname: dj.nickname,
+      duration: data.duration,
+      reason: data.reason
+    });
+  });
+
+  socket.on('banUser', (data) => {
+    const dj = activeDJs.get(socket.id);
+    if (!dj) return;
+
+    bannedUsers.add(data.targetNickname);
     
-    console.log('Kullanıcı ayrıldı:', socket.id);
+    // Find and disconnect the user
+    const targetUser = Array.from(onlineUsers.values()).find(u => u.nickname === data.targetNickname);
+    if (targetUser) {
+      io.to(targetUser.id).emit('banned', { reason: data.reason });
+      io.sockets.sockets.get(targetUser.id)?.disconnect(true);
+    }
+
+    io.emit('userBanned', {
+      targetNickname: data.targetNickname,
+      djNickname: dj.nickname,
+      reason: data.reason
+    });
+  });
+
+  // Typing indicators
+  socket.on('typing', (data) => {
+    socket.broadcast.emit('typing', data);
+  });
+
+  socket.on('stopTyping', (data) => {
+    socket.broadcast.emit('stopTyping', data);
+  });
+
+  // User away/back
+  socket.on('userAway', (data) => {
+    const user = onlineUsers.get(socket.id);
+    if (user) {
+      user.isOnline = false;
+      onlineUsers.set(socket.id, user);
+      io.emit('userList', Array.from(onlineUsers.values()));
+    }
+  });
+
+  socket.on('userBack', (data) => {
+    const user = onlineUsers.get(socket.id);
+    if (user) {
+      user.isOnline = true;
+      onlineUsers.set(socket.id, user);
+      io.emit('userList', Array.from(onlineUsers.values()));
+    }
+  });
+
+  // User disconnect
+  socket.on('disconnect', () => {
+    const user = onlineUsers.get(socket.id);
+    
+    if (user) {
+      // Remove from online users
+      onlineUsers.delete(socket.id);
+      
+      // Remove from active DJs if applicable
+      if (activeDJs.has(socket.id)) {
+        activeDJs.delete(socket.id);
+        io.emit('dj logout', { nickname: user.nickname });
+      }
+      
+      // Notify other users
+      io.emit('userLeft', user);
+      io.emit('userList', Array.from(onlineUsers.values()));
+      
+      console.log(`${user.nickname} ayrıldı`);
+    }
+    
+    console.log('Bağlantı kesildi:', socket.id);
   });
 });
 
-// Helper functions
-function getRandomColor() {
-  const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F'];
-  return colors[Math.floor(Math.random() * colors.length)];
-}
-
-function getDJActionMessage(action, djName, data) {
-  switch (action) {
-    case 'start-broadcast':
-      return `🎙️ ${djName} yayına başladı! Şarkı: ${data.songTitle || 'Canlı Yayın'}`;
-    case 'stop-broadcast':
-      return `📻 ${djName} yayını sonlandırdı!`;
-    case 'change-song':
-      return `🎵 Şu anda çalan: ${data.songTitle}`;
-    default:
-      return `${djName} bir DJ kontrolü gerçekleştirdi.`;
-  }
-}
-
-// Initialize database
-db.init().then(() => {
-  server.listen(PORT, () => {
-    console.log(`🎵 RitimON FM Server çalışıyor: http://localhost:${PORT}`);
-    console.log(`🎧 DJ Paneli: http://localhost:${PORT}/dj`);
-  });
-}).catch(error => {
-  console.error('Database initialization failed:', error);
+// Start server
+server.listen(PORT, () => {
+  console.log(`🎵 RitimON FM Server çalışıyor: http://localhost:${PORT}`);
+  console.log(`🎧 Ana Chat: http://localhost:${PORT}/main-chat`);
+  console.log(`🎙️ DJ Panel: http://localhost:${PORT}/dj`);
+  console.log(`📊 API Status: http://localhost:${PORT}/api/status`);
 });
