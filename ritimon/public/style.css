@@ -44,6 +44,8 @@ body {
   padding: 8px;
   border-radius: 6px;
   border: 1px solid #ccc;
+  background: #1e2a47;
+  color: white;
 }
 
 .login-panel button {
