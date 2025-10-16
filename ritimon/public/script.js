@@ -8,11 +8,24 @@ const onlineCount = document.getElementById("onlineCount");
 const totalCount = document.getElementById("totalCount");
 const currentTrack = document.getElementById("currentTrack");
 
+let nickname = "";
+
+function setNickname() {
+  const input = document.getElementById("nicknameInput").value.trim();
+  if (input) {
+    nickname = input;
+    document.querySelector(".login-panel").style.display = "none";
+    socket.emit("user joined", nickname);
+  }
+}
+
 function sendMessage() {
   const msg = messageInput.value.trim();
-  if (msg) {
-    socket.emit("chat message", msg);
+  if (msg && nickname) {
+    socket.emit("chat message", `${nickname}: ${msg}`);
     messageInput.value = "";
+  } else if (!nickname) {
+    alert("Lütfen önce bir nick girin.");
   }
 }
 
@@ -23,34 +36,25 @@ socket.on("chat message", (msg) => {
   chatBox.scrollTop = chatBox.scrollHeight;
 });
 
-function toggleEmoji() {
-  emojiPanel.style.display = emojiPanel.style.display === "none" ? "block" : "none";
-}
+socket.on("track update", (track) => {
+  currentTrack.textContent = track;
+});
 
-function toggleSound() {
-  equalizer.style.display = equalizer.style.display === "none" ? "block" : "none";
-}
+socket.on("onlineCount", (count) => {
+  onlineCount.textContent = count;
+});
 
-function toggleTheme() {
-  document.body.classList.toggle("dark-theme");
-}
+socket.on("totalCount", (count) => {
+  totalCount.textContent = count;
+});
 
-function toggleFont() {
-  document.body.classList.toggle("alt-font");
-}
-
-function toggleSize() {
-  document.body.classList.toggle("large-text");
-}
-
-emojiPanel.addEventListener("click", (e) => {
-  if (e.target.textContent) {
-    messageInput.value += e.target.textContent;
-    messageInput.focus();
+function updateTrack() {
+  const newTrack = document.getElementById("trackInput").value.trim();
+  if (newTrack) {
+    currentTrack.textContent = newTrack;
+    socket.emit("track update", newTrack);
   }
-});
+}
 
-messageInput.addEventListener("keypress", (e) => {
-  if (e.key === "Enter") sendMessage();
-});
+function toggle
 
