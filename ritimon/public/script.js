@@ -102,3 +102,43 @@ socket.on("totalCount", (count) => {
   totalCount.textContent = count;
 });
 
+function updateTrack() {
+  const input = document.getElementById("trackInput").value.trim();
+  if (input) {
+    currentTrack.textContent = input;
+    socket.emit("track update", input);
+
+    // YouTube URL ise iframe ile göster
+    if (input.includes("youtube.com") || input.includes("youtu.be")) {
+      const embed = document.createElement("iframe");
+      embed.src = convertToEmbedURL(input);
+      embed.width = "100%";
+      embed.height = "200";
+      embed.allow = "autoplay";
+      document.querySelector(".dj-panel").appendChild(embed);
+    }
+  }
+}
+
+function convertToEmbedURL(url) {
+  if (url.includes("watch?v=")) {
+    return url.replace("watch?v=", "embed/");
+  } else if (url.includes("youtu.be")) {
+    const id = url.split("/").pop();
+    return `https://www.youtube.com/embed/${id}`;
+  }
+  return url;
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  const files = e.dataTransfer.files;
+  const list = document.getElementById("fileList");
+  for (let i = 0; i < files.length && i < 50; i++) {
+    const li = document.createElement("li");
+    li.textContent = `🎵 ${files[i].name}`;
+    list.appendChild(li);
+  }
+}
+
+
