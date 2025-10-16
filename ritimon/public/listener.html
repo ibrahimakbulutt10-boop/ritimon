@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dinleyici - RitimON FM</title>
+  <link rel="stylesheet" href="listener.css" />
+  <link rel="icon" href="favicon.ico" />
+</head>
+<body>
+  <div class="listener-container">
+    <!-- Header -->
+    <div class="listener-header">
+      <div class="logo-section">
+        <h1>🎧 RitimON FM</h1>
+        <p class="tagline">Listelerde değil, <strong>RUHUNUZDA</strong> yankılanır</p>
+      </div>
+      <div class="status-section">
+        <div class="connection-status" id="connectionStatus">
+          <span class="status-dot"></span>
+          <span>Bağlanıyor...</span>
+        </div>
+        <div class="online-count">
+          <span id="onlineCount">0</span> dinleyici
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Player Section -->
+      <div class="player-section">
+        <div class="now-playing-card">
+          <div class="album-art">
+            <div class="vinyl" id="vinyl">
+              <div class="vinyl-center"></div>
+              <div class="vinyl-grooves"></div>
+            </div>
+          </div>
+          <div class="track-info">
+            <h2 id="currentTrack">Yayın başlamadı</h2>
+            <p id="currentArtist">DJ bekleniyor...</p>
+            <div class="track-progress">
+              <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+              </div>
+              <div class="time-info">
+                <span id="currentTime">--:--</span>
+                <span id="totalTime">--:--</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Player Controls -->
+        <div class="player-controls">
+          <button class="control-btn" id="playPauseBtn" onclick="togglePlay()">
+            <span class="play-icon">▶️</span>
+          </button>
+          <button class="control-btn" onclick="requestSong()">
+            <span>🎤</span>
+          </button>
+          <button class="control-btn" onclick="toggleVolume()">
+            <span id="volumeIcon">🔊</span>
+          </button>
+          <div class="volume-slider">
+            <input type="range" id="volumeControl" min="0" max="100" value="50" 
+                   onchange="setVolume(this.value)">
+          </div>
+        </div>
+      </div>
+
+      <!-- Chat Section -->
+      <div class="chat-section">
+        <div class="chat-header">
+          <h3>💬 Canlı Chat</h3>
+          <button class="btn btn-primary" onclick="openChat()">Sohbete Katıl</button>
+        </div>
+        <div class="recent-messages" id="recentMessages">
+          <!-- Recent messages will appear here -->
+        </div>
+      </div>
+
+      <!-- DJ Info Section -->
+      <div class="dj-info-section">
+        <h3>🎙️ Yayındaki DJ</h3>
+        <div class="dj-card" id="djCard">
+          <div class="dj-avatar">
+            <span id="djInitial">?</span>
+          </div>
+          <div class="dj-details">
+            <h4 id="djName">DJ Bekleniyor</h4>
+            <p id="djStatus">Yayın başlamadı</p>
+            <div class="dj-stats">
+              <span class="stat">
+                <span class="stat-label">Yayın Süresi:</span>
+                <span id="djDuration">--:--</span>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Statistics Section -->
+      <div class="stats-section">
+        <h3>📊 İstatistikler</h3>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon">🎵</div>
+            <div class="stat-info">
+              <span class="stat-number" id="totalSongs">0</span>
+              <span class="stat-label">Toplam Şarkı</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">⏱️</div>
+            <div class="stat-info">
+              <span class="stat-number" id="totalListenTime">0m</span>
+              <span class="stat-label">Dinleme Süresi</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">👥</div>
+            <div class="stat-info">
+              <span class="stat-number" id="peakListeners">0</span>
+              <span class="stat-label">En Yüksek Dinleyici</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Song History -->
+        <div class="song-history">
+          <h4>🎶 Son Çalan Şarkılar</h4>
+          <div id="songHistory" class="history-list">
+            <!-- Song history will appear here -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <div class="footer-content">
+        <p>&copy; 2024 RitimON FM - Tüm hakları saklıdır</p>
+        <div class="social-links">
+          <button class="social-btn">📱</button>
+          <button class="social-btn">📧</button>
+          <button class="social-btn">🌐</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Audio Element -->
+  <audio id="radioStream" preload="none">
+    <!-- Radio stream will be loaded here -->
+  </audio>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="listener.js"></script>
+</body>
+</html>

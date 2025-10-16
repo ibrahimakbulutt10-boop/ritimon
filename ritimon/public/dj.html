@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DJ Paneli - RitimON FM</title>
+  <link rel="stylesheet" href="dj.css" />
+  <link rel="icon" href="favicon.ico" />
+</head>
+<body>
+  <div class="dj-container">
+    <!-- Header -->
+    <div class="dj-header">
+      <h1>🎙️ RitimON FM DJ Paneli</h1>
+      <div class="status-indicator">
+        <span id="connectionStatus">Bağlantı durumu: Bekleniyor</span>
+      </div>
+    </div>
+
+    <!-- Login Panel -->
+    <div id="loginPanel" class="login-panel">
+      <div class="glass-card">
+        <h2>🔐 DJ Girişi</h2>
+        <div class="form-group">
+          <label for="djNickname">DJ Adınız:</label>
+          <input type="text" id="djNickname" placeholder="DJ adınızı girin" />
+        </div>
+        <div class="form-group">
+          <label for="djpass">Şifre:</label>
+          <input type="password" id="djpass" placeholder="DJ şifresi" />
+        </div>
+        <button onclick="checkPassword()" class="btn btn-primary">Giriş Yap</button>
+        <div id="loginError" class="error-message"></div>
+      </div>
+    </div>
+
+    <!-- DJ Controls -->
+    <div id="djControls" class="dj-controls" style="display:none;">
+      <div class="controls-grid">
+        <!-- Stream Controls -->
+        <div class="control-card">
+          <h3>📡 Yayın Kontrolü</h3>
+          <div class="control-buttons">
+            <button onclick="startStream()" class="btn btn-success" id="startBtn">
+              ▶️ Yayını Başlat
+            </button>
+            <button onclick="stopStream()" class="btn btn-danger" id="stopBtn" disabled>
+              ⏹️ Yayını Durdur
+            </button>
+          </div>
+          <div class="stream-status">
+            <span id="streamStatus">Yayın kapalı</span>
+          </div>
+        </div>
+
+        <!-- Music Controls -->
+        <div class="control-card">
+          <h3>🎵 Müzik Kontrolü</h3>
+          <div class="music-controls">
+            <div class="form-group">
+              <label for="songName">Şarkı Adı:</label>
+              <input type="text" id="songName" placeholder="Şu anda çalan şarkı" />
+            </div>
+            <div class="form-group">
+              <label for="artistName">Sanatçı:</label>
+              <input type="text" id="artistName" placeholder="Sanatçı adı" />
+            </div>
+            <button onclick="updateNowPlaying()" class="btn btn-info">
+              🎶 Şarkı Bilgisini Güncelle
+            </button>
+          </div>
+        </div>
+
+        <!-- Announcements -->
+        <div class="control-card">
+          <h3>📢 Duyurular</h3>
+          <div class="announcement-controls">
+            <div class="form-group">
+              <label for="announcementText">Duyuru Metni:</label>
+              <textarea id="announcementText" placeholder="Duyuru yazısını buraya girin..." rows="3"></textarea>
+            </div>
+            <button onclick="sendAnnouncement()" class="btn btn-warning">
+              📢 Duyuru Gönder
+            </button>
+          </div>
+        </div>
+
+        <!-- Sound Effects -->
+        <div class="control-card">
+          <h3>🔊 Ses Efektleri</h3>
+          <div class="sound-effects">
+            <div class="effect-buttons">
+              <button onclick="playSoundEffect('applause')" class="btn btn-effect">
+                👏 Alkış
+              </button>
+              <button onclick="playSoundEffect('cheer')" class="btn btn-effect">
+                🎉 Kutlama
+              </button>
+              <button onclick="playSoundEffect('drumroll')" class="btn btn-effect">
+                🥁 Davul
+              </button>
+              <button onclick="playSoundEffect('bell')" class="btn btn-effect">
+                🔔 Zil
+              </button>
+              <button onclick="playSoundEffect('whistle')" class="btn btn-effect">
+                📯 Düdük
+              </button>
+              <button onclick="playSoundEffect('airhorn')" class="btn btn-effect">
+                📢 Hava Korna
+              </button>
+            </div>
+            <div class="custom-sound">
+              <div class="form-group">
+                <label for="customSoundText">Özel Ses Efekti:</label>
+                <input type="text" id="customSoundText" placeholder="Ses efekti açıklaması..." />
+              </div>
+              <button onclick="playCustomEffect()" class="btn btn-secondary">
+                🔊 Özel Efekt
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Music Upload -->
+        <div class="control-card">
+          <h3>🎵 Geçici Müzik Yükleme</h3>
+          <div class="temp-warning">
+            <span class="warning-icon">⚠️</span>
+            <span>Yüklenen dosyalar geçicidir ve çalındıktan sonra otomatik silinir!</span>
+          </div>
+          <div class="upload-section">
+            <div class="upload-area" id="uploadArea">
+              <div class="upload-content">
+                <div class="upload-icon">🎵</div>
+                <h4>Ses Dosyası Yükle</h4>
+                <p>MP3, WAV, OGG dosyalarını sürükleyip bırakın</p>
+                <p class="temp-info">📝 Geçici dosya - çalındıktan sonra silinir</p>
+                <input type="file" id="musicFileInput" accept="audio/*" multiple style="display: none;" />
+                <button onclick="document.getElementById('musicFileInput').click()" class="btn btn-primary">
+                  📁 Dosya Seç
+                </button>
+              </div>
+            </div>
+            <div class="upload-progress" id="uploadProgress" style="display: none;">
+              <div class="progress-bar">
+                <div class="progress-fill" id="uploadProgressFill"></div>
+              </div>
+              <span id="uploadStatus">Yükleniyor...</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Playlist Management -->
+        <div class="control-card">
+          <h3>📋 Playlist Yönetimi</h3>
+          <div class="playlist-controls">
+            <div class="form-group">
+              <label for="songTitle">Şarkı Adı:</label>
+              <input type="text" id="songTitle" placeholder="Şarkı adını girin" />
+            </div>
+            <div class="form-group">
+              <label for="artistName">Sanatçı:</label>
+              <input type="text" id="artistName" placeholder="Sanatçı adını girin" />
+            </div>
+            <div class="playlist-actions">
+              <button onclick="addToPlaylist()" class="btn btn-success">
+                ➕ Manuel Ekle
+              </button>
+              <button onclick="addUploadedToPlaylist()" class="btn btn-info">
+                🎵 Yüklenen Ekle
+              </button>
+              <button onclick="clearPlaylist()" class="btn btn-warning">
+                🗑️ Temizle
+              </button>
+            </div>
+          </div>
+          <div class="playlist-display">
+            <h4>📝 Gelecek Şarkılar</h4>
+            <div id="playlistItems" class="playlist-items">
+              <!-- Playlist items will appear here -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Music Library -->
+        <div class="control-card">
+          <h3>📚 Müzik Kütüphanesi</h3>
+          <div class="music-library">
+            <div class="library-controls">
+              <input type="text" id="searchLibrary" placeholder="Müzik ara..." />
+              <button onclick="refreshLibrary()" class="btn btn-secondary">
+                🔄 Yenile
+              </button>
+            </div>
+            <div id="musicLibrary" class="library-items">
+              <!-- Music library items will appear here -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="control-card">
+          <h3>⚡ Hızlı İşlemler</h3>
+          <div class="quick-actions">
+            <button onclick="requestSong()" class="btn btn-secondary">
+              🎤 Şarkı İsteği
+            </button>
+            <button onclick="showStats()" class="btn btn-secondary">
+              📊 İstatistikler
+            </button>
+            <button onclick="playNextSong()" class="btn btn-info">
+              ⏭️ Sonraki Şarkı
+            </button>
+            <button onclick="emergencyStop()" class="btn btn-danger">
+              🚨 Acil Durdur
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Chat Feed -->
+      <div class="chat-feed">
+        <div class="chat-header">
+          <h3>💬 Canlı Chat</h3>
+          <div class="chat-controls">
+            <button onclick="toggleAutoScroll()" class="btn btn-secondary" id="autoScrollBtn">
+              📌 Otomatik Kaydır
+            </button>
+            <button onclick="clearChat()" class="btn btn-warning">
+              🗑️ Chat Temizle
+            </button>
+          </div>
+        </div>
+        <div id="liveChat" class="chat-messages">
+          <!-- Live chat messages will appear here -->
+        </div>
+        <div class="chat-input-section">
+          <div class="input-group">
+            <input type="text" id="djChatInput" placeholder="Mesajınızı yazın..." maxlength="200" />
+            <button onclick="sendDJMessage()" class="btn btn-primary">
+              📤 Gönder
+            </button>
+          </div>
+          <div class="quick-responses">
+            <button onclick="sendQuickResponse('Merhaba dinleyiciler! 🎧')" class="quick-btn">👋 Selam</button>
+            <button onclick="sendQuickResponse('Teşekkürler dinlediğiniz için! ❤️')" class="quick-btn">❤️ Teşekkür</button>
+            <button onclick="sendQuickResponse('Şarkı isteklerinizi bekliyorum! 🎵')" class="quick-btn">🎵 İstek</button>
+            <button onclick="sendQuickResponse('Güzel bir akşam geçiriyoruz! 🌟')" class="quick-btn">🌟 Akşam</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- DJ Info -->
+      <div class="dj-info">
+        <div class="info-item">
+          <span class="label">DJ:</span>
+          <span id="currentDJName">-</span>
+        </div>
+        <div class="info-item">
+          <span class="label">Başlangıç:</span>
+          <span id="djStartTime">-</span>
+        </div>
+        <div class="info-item">
+          <span class="label">Çevrimiçi:</span>
+          <span id="onlineUsers">0</span> kullanıcı
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="dj-stream.js"></script>
+</body>
+</html>
+

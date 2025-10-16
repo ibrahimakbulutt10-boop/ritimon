@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sohbet Odası - RitimON FM</title>
+  <link rel="stylesheet" href="chat.css" />
+  <link rel="icon" href="favicon.ico" />
+</head>
+<body>
+  <div class="chat-container">
+    <!-- Header -->
+    <div class="chat-header">
+      <div class="header-info">
+        <h2>🎧 RitimON FM Chat</h2>
+        <div class="user-count">
+          <span id="userCount">0</span> kullanıcı çevrimiçi
+        </div>
+      </div>
+      <div class="now-playing">
+        <div id="currentSong">🎵 Şu anda çalan: Yükleniyor...</div>
+      </div>
+    </div>
+
+    <!-- Chat Messages -->
+    <div class="chat-messages" id="messages">
+      <!-- Messages will be added here -->
+    </div>
+
+    <!-- Right Click Context Menu -->
+    <div id="contextMenu" class="context-menu" style="display: none;">
+      <div class="context-menu-item" onclick="warnUser()">
+        <span class="context-icon">⚠️</span>
+        <span>Uyarı Ver</span>
+      </div>
+      <div class="context-menu-item" onclick="timeoutUser()">
+        <span class="context-icon">⏰</span>
+        <span>5dk Yasakla</span>
+      </div>
+      <div class="context-menu-item" onclick="banUser()">
+        <span class="context-icon">🚫</span>
+        <span>Kalıcı Yasakla</span>
+      </div>
+      <div class="context-menu-item" onclick="muteUser()">
+        <span class="context-icon">🔇</span>
+        <span>Sus</span>
+      </div>
+      <div class="context-menu-item" onclick="viewProfile()">
+        <span class="context-icon">👤</span>
+        <span>Profil Görüntüle</span>
+      </div>
+    </div>
+
+    <!-- Chat Input -->
+    <div class="chat-input-container">
+      <div class="input-group">
+        <input type="text" id="messageInput" placeholder="Mesajınızı yazın..." maxlength="200" />
+        <button onclick="sendMessage()" class="send-btn" id="sendBtn">
+          <span>📤</span>
+        </button>
+      </div>
+      <div class="emoji-picker">
+        <button onclick="addEmoji('😊')" class="emoji-btn">😊</button>
+        <button onclick="addEmoji('🎵')" class="emoji-btn">🎵</button>
+        <button onclick="addEmoji('❤️')" class="emoji-btn">❤️</button>
+        <button onclick="addEmoji('🔥')" class="emoji-btn">🔥</button>
+        <button onclick="addEmoji('👍')" class="emoji-btn">👍</button>
+        <button onclick="addEmoji('👏')" class="emoji-btn">👏</button>
+      </div>
+    </div>
+
+    <!-- Online Users -->
+    <div class="online-users" id="onlineUsers">
+      <h4>Çevrimiçi Kullanıcılar</h4>
+      <div id="userList"></div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="chat-stream.js"></script>
+</body>
+</html>
+
