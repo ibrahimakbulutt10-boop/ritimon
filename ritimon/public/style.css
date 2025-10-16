@@ -159,4 +159,30 @@ body {
   text-align: center;
   font-size: 1.1em;
 }
+.upload-area {
+  margin-top: 10px;
+  padding: 12px;
+  background: rgba(255,255,255,0.05);
+  border: 2px dashed #3a4a6b;
+  border-radius: 8px;
+  text-align: center;
+  color: #aaccff;
+  backdrop-filter: blur(8px);
+}
+
+.playlist {
+  list-style: none;
+  padding: 0;
+  margin-top: 10px;
+}
+
+.playlist li {
+  padding: 6px 10px;
+  background: #2a3b5f;
+  margin: 4px;
+  border-radius: 6px;
+  color: white;
+}
+
+
 
