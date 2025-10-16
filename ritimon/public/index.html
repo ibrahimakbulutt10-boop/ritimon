@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RitimON FM</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="/socket.io/socket.io.js"></script>
+  <script type="module" src="script.js" defer></script>
+</head>
+<body>
+  <div class="main-layout">
+    <div class="top-bar">
+      <button onclick="toggleTheme()">🎨 Tema</button>
+      <button onclick="toggleFont()">🔠 Yazı</button>
+      <button onclick="toggleSize()">🔍 Boyut</button>
+      <button onclick="toggleSound()">🔊 Ses</button>
+    </div>
+
+    <div class="content-area">
+      <div class="chat-section">
+        <div class="chat-box" id="chatBox"></div>
+
+        <div class="message-panel">
+          <input type="text" id="messageInput" placeholder="Mesajınızı yazın..." />
+          <button onclick="sendMessage()">Gönder</button>
+          <button onclick="toggleEmoji()">😊</button>
+        </div>
+
+        <div class="emoji-panel" id="emojiPanel" style="display:none;">
+          😄 😂 😍 🤔 😎 😢 😡 🙌 🎶 🔥
+        </div>
+
+        <div class="equalizer" id="equalizer" style="display:none;"></div>
+      </div>
+
+      <div class="user-section">
+        <h3>🗣️ RitimON’da Sohbet</h3>
+        <div class="user-list">
+          <p>Online: <span id="onlineCount">0</span></p>
+          <p>Total: <span id="totalCount">0</span></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="dj-panel">
+      <div class="dj-info">🎙️ DJ: DJOrkun</div>
+      <div class="now-playing">Şu an çalan: <span id="currentTrack">Ritmi Hisset</span></div>
+    </div>
+  </div>
+</body>
+</html>
+
