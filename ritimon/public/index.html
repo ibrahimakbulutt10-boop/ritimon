@@ -17,6 +17,11 @@
       <button onclick="toggleSound()">🔊 Ses</button>
     </div>
 
+    <div class="login-panel">
+      <input type="text" id="nicknameInput" placeholder="Nickinizi yazın..." />
+      <button onclick="setNickname()">Giriş Yap</button>
+    </div>
+
     <div class="content-area">
       <div class="chat-section">
         <div class="chat-box" id="chatBox"></div>
@@ -46,6 +51,8 @@
     <div class="dj-panel">
       <div class="dj-info">🎙️ DJ: DJOrkun</div>
       <div class="now-playing">Şu an çalan: <span id="currentTrack">Ritmi Hisset</span></div>
+      <input type="text" id="trackInput" placeholder="Yeni şarkı adı..." />
+      <button onclick="updateTrack()">Şarkıyı Güncelle</button>
     </div>
   </div>
 </body>
