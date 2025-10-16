@@ -53,8 +53,24 @@
       <div class="now-playing">Şu an çalan: <span id="currentTrack">Ritmi Hisset</span></div>
       <input type="text" id="trackInput" placeholder="Yeni şarkı adı..." />
       <button onclick="updateTrack()">Şarkıyı Güncelle</button>
+   <div class="dj-panel">
+  <div class="dj-info">🎙️ DJ: DJOrkun</div>
+  <div class="now-playing">Sohbet Teması: <span id="currentTrack">Gecenin Ruhu</span></div>
+
+  <input type="text" id="trackInput" placeholder="Yeni tema veya YouTube URL..." />
+  <button onclick="updateTrack()">🎙️ Temayı Güncelle</button>
+
+  <div class="upload-area" ondrop="handleDrop(event)" ondragover="event.preventDefault()">
+    🎵 Bilgisayardan şarkı sürükleyin (MP3)
+  </div>
+
+  <ul id="fileList" class="playlist"></ul>
+</div>
+
+
     </div>
   </div>
 </body>
 </html>
+
 
