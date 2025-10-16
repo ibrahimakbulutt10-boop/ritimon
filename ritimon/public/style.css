@@ -2,7 +2,8 @@ body {
   margin: 0;
   padding: 0;
   font-family: 'Segoe UI', sans-serif;
-  background: #f0f0f0;
+  background: #0a1a2f;
+  color: #e0e0e0;
   height: 100vh;
   display: flex;
   flex-direction: column;
@@ -18,16 +19,39 @@ body {
   display: flex;
   gap: 10px;
   padding: 10px 20px;
-  background: #ff0066;
-  color: white;
+  background: #1e2a47;
+  backdrop-filter: blur(10px);
 }
 
 .top-bar button {
-  background: white;
-  color: #ff0066;
+  background: #3a4a6b;
+  color: white;
   border: none;
   padding: 6px 12px;
   border-radius: 6px;
+  cursor: pointer;
+}
+
+.login-panel {
+  display: flex;
+  gap: 10px;
+  padding: 10px 20px;
+  background: #1e2a47;
+}
+
+.login-panel input {
+  flex: 1;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.login-panel button {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  background: #3a4a6b;
+  color: white;
   cursor: pointer;
 }
 
@@ -42,16 +66,16 @@ body {
   flex: 4;
   display: flex;
   flex-direction: column;
-  background: white;
+  background: rgba(255,255,255,0.05);
   border-radius: 10px;
   padding: 15px;
-  box-shadow: 0 0 8px rgba(0,0,0,0.1);
+  backdrop-filter: blur(12px);
 }
 
 .chat-box {
   flex: 1;
   overflow-y: auto;
-  border: 1px solid #ccc;
+  border: 1px solid #3a4a6b;
   border-radius: 8px;
   padding: 10px;
   margin-bottom: 10px;
@@ -60,7 +84,7 @@ body {
 .chat-box p {
   margin: 5px 0;
   padding: 6px 10px;
-  background: #e0e0e0;
+  background: #2a3b5f;
   border-radius: 6px;
 }
 
@@ -74,13 +98,15 @@ body {
   padding: 8px;
   border-radius: 6px;
   border: 1px solid #ccc;
+  background: #1e2a47;
+  color: white;
 }
 
 .message-panel button {
   padding: 8px 12px;
   border: none;
   border-radius: 6px;
-  background: #ff0066;
+  background: #3a4a6b;
   color: white;
   cursor: pointer;
 }
@@ -96,10 +122,10 @@ body {
   height: 30px;
   background: repeating-linear-gradient(
     90deg,
-    #ff0066,
-    #ff0066 5px,
-    #fff 5px,
-    #fff 10px
+    #3a4a6b,
+    #3a4a6b 5px,
+    #1e2a47 5px,
+    #1e2a47 10px
   );
   animation: pulse 1s infinite;
   border-radius: 6px;
@@ -113,19 +139,19 @@ body {
 
 .user-section {
   flex: 1;
-  background: #fff;
+  background: rgba(255,255,255,0.05);
   border-radius: 10px;
   padding: 15px;
-  box-shadow: 0 0 8px rgba(0,0,0,0.1);
+  backdrop-filter: blur(12px);
 }
 
 .user-section h3 {
   margin-bottom: 10px;
-  color: #ff0066;
+  color: #aaccff;
 }
 
 .dj-panel {
-  background: linear-gradient(90deg, #ff0066, #ffcc00);
+  background: linear-gradient(90deg, #1e2a47, #3a4a6b);
   color: white;
   padding: 15px;
   text-align: center;
