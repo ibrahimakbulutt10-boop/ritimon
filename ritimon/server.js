@@ -20,6 +20,8 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
+// Serve uploaded files publicly
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -60,6 +62,9 @@ let currentSong = 'Müzik yükleniyor...';
 let currentDJ = 'DJ bekleniyor';
 let isLive = false;
 let serverStartTime = Date.now();
+// In-memory music library (simple demo storage)
+let musicLibrary = [];
+let nextMusicId = 1;
 
 // Routes
 app.get('/', (req, res) => {
@@ -90,7 +95,8 @@ app.get('/api/status', (req, res) => {
     currentSong: currentSong,
     currentDJ: currentDJ,
     isLive: isLive,
-    uptime: Math.floor((Date.now() - serverStartTime) / 1000)
+    uptime: Math.floor((Date.now() - serverStartTime) / 1000),
+    musicCount: musicLibrary.length
   });
 });
 
@@ -102,18 +108,87 @@ app.post('/api/upload', upload.single('musicFile'), (req, res) => {
     }
 
     console.log('Dosya yüklendi:', req.file.filename);
+    // Add to in-memory library
+    const publicPath = `/uploads/${req.file.filename}`;
+    const musicInfo = {
+      id: nextMusicId++,
+      originalName: req.file.originalname,
+      filename: req.file.filename,
+      size: req.file.size,
+      uploadedAt: Date.now(),
+      path: publicPath,
+      uploadedBy: req.body?.uploadedBy || 'Unknown'
+    };
+    musicLibrary.push(musicInfo);
+    // Notify clients via socket
+    io.emit('musicUploaded', musicInfo);
     
     res.json({
       success: true,
       filename: req.file.filename,
       originalName: req.file.originalname,
       size: req.file.size,
-      path: req.file.path
+      path: req.file.path,
+      musicInfo
     });
   } catch (error) {
     console.error('Upload error:', error);
     res.status(500).json({ error: 'Dosya yükleme hatası' });
   }
+});
+
+// Alias endpoint for dj-stream.js expectations
+app.post('/api/upload-music', upload.single('musicFile'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'Dosya yüklenmedi' });
+    }
+
+    const publicPath = `/uploads/${req.file.filename}`;
+    const musicInfo = {
+      id: nextMusicId++,
+      originalName: req.file.originalname,
+      filename: req.file.filename,
+      size: req.file.size,
+      uploadedAt: Date.now(),
+      path: publicPath,
+      uploadedBy: req.body?.uploadedBy || 'Unknown'
+    };
+    musicLibrary.push(musicInfo);
+    io.emit('musicUploaded', musicInfo);
+    res.json({ success: true, musicInfo });
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({ error: 'Dosya yükleme hatası' });
+  }
+});
+
+// Music library endpoints
+app.get('/api/music-library', (req, res) => {
+  res.json(musicLibrary);
+});
+
+app.delete('/api/music/:id', (req, res) => {
+  const id = Number(req.params.id);
+  const index = musicLibrary.findIndex(m => m.id === id);
+  if (index === -1) {
+    return res.status(404).json({ success: false, error: 'Bulunamadı' });
+  }
+  const [removed] = musicLibrary.splice(index, 1);
+  // Attempt to delete file from disk (best effort)
+  const fileOnDisk = path.join(__dirname, 'uploads', removed.filename);
+  fs.unlink(fileOnDisk, (err) => {
+    if (err) {
+      console.warn('Silme hatası (yoksayılıyor):', err.message);
+    }
+  });
+  io.emit('musicDeleted', { id });
+  res.json({ success: true, id });
+});
+
+// Users endpoint for clients needing counts
+app.get('/api/users', (req, res) => {
+  res.json(Array.from(onlineUsers.values()));
 });
 
 // Socket.io connection handling
