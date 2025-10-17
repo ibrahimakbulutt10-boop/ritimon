@@ -4,307 +4,352 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RitimON FM - DJ Paneli</title>
+    <link rel="stylesheet" href="css/style.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
-            min-height: 100vh;
-            color: white;
-            overflow-x: hidden;
-        }
-
-        .bg-animation {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            background: 
-                radial-gradient(circle at 20% 80%, rgba(255, 64, 129, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 80% 20%, rgba(78, 205, 196, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 40% 40%, rgba(255, 193, 7, 0.05) 0%, transparent 50%);
-        }
-
-        /* DJ Login Modal */
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.9);
+        /* Layout Styles - 30/70 Split */
+        .dj-main-layout {
             display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            backdrop-filter: blur(10px);
+            height: calc(100vh - 80px);
+            gap: 20px;
+            padding: 20px;
         }
 
-        .modal-content {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            border-radius: 20px;
-            padding: 40px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            text-align: center;
-            max-width: 450px;
-            width: 90%;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        }
-
-        .modal-header h2 {
-            font-family: 'Orbitron', monospace;
-            color: #ff4081;
-            margin-bottom: 10px;
-            font-size: 2rem;
-            background: linear-gradient(45deg, #ff4081, #ff6ec7);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .modal-header p {
-            color: #4ecdc4;
-            margin-bottom: 30px;
-            font-size: 1.1rem;
-            opacity: 0.9;
-        }
-
-        .input-group {
-            margin-bottom: 20px;
-            position: relative;
-        }
-
-        .input-group i {
-            position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #4ecdc4;
-            z-index: 1;
-        }
-
-        .input-group input {
-            width: 100%;
-            padding: 15px 20px 15px 45px;
-            border: none;
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            font-size: 1.1rem;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            transition: all 0.3s ease;
-        }
-
-        .input-group input::placeholder {
-            color: rgba(255, 255, 255, 0.5);
-        }
-
-        .input-group input:focus {
-            outline: none;
-            border-color: #ff4081;
-            box-shadow: 0 0 20px rgba(255, 64, 129, 0.3);
-            background: rgba(255, 255, 255, 0.15);
-        }
-
-        .btn-primary {
-            width: 100%;
-            padding: 15px 20px;
-            border: none;
-            border-radius: 12px;
-            background: linear-gradient(45deg, #ff4081, #ff6ec7);
-            color: white;
-            font-size: 1.2rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-bottom: 15px;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(255, 64, 129, 0.4);
-        }
-
-        .error-message {
-            color: #ff6b6b;
-            font-size: 0.9rem;
-            margin-top: 10px;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        /* DJ Panel Layout - DEĞİŞİKLİK: 30% DJ Controls, 70% Chat */
-        .dj-container {
-            display: flex;
-            height: 100vh;
-            gap: 15px;
-            padding: 15px;
-        }
-
-        /* Left Side - DJ Controls (KÜÇÜLTÜLDÜ) */
-        .dj-controls {
-            width: 30%; /* KÜÇÜLTÜLDÜ */
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        /* Right Side - DJ Chat (BÜYÜTÜLDÜ) */
-        .dj-chat-section {
-            width: 70%; /* BÜYÜTÜLDÜ */
-            display: flex;
-            flex-direction: column;
+        .dj-controls-panel {
+            width: 30%;
             background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
             border-radius: 15px;
+            padding: 20px;
             border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow-y: auto;
+            max-height: 100%;
         }
 
-        /* DJ Header */
-        .dj-header {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            padding: 15px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        .dj-chat-panel {
+            width: 70%;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Chat Panel Styles */
+        .chat-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 100;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .dj-header h1 {
-            font-family: 'Orbitron', monospace;
-            color: #ff4081;
-            font-size: 1.3rem;
+        .chat-header h3 {
+            color: #4ecdc4;
             margin: 0;
         }
 
-        .dj-welcome {
-            color: #4ecdc4;
-            font-size: 0.8rem;
-            margin-top: 3px;
-        }
-
-        .header-right {
+        .chat-main {
+            flex: 1;
             display: flex;
-            gap: 8px;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .chat-messages {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            overflow-y: auto;
+            min-height: 300px;
+            max-height: 400px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .message {
+            margin-bottom: 12px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border-left: 3px solid #4ecdc4;
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
             align-items: center;
+            margin-bottom: 5px;
         }
 
-        .btn-secondary {
-            padding: 6px 12px;
-            background: rgba(78, 205, 196, 0.2);
+        .message-author {
+            font-weight: bold;
             color: #4ecdc4;
-            border: 1px solid #4ecdc4;
-            border-radius: 6px;
-            text-decoration: none;
+        }
+
+        .message-time {
             font-size: 0.8rem;
-            transition: all 0.3s ease;
+            opacity: 0.7;
         }
 
-        .btn-secondary:hover {
-            background: rgba(78, 205, 196, 0.3);
+        .message-content {
+            color: white;
         }
 
-        .btn-logout {
-            padding: 6px 12px;
-            background: rgba(255, 107, 107, 0.2);
-            color: #ff6b6b;
-            border: 1px solid #ff6b6b;
+        .message-content.colored {
+            font-weight: 500;
+        }
+
+        .message.dj-message {
+            border-left-color: #f39c12;
+            background: rgba(243, 156, 18, 0.1);
+        }
+
+        .message.dj-message .message-author {
+            color: #f39c12;
+        }
+
+        .banned-user {
+            opacity: 0.5;
+            background: rgba(255, 0, 0, 0.1);
+            border-left-color: #ff4757;
+        }
+
+        /* Chat Input Styles */
+        .chat-input-section {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 15px;
+        }
+
+        .theme-buttons {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .theme-btn {
+            padding: 8px 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 6px;
+            color: white;
             cursor: pointer;
             font-size: 0.8rem;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
         }
 
-        .btn-logout:hover {
-            background: rgba(255, 107, 107, 0.3);
+        .theme-btn:hover {
+            background: rgba(78, 205, 196, 0.2);
+            border-color: #4ecdc4;
         }
 
-        /* Control Sections (KÜÇÜLTÜLDÜ) */
+        /* Color Picker Styles */
+        .color-picker-section {
+            margin-bottom: 15px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .color-buttons {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 8px;
+        }
+
+        .color-btn {
+            width: 40px;
+            height: 40px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .color-btn:hover {
+            transform: scale(1.1);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .color-btn.active {
+            border-color: #4ecdc4;
+            border-width: 3px;
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(78, 205, 196, 0.5);
+        }
+
+        .color-btn.active::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #000;
+            font-weight: bold;
+            font-size: 16px;
+            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
+        }
+
+        .chat-input-container {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+            resize: none;
+            min-height: 50px;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: #4ecdc4;
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .chat-input.color-preview:focus {
+            border-color: var(--selected-color, #4ecdc4);
+        }
+
+        .chat-send-btn {
+            padding: 12px 20px;
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s ease;
+        }
+
+        .chat-send-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(78, 205, 196, 0.3);
+        }
+
+        /* User List Styles */
+        .users-section {
+            margin-bottom: 20px;
+        }
+
+        .users-list {
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .user-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            margin-bottom: 5px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+        }
+
+        .user-name {
+            color: white;
+            font-weight: 500;
+        }
+
+        .user-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .action-btn {
+            padding: 4px 8px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            color: white;
+        }
+
+        .warn-btn {
+            background: #f39c12;
+        }
+
+        .ban-btn {
+            background: #e74c3c;
+        }
+
+        .unban-btn {
+            background: #27ae60;
+        }
+
+        /* Control Panel Styles */
         .control-section {
             background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border-radius: 12px;
+            border-radius: 10px;
             padding: 15px;
+            margin-bottom: 15px;
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .control-section h3 {
             color: #4ecdc4;
-            margin-bottom: 12px;
-            font-size: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            margin: 0 0 15px 0;
+            font-size: 1.1rem;
         }
 
-        /* Broadcast Controls */
-        .broadcast-status {
+        .input-group {
             display: flex;
             align-items: center;
             gap: 10px;
-            margin-bottom: 12px;
-            padding: 12px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
+            margin-bottom: 10px;
         }
 
-        .status-indicator {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        #broadcastIndicator {
-            color: #ff6b6b;
-        }
-
-        #broadcastIndicator.live {
+        .input-group i {
             color: #4ecdc4;
-            animation: pulse 2s infinite;
+            width: 20px;
         }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+        .input-group input {
+            flex: 1;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            color: white;
         }
 
-        .control-buttons {
-            display: flex;
-            gap: 8px;
+        .input-group input:focus {
+            outline: none;
+            border-color: #4ecdc4;
         }
 
-        .btn-success {
+        .btn-primary {
             background: linear-gradient(45deg, #4ecdc4, #44a08d);
             color: white;
             border: none;
             padding: 8px 15px;
             border-radius: 6px;
             cursor: pointer;
-            font-weight: 600;
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
+            font-weight: 500;
         }
 
-        .btn-success:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(78, 205, 196, 0.4);
+        .btn-success {
+            background: linear-gradient(45deg, #55a3ff, #003d82);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
         }
 
         .btn-danger {
@@ -314,598 +359,119 @@
             padding: 8px 15px;
             border-radius: 6px;
             cursor: pointer;
-            font-weight: 600;
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
         }
 
-        .btn-danger:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+        .btn-warning {
+            background: linear-gradient(45deg, #ffa502, #ff6348);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
         }
 
-        /* Song Controls */
-        .current-playing {
-            margin-top: 12px;
-            padding: 12px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-        }
-
-        #currentPlayingSong {
-            color: #4ecdc4;
-            font-weight: 600;
-            margin-top: 6px;
-            font-size: 0.9rem;
-        }
-
-        /* Playlist Styles (KÜÇÜLTÜLDÜ) */
-        .playlist-section {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            padding: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .playlist-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .playlist-header span {
-            font-weight: 600;
-            color: #4ecdc4;
-            font-size: 0.9rem;
-        }
-
+        /* Playlist Styles */
         .playlist-items {
-            max-height: 150px; /* KÜÇÜLTÜLDÜ */
+            max-height: 200px;
             overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 10px;
         }
 
         .playlist-item {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             padding: 8px;
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
             border-radius: 6px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: all 0.2s ease;
-        }
-
-        .playlist-item:hover {
-            background: rgba(255, 255, 255, 0.15);
-            transform: translateX(3px);
-        }
-
-        .playlist-item.playing {
-            background: linear-gradient(45deg, #4ecdc4, #44a08d);
-            border-color: #4ecdc4;
+            margin-bottom: 5px;
+            color: white;
         }
 
         .playlist-item-number {
             width: 20px;
             height: 20px;
-            background: rgba(255, 255, 255, 0.2);
+            background: #4ecdc4;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.7rem;
-            font-weight: bold;
-        }
-
-        .playlist-item-title {
-            flex: 1;
             font-size: 0.8rem;
+            font-weight: bold;
             color: white;
         }
 
-        .playlist-item-actions {
+        /* Modal Styles */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
             display: flex;
-            gap: 4px;
-        }
-
-        .playlist-btn {
-            width: 24px;
-            height: 24px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
             justify-content: center;
-            font-size: 0.7rem;
-            transition: all 0.2s ease;
+            align-items: center;
+            z-index: 1000;
         }
 
-        .playlist-btn.play {
-            background: #4ecdc4;
+        .modal-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header h2 {
             color: white;
+            margin-bottom: 10px;
         }
 
-        .playlist-btn.delete {
-            background: #ff6b6b;
-            color: white;
+        .modal-header p {
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 30px;
         }
 
-        .playlist-btn.up {
-            background: #ffd93d;
-            color: #333;
+        .hidden {
+            display: none !important;
         }
 
-        .playlist-btn.down {
-            background: #6c5ce7;
-            color: white;
-        }
-
-        .playlist-btn:hover {
-            transform: scale(1.1);
-        }
-
-        .playlist-actions {
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
-            margin-top: 12px;
-        }
-
-        .btn-sm {
-            padding: 4px 8px;
-            font-size: 0.7rem;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .btn-warning {
-            background: linear-gradient(45deg, #ffd93d, #f39c12);
-            color: #333;
-        }
-
-        .btn-info {
-            background: linear-gradient(45deg, #74b9ff, #0984e3);
-            color: white;
-        }
-
-        /* DJ Chat Section */
-        .chat-header {
-            padding: 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
+        /* Header Styles */
+        .dj-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .chat-header-left h3 {
-            color: #ff4081;
-            font-family: 'Orbitron', monospace;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .chat-subtitle {
+        .header-left h1 {
             color: #4ecdc4;
-            font-size: 0.9rem;
+            margin: 0;
+        }
+
+        .dj-welcome {
+            color: rgba(255, 255, 255, 0.8);
             margin-top: 5px;
         }
 
-        .chat-header-right {
-            display: flex;
-            gap: 10px;
-        }
-
-        /* Chat Messages - BÜYÜK ALAN */
-        .chat-messages {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            min-height: 500px; /* BÜYÜK CHAT ALANI */
-        }
-
-        .message {
-            padding: 12px 18px;
-            border-radius: 18px;
-            max-width: 80%;
-            word-wrap: break-word;
-            animation: fadeInUp 0.3s ease;
-            position: relative;
-        }
-
-        .message.dj {
-            align-self: flex-end;
-            background: linear-gradient(45deg, #ff4081, #ff6ec7);
+        .btn-logout {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
             color: white;
-            border: 2px solid #ff4081;
-        }
-
-        .message.user {
-            align-self: flex-start;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
-        }
-
-        .message-header {
-            font-size: 0.8rem;
-            opacity: 0.7;
-            margin-bottom: 5px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .dj-badge {
-            background: #ff4081;
-            color: white;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 0.7rem;
-            font-weight: bold;
-        }
-
-        /* Kullanıcı Listesi ve Moderation */
-        .users-panel {
-            width: 250px;
-            background: rgba(255, 255, 255, 0.05);
-            border-left: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .users-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .users-title {
-            color: #4ecdc4;
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-
-        .user-count {
-            background: rgba(78, 205, 196, 0.2);
-            color: #4ecdc4;
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 0.8rem;
-        }
-
-        .user-list {
-            flex: 1;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            max-height: 300px;
-        }
-
-        .user-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            transition: all 0.3s ease;
-            position: relative;
-        }
-
-        .user-item:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .user-item.banned {
-            background: rgba(255, 107, 107, 0.2);
-            border: 1px solid rgba(255, 107, 107, 0.3);
-        }
-
-        .user-avatar {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            background: linear-gradient(45deg, #4ecdc4, #44a08d);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.8rem;
-            font-weight: bold;
-        }
-
-        .user-info {
-            flex: 1;
-        }
-
-        .user-name {
-            font-size: 0.9rem;
-            font-weight: 500;
-        }
-
-        .user-status {
-            font-size: 0.7rem;
-            opacity: 0.7;
-        }
-
-        .user-actions {
-            display: flex;
-            gap: 4px;
-        }
-
-        .user-action-btn {
-            width: 24px;
-            height: 24px;
             border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.7rem;
-            transition: all 0.2s ease;
-        }
-
-        .warn-btn {
-            background: #ffd93d;
-            color: #333;
-        }
-
-        .ban-btn {
-            background: #ff6b6b;
-            color: white;
-        }
-
-        .unban-btn {
-            background: #4ecdc4;
-            color: white;
-        }
-
-        .user-action-btn:hover {
-            transform: scale(1.1);
-        }
-
-        /* Chat Input - BÜYÜK MESAJ KUTUSU */
-        .chat-input-container {
-            padding: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-        }
-
-        .chat-input-wrapper {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .chat-input {
-            width: 100%;
-            padding: 20px; /* BÜYÜK MESAJ KUTUSU */
-            border: none;
-            border-radius: 15px;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            font-size: 1.1rem; /* BÜYÜK FONT */
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            transition: all 0.3s ease;
-            resize: vertical;
-            min-height: 60px; /* BÜYÜK YÜKSEKLİK */
-            max-height: 120px;
-        }
-
-        .chat-input::placeholder {
-            color: rgba(255, 255, 255, 0.5);
-        }
-
-        .chat-input:focus {
-            outline: none;
-            border-color: #ff4081;
-            box-shadow: 0 0 20px rgba(255, 64, 129, 0.3);
-            background: rgba(255, 255, 255, 0.15);
-        }
-
-        /* Emoji Support ve Theme URLs */
-        .emoji-toolbar {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-            margin-bottom: 10px;
-        }
-
-        .emoji-btn {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 10px 15px;
             border-radius: 8px;
-            padding: 8px 12px;
-            font-size: 1.2rem;
             cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .emoji-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-            transform: scale(1.1);
-        }
-
-        .theme-urls {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-bottom: 10px;
-        }
-
-        .theme-btn {
-            background: rgba(255, 64, 129, 0.2);
-            border: 1px solid rgba(255, 64, 129, 0.3);
-            border-radius: 6px;
-            padding: 4px 8px;
-            font-size: 0.8rem;
-            color: #ff4081;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .theme-btn:hover {
-            background: rgba(255, 64, 129, 0.3);
-            transform: scale(1.05);
-        }
-
-        .send-btn {
-            padding: 15px 25px;
-            border: none;
-            border-radius: 15px;
-            background: linear-gradient(45deg, #ff4081, #ff6ec7);
-            color: white;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 1.1rem;
-        }
-
-        .send-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(255, 64, 129, 0.4);
-        }
-
-        .input-controls {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        /* Chat Clear Button */
-        .chat-clear-btn {
-            background: rgba(255, 107, 107, 0.2);
-            color: #ff6b6b;
-            border: 1px solid #ff6b6b;
-            border-radius: 6px;
-            padding: 6px 12px;
-            cursor: pointer;
-            font-size: 0.8rem;
-            transition: all 0.3s ease;
-        }
-
-        .chat-clear-btn:hover {
-            background: rgba(255, 107, 107, 0.3);
-        }
-
-        /* Statistics */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 10px;
-        }
-
-        .stat-card {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            padding: 12px;
-            text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .stat-icon {
-            font-size: 1.2rem;
-            color: #4ecdc4;
-            margin-bottom: 6px;
-        }
-
-        .stat-number {
-            font-size: 1.4rem;
-            font-weight: bold;
-            color: white;
-            margin-bottom: 4px;
-        }
-
-        .stat-label {
-            font-size: 0.7rem;
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        /* Quick Actions */
-        .quick-actions {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .quick-btn {
-            padding: 8px 12px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 6px;
-            color: white;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-align: left;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.8rem;
-        }
-
-        .quick-btn:hover {
-            background: rgba(255, 255, 255, 0.15);
-            transform: translateX(3px);
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Responsive */
-        @media (max-width: 1200px) {
-            .dj-container {
-                flex-direction: column;
-                height: auto;
-            }
-            
-            .dj-controls, .dj-chat-section {
-                width: 100%;
-            }
-            
-            .chat-messages {
-                min-height: 300px;
-            }
-
-            .users-panel {
-                width: 100%;
-            }
         }
     </style>
 </head>
-<body>
-    <div class="bg-animation"></div>
-
+<body class="dj-body">
     <!-- DJ Login Modal -->
     <div id="djLoginModal" class="modal">
         <div class="modal-content">
@@ -920,7 +486,7 @@
                 </div>
                 <div class="input-group">
                     <i class="fas fa-lock"></i>
-                    <input type="password" id="djPassword" placeholder="•••••••••••••••••••••••••••••••••••" required>
+                    <input type="password" id="djPassword" placeholder="DJ Şifreniz" required>
                 </div>
                 <button type="submit" class="btn-primary">
                     <i class="fas fa-sign-in-alt"></i> DJ Paneline Giriş
@@ -941,7 +507,7 @@
                 </div>
             </div>
             <div class="header-right">
-                <a href="/" target="_blank" class="btn-secondary">
+                <a href="/" target="_blank" class="btn-primary">
                     <i class="fas fa-comments"></i> Ana Chat
                 </a>
                 <button id="djLogoutBtn" class="btn-logout">
@@ -950,198 +516,106 @@
             </div>
         </header>
 
-        <div class="dj-container">
-            <!-- Left Side - DJ Controls (KÜÇÜLTÜLDÜ) -->
-            <div class="dj-controls">
+        <!-- Main Layout -->
+        <div class="dj-main-layout">
+            <!-- Controls Panel (30%) -->
+            <div class="dj-controls-panel">
                 <!-- Broadcast Controls -->
                 <div class="control-section">
-                    <h3><i class="fas fa-broadcast-tower"></i> Yayın</h3>
-                    <div class="broadcast-controls">
-                        <div class="broadcast-status" id="broadcastStatus">
-                            <div class="status-indicator">
-                                <i class="fas fa-circle" id="broadcastIndicator"></i>
-                                <span id="broadcastText">Yayın Dışı</span>
-                            </div>
-                        </div>
-                        
-                        <div class="control-buttons">
-                            <button id="startBroadcastBtn" class="btn-success">
-                                <i class="fas fa-play"></i> Başlat
-                            </button>
-                            <button id="stopBroadcastBtn" class="btn-danger hidden">
-                                <i class="fas fa-stop"></i> Durdur
-                            </button>
-                        </div>
+                    <h3><i class="fas fa-broadcast-tower"></i> Yayın Kontrolü</h3>
+                    <div class="input-group">
+                        <i class="fas fa-music"></i>
+                        <input type="text" id="songTitleInput" placeholder="Şu anda çalan şarkı..." maxlength="100">
+                        <button id="updateSongBtn" class="btn-primary">Güncelle</button>
                     </div>
-                </div>
-
-                <!-- Song Controls -->
-                <div class="control-section">
-                    <h3><i class="fas fa-music"></i> Şarkı</h3>
-                    <div class="song-controls">
-                        <div class="input-group">
-                            <i class="fas fa-music"></i>
-                            <input type="text" id="songTitleInput" placeholder="Şarkı adı..." maxlength="100">
-                            <button id="updateSongBtn" class="btn-primary">
-                                Güncelle
-                            </button>
-                        </div>
-                        
-                        <div class="current-playing">
-                            <strong>Çalan:</strong>
-                            <div id="currentPlayingSong">RitimON FM</div>
-                        </div>
+                    <div style="margin-top: 10px; color: white;">
+                        <strong>Çalan:</strong> <span id="currentPlayingSong">RitimON FM</span>
                     </div>
                 </div>
 
                 <!-- Playlist Section -->
                 <div class="control-section">
-                    <h3><i class="fas fa-list-music"></i> Playlist</h3>
-                    <div class="playlist-section">
-                        <!-- Add Song -->
-                        <div class="add-song-form">
-                            <div class="input-group">
-                                <i class="fas fa-plus"></i>
-                                <input type="text" id="newSongInput" placeholder="Şarkı ekle..." maxlength="100">
-                                <button id="addSongBtn" class="btn-success">
-                                    <i class="fas fa-plus"></i>
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <!-- Playlist -->
-                        <div class="playlist-container">
-                            <div class="playlist-header">
-                                <span>Liste (<span id="playlistCount">0</span>/50)</span>
-                                <button id="clearPlaylistBtn" class="btn-warning btn-sm">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                            
-                            <div id="playlistItems" class="playlist-items">
-                                <!-- Playlist items will be added here -->
-                            </div>
-                        </div>
-                        
-                        <!-- Quick Actions -->
-                        <div class="playlist-actions">
-                            <button id="shuffleBtn" class="btn-secondary btn-sm">
-                                <i class="fas fa-random"></i>
-                            </button>
-                            <button id="nextSongBtn" class="btn-primary btn-sm">
-                                <i class="fas fa-forward"></i>
-                            </button>
-                            <button id="autoPlayBtn" class="btn-info btn-sm">
-                                <i class="fas fa-play"></i>
-                            </button>
-                        </div>
+                    <h3><i class="fas fa-list-music"></i> Playlist (<span id="playlistCount">0</span>/50)</h3>
+                    <div class="input-group">
+                        <i class="fas fa-plus"></i>
+                        <input type="text" id="newSongInput" placeholder="Şarkı adı girin..." maxlength="100">
+                        <button id="addSongBtn" class="btn-success">Ekle</button>
                     </div>
-                </div>
-
-                <!-- Statistics -->
-                <div class="control-section">
-                    <h3><i class="fas fa-chart-bar"></i> İstatistik</h3>
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-icon"><i class="fas fa-users"></i></div>
-                            <div class="stat-info">
-                                <div class="stat-number" id="totalListeners">0</div>
-                                <div class="stat-label">Dinleyici</div>
-                            </div>
-                        </div>
-                        
-                        <div class="stat-card">
-                            <div class="stat-icon"><i class="fas fa-comments"></i></div>
-                            <div class="stat-info">
-                                <div class="stat-number" id="chatActivity">0</div>
-                                <div class="stat-label">Mesaj</div>
-                            </div>
-                        </div>
+                    <div class="playlist-items" id="playlistItems">
+                        <!-- Playlist items will be added here -->
                     </div>
-                </div>
-
-                <!-- Quick Actions -->
-                <div class="control-section">
-                    <h3><i class="fas fa-bolt"></i> Hızlı</h3>
-                    <div class="quick-actions">
-                        <button class="quick-btn" data-message="🎵 Yeni şarkı başlıyor! 🎵">
-                            <i class="fas fa-music"></i> Şarkı Duyuru
-                        </button>
-                        <button class="quick-btn" data-message="📻 RitimON FM'de kalın! 📻">
-                            <i class="fas fa-bullhorn"></i> Promosyon
-                        </button>
-                        <button class="quick-btn" data-message="💬 Sohbete katılın! 💬">
-                            <i class="fas fa-comments"></i> Chat Teşvik
-                        </button>
-                    </div>
+                    <button id="clearPlaylistBtn" class="btn-warning" style="width: 100%; margin-top: 10px;">
+                        <i class="fas fa-trash"></i> Playlist Temizle
+                    </button>
                 </div>
             </div>
 
-            <!-- Right Side - DJ Chat (BÜYÜTÜLDÜ) -->
-            <div class="dj-chat-section">
+            <!-- Chat Panel (70%) -->
+            <div class="dj-chat-panel">
                 <div class="chat-header">
-                    <div class="chat-header-left">
-                        <h3><i class="fas fa-comments"></i> DJ Sohbet</h3>
-                        <div class="chat-subtitle">Dinleyicilerinizle canlı sohbet edin</div>
-                    </div>
-                    <div class="chat-header-right">
-                        <button class="chat-clear-btn" id="clearChatBtn">
-                            <i class="fas fa-trash"></i> Temizle
-                        </button>
+                    <h3><i class="fas fa-comments"></i> DJ Chat Kontrolü</h3>
+                    <button id="clearChatBtn" class="btn-danger">
+                        <i class="fas fa-broom"></i> Sohbeti Temizle
+                    </button>
+                </div>
+
+                <!-- Users Section -->
+                <div class="users-section">
+                    <h4 style="color: #4ecdc4; margin-bottom: 10px;">
+                        <i class="fas fa-users"></i> Aktif Kullanıcılar (<span id="userCount">0</span>)
+                    </h4>
+                    <div class="users-list" id="usersList">
+                        <!-- Users will be added here -->
                     </div>
                 </div>
-                
-                <div style="display: flex; flex: 1;">
-                    <div class="chat-messages" id="djChatMessages">
-                        <!-- Mesajlar buraya eklenecek -->
+
+                <!-- Chat Messages -->
+                <div class="chat-main">
+                    <div class="chat-messages" id="chatMessages">
+                        <!-- Messages will appear here -->
                     </div>
-                    
-                    <!-- Kullanıcı Listesi -->
-                    <div class="users-panel">
-                        <div class="users-header">
-                            <span class="users-title">Kullanıcılar</span>
-                            <span class="user-count" id="userCount">0</span>
+
+                    <!-- Chat Input Section -->
+                    <div class="chat-input-section">
+                        <!-- Theme Buttons -->
+                        <div class="theme-buttons">
+                            <button class="theme-btn" data-text="🎵 Müzik: ">🎵 Müzik</button>
+                            <button class="theme-btn" data-text="📢 Duyuru: ">📢 Duyuru</button>
+                            <button class="theme-btn" data-text="🎉 Etkinlik: ">🎉 Etkinlik</button>
+                            <button class="theme-btn" data-text="💝 Hediye: ">💝 Hediye</button>
+                            <button class="theme-btn" data-text="⭐ Özel: ">⭐ Özel</button>
+                            <button class="theme-btn" data-text="🚀 Hızlı: ">🚀 Hızlı</button>
+                            <button class="theme-btn" data-text="💫 Yeni: ">💫 Yeni</button>
+                            <button class="theme-btn" data-text="🔥 Hit: ">🔥 Hit</button>
+                            <button class="theme-btn" data-text="❤️ Favori: ">❤️ Favori</button>
+                            <button class="theme-btn" data-text="🎊 Parti: ">🎊 Parti</button>
                         </div>
-                        
-                        <div class="user-list" id="userList">
-                            <!-- Kullanıcılar buraya eklenecek -->
+
+                        <!-- Color Picker -->
+                        <div class="color-picker-section">
+                            <label style="color: #4ecdc4; font-weight: bold; margin-bottom: 8px; display: block;">
+                                <i class="fas fa-palette"></i> Mesaj Rengi:
+                            </label>
+                            <div class="color-buttons">
+                                <button class="color-btn active" data-color="#ffffff" style="background: #ffffff;" title="Beyaz"></button>
+                                <button class="color-btn" data-color="#4ecdc4" style="background: #4ecdc4;" title="Turkuaz"></button>
+                                <button class="color-btn" data-color="#ff6b6b" style="background: #ff6b6b;" title="Kırmızı"></button>
+                                <button class="color-btn" data-color="#ffa502" style="background: #ffa502;" title="Turuncu"></button>
+                                <button class="color-btn" data-color="#f9ca24" style="background: #f9ca24;" title="Sarı"></button>
+                                <button class="color-btn" data-color="#6c5ce7" style="background: #6c5ce7;" title="Mor"></button>
+                                <button class="color-btn" data-color="#a29bfe" style="background: #a29bfe;" title="Açık Mor"></button>
+                                <button class="color-btn" data-color="#fd79a8" style="background: #fd79a8;" title="Pembe"></button>
+                                <button class="color-btn" data-color="#00b894" style="background: #00b894;" title="Yeşil"></button>
+                                <button class="color-btn" data-color="#74b9ff" style="background: #74b9ff;" title="Mavi"></button>
+                                <button class="color-btn" data-color="#e17055" style="background: #e17055;" title="Kahverengi"></button>
+                                <button class="color-btn" data-color="#636e72" style="background: #636e72;" title="Gri"></button>
+                            </div>
                         </div>
-                    </div>
-                </div>
-                
-                <div class="chat-input-container">
-                    <div class="chat-input-wrapper">
-                        <!-- Emoji Toolbar -->
-                        <div class="emoji-toolbar">
-                            <button class="emoji-btn" data-emoji="🎵">🎵</button>
-                            <button class="emoji-btn" data-emoji="📻">📻</button>
-                            <button class="emoji-btn" data-emoji="🎧">🎧</button>
-                            <button class="emoji-btn" data-emoji="🎤">🎤</button>
-                            <button class="emoji-btn" data-emoji="🔥">🔥</button>
-                            <button class="emoji-btn" data-emoji="💖">💖</button>
-                            <button class="emoji-btn" data-emoji="👏">👏</button>
-                            <button class="emoji-btn" data-emoji="😄">😄</button>
-                            <button class="emoji-btn" data-emoji="😍">😍</button>
-                            <button class="emoji-btn" data-emoji="🤘">🤘</button>
-                        </div>
-                        
-                        <!-- DJ Tema URL'leri -->
-                        <div class="theme-urls">
-                            <button class="theme-btn" data-theme="🎵 Müzik: ">🎵 Müzik</button>
-                            <button class="theme-btn" data-theme="📻 Radyo: ">📻 Radyo</button>
-                            <button class="theme-btn" data-theme="🎧 Ses: ">🎧 Ses</button>
-                            <button class="theme-btn" data-theme="🎤 Mikrofon: ">🎤 Mikrofon</button>
-                            <button class="theme-btn" data-theme="🔊 Volume: ">🔊 Volume</button>
-                            <button class="theme-btn" data-theme="🎶 Melodi: ">🎶 Melodi</button>
-                            <button class="theme-btn" data-theme="🎸 Rock: ">🎸 Rock</button>
-                            <button class="theme-btn" data-theme="🎹 Piyano: ">🎹 Piyano</button>
-                            <button class="theme-btn" data-theme="🥁 Ritim: ">🥁 Ritim</button>
-                            <button class="theme-btn" data-theme="🎺 Brass: ">🎺 Brass</button>
-                        </div>
-                        
-                        <div class="input-controls">
-                            <textarea class="chat-input" id="djMessageInput" placeholder="DJ mesajınızı yazın... (Enter ile gönderin)" maxlength="500"></textarea>
-                            <button class="send-btn" id="djSendBtn">
+
+                        <!-- Chat Input -->
+                        <div class="chat-input-container">
+                            <textarea id="chatInput" class="chat-input" placeholder="DJ mesajı yaz... (Enter ile gönder)" rows="2"></textarea>
+                            <button id="sendChatBtn" class="chat-send-btn">
                                 <i class="fas fa-paper-plane"></i> Gönder
                             </button>
                         </div>
@@ -1152,10 +626,11 @@
     </div>
 
     <script type="module">
-        // Firebase Configuration
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
-        import { getDatabase, ref, push, onValue, serverTimestamp, remove } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js';
+        // Firebase v9 imports
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js';
+        import { getDatabase, ref, onValue, push, remove, off } from 'https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js';
 
+        // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyDScnST7m9TrW67Fz-UYljEfUr9YZxBHF8",
             authDomain: "radyoapp-81787.firebaseapp.com",
@@ -1167,85 +642,88 @@
             measurementId: "G-3NLHLL0DGL"
         };
 
+        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
 
+        // Global variables
         let currentDJ = null;
-        let playlist = [];
-        let currentSongIndex = 0;
-        let broadcastStartTime = null;
-        let connectedUsers = new Map();
-        let bannedUsers = new Set();
+        let selectedColor = '#ffffff'; // Default white color
+        let playlist = JSON.parse(localStorage.getItem('djPlaylist')) || [];
+        let bannedUsers = new Set(JSON.parse(localStorage.getItem('bannedUsers')) || []);
 
-        // DOM Elements
-        const djLoginModal = document.getElementById('djLoginModal');
-        const djPanel = document.getElementById('djPanel');
-        const djUsername = document.getElementById('djUsername');
-        const djPassword = document.getElementById('djPassword');
-        const djLoginForm = document.getElementById('djLoginForm');
-        const djLoginError = document.getElementById('djLoginError');
-        const welcomeDJ = document.getElementById('welcomeDJ');
-        const djLogoutBtn = document.getElementById('djLogoutBtn');
-
-        // Broadcast Controls
-        const startBroadcastBtn = document.getElementById('startBroadcastBtn');
-        const stopBroadcastBtn = document.getElementById('stopBroadcastBtn');
-        const broadcastIndicator = document.getElementById('broadcastIndicator');
-        const broadcastText = document.getElementById('broadcastText');
-
-        // Song Controls
-        const songTitleInput = document.getElementById('songTitleInput');
-        const updateSongBtn = document.getElementById('updateSongBtn');
-        const currentPlayingSong = document.getElementById('currentPlayingSong');
-
-        // Playlist Controls
-        const newSongInput = document.getElementById('newSongInput');
-        const addSongBtn = document.getElementById('addSongBtn');
-        const playlistItems = document.getElementById('playlistItems');
-        const playlistCount = document.getElementById('playlistCount');
-        const clearPlaylistBtn = document.getElementById('clearPlaylistBtn');
-        const shuffleBtn = document.getElementById('shuffleBtn');
-        const nextSongBtn = document.getElementById('nextSongBtn');
-        const autoPlayBtn = document.getElementById('autoPlayBtn');
-
-        // Chat Elements
-        const djChatMessages = document.getElementById('djChatMessages');
-        const djMessageInput = document.getElementById('djMessageInput');
-        const djSendBtn = document.getElementById('djSendBtn');
-        const clearChatBtn = document.getElementById('clearChatBtn');
-
-        // User Management
-        const userList = document.getElementById('userList');
-        const userCount = document.getElementById('userCount');
-
-        // Statistics
-        const totalListeners = document.getElementById('totalListeners');
-        const chatActivity = document.getElementById('chatActivity');
-
-        // DJ Authentication - GİZLİ ŞİFRE
+        // Valid DJ credentials
         const validDJs = {
             'admin': '4545',
             'dj1': '4545',
             'dj2': '4545'
         };
 
+        // DOM elements
+        const djLoginModal = document.getElementById('djLoginModal');
+        const djPanel = document.getElementById('djPanel');
+        const djLoginForm = document.getElementById('djLoginForm');
+        const djUsernameInput = document.getElementById('djUsername');
+        const djPasswordInput = document.getElementById('djPassword');
+        const djLoginError = document.getElementById('djLoginError');
+        const welcomeDJ = document.getElementById('welcomeDJ');
+        const djLogoutBtn = document.getElementById('djLogoutBtn');
+
+        // Chat elements
+        const chatMessages = document.getElementById('chatMessages');
+        const chatInput = document.getElementById('chatInput');
+        const sendChatBtn = document.getElementById('sendChatBtn');
+        const clearChatBtn = document.getElementById('clearChatBtn');
+        const usersList = document.getElementById('usersList');
+        const userCount = document.getElementById('userCount');
+
+        // Playlist elements
+        const newSongInput = document.getElementById('newSongInput');
+        const addSongBtn = document.getElementById('addSongBtn');
+        const playlistItems = document.getElementById('playlistItems');
+        const playlistCount = document.getElementById('playlistCount');
+        const clearPlaylistBtn = document.getElementById('clearPlaylistBtn');
+
+        // Song control elements
+        const songTitleInput = document.getElementById('songTitleInput');
+        const updateSongBtn = document.getElementById('updateSongBtn');
+        const currentPlayingSong = document.getElementById('currentPlayingSong');
+
+        // Load banned users
+        function loadBannedUsers() {
+            const stored = localStorage.getItem('bannedUsers');
+            if (stored) {
+                bannedUsers = new Set(JSON.parse(stored));
+            }
+        }
+
+        // Save banned users
+        function saveBannedUsers() {
+            localStorage.setItem('bannedUsers', JSON.stringify([...bannedUsers]));
+        }
+
         // DJ Login
         djLoginForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            const username = djUsername.value.trim();
-            const password = djPassword.value.trim();
-
+            
+            const username = djUsernameInput.value.trim();
+            const password = djPasswordInput.value.trim();
+            
             if (validDJs[username] && validDJs[username] === password) {
                 currentDJ = username;
                 welcomeDJ.textContent = username;
-                djLoginModal.style.display = 'none';
+                djLoginModal.classList.add('hidden');
                 djPanel.classList.remove('hidden');
                 djLoginError.textContent = '';
                 
-                // Initialize DJ session
-                initializeDJSession();
+                // Start listening to chat and users
+                startFirebaseListeners();
+                
+                // Load playlist
+                updatePlaylistDisplay();
             } else {
                 djLoginError.textContent = 'Hatalı kullanıcı adı veya şifre!';
+                djLoginError.style.color = '#ff6b6b';
             }
         });
 
@@ -1253,451 +731,344 @@
         djLogoutBtn.addEventListener('click', () => {
             currentDJ = null;
             djPanel.classList.add('hidden');
-            djLoginModal.style.display = 'flex';
-            djUsername.value = '';
-            djPassword.value = '';
+            djLoginModal.classList.remove('hidden');
+            djUsernameInput.value = '';
+            djPasswordInput.value = '';
+            
+            // Stop listeners
+            stopFirebaseListeners();
         });
 
-        // Initialize DJ Session
-        function initializeDJSession() {
-            // Start listening to chat messages
-            listenToChat();
-            
-            // Start listening to users
-            listenToUsers();
-            
-            // Load saved playlist
-            loadPlaylist();
-            
-            // Update statistics
-            updateStatistics();
-            
-            // Start broadcast time counter
-            startBroadcastTimeCounter();
+        // Firebase listeners
+        let messagesListener = null;
+        let usersListener = null;
+
+        function startFirebaseListeners() {
+            // Messages listener
+            const messagesRef = ref(database, 'messages');
+            messagesListener = onValue(messagesRef, (snapshot) => {
+                const messages = snapshot.val();
+                displayMessages(messages);
+            });
+
+            // Users listener
+            const usersRef = ref(database, 'users');
+            usersListener = onValue(usersRef, (snapshot) => {
+                const users = snapshot.val();
+                displayUsers(users);
+            });
         }
 
-        // Broadcast Controls
-        startBroadcastBtn.addEventListener('click', () => {
-            broadcastIndicator.classList.add('live');
-            broadcastText.textContent = 'Canlı Yayında';
-            startBroadcastBtn.classList.add('hidden');
-            stopBroadcastBtn.classList.remove('hidden');
-            broadcastStartTime = Date.now();
-            
-            // Send broadcast start message
-            sendDJMessage('📻 Canlı yayın başladı! Hoş geldiniz! 🎵');
-        });
+        function stopFirebaseListeners() {
+            if (messagesListener) {
+                const messagesRef = ref(database, 'messages');
+                off(messagesRef);
+                messagesListener = null;
+            }
+            if (usersListener) {
+                const usersRef = ref(database, 'users');
+                off(usersRef);
+                usersListener = null;
+            }
+        }
 
-        stopBroadcastBtn.addEventListener('click', () => {
-            broadcastIndicator.classList.remove('live');
-            broadcastText.textContent = 'Yayın Dışı';
-            stopBroadcastBtn.classList.add('hidden');
-            startBroadcastBtn.classList.remove('hidden');
-            broadcastStartTime = null;
-            
-            // Send broadcast end message
-            sendDJMessage('📻 Yayın sona erdi. Tekrar bekleriz! 👋');
-        });
+        // Display messages
+        function displayMessages(messages) {
+            if (!messages) {
+                chatMessages.innerHTML = '<div style="text-align: center; opacity: 0.7; padding: 20px;">Henüz mesaj yok</div>';
+                return;
+            }
 
-        // Song Controls
-        updateSongBtn.addEventListener('click', () => {
-            const songTitle = songTitleInput.value.trim();
-            if (songTitle) {
-                currentPlayingSong.textContent = songTitle;
-                songTitleInput.value = '';
+            const messageArray = Object.values(messages);
+            messageArray.sort((a, b) => a.timestamp - b.timestamp);
+
+            chatMessages.innerHTML = '';
+            messageArray.forEach(message => {
+                // Skip banned users
+                if (bannedUsers.has(message.nickname)) return;
+
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message';
                 
-                // Send song update to chat
-                sendDJMessage(`🎵 Şimdi çalıyor: ${songTitle} 🎵`);
+                // Add DJ message styling
+                if (message.isDJ) {
+                    messageDiv.classList.add('dj-message');
+                }
+                
+                const time = new Date(message.timestamp).toLocaleTimeString('tr-TR', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                // Apply message color if exists
+                const messageColor = message.color || '#ffffff';
+                const coloredClass = message.color && message.color !== '#ffffff' ? 'colored' : '';
+
+                messageDiv.innerHTML = `
+                    <div class="message-header">
+                        <span class="message-author">${message.nickname}</span>
+                        <span class="message-time">${time}</span>
+                    </div>
+                    <div class="message-content ${coloredClass}" style="color: ${messageColor};">${message.message}</div>
+                `;
+
+                chatMessages.appendChild(messageDiv);
+            });
+
+            // Auto scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Display users
+        function displayUsers(users) {
+            if (!users) {
+                usersList.innerHTML = '<div style="text-align: center; opacity: 0.7; padding: 10px;">Aktif kullanıcı yok</div>';
+                userCount.textContent = '0';
+                return;
+            }
+
+            const userArray = Object.entries(users);
+            userCount.textContent = userArray.length;
+
+            usersList.innerHTML = '';
+            userArray.forEach(([userId, userData]) => {
+                const userDiv = document.createElement('div');
+                userDiv.className = 'user-item';
+                
+                const isBanned = bannedUsers.has(userData.nickname);
+                
+                userDiv.innerHTML = `
+                    <span class="user-name" style="${isBanned ? 'opacity: 0.5; text-decoration: line-through;' : ''}">${userData.nickname}</span>
+                    <div class="user-actions">
+                        <button class="action-btn warn-btn" onclick="warnUser('${userData.nickname}')">Uyar</button>
+                        ${isBanned ? 
+                            `<button class="action-btn unban-btn" onclick="unbanUser('${userData.nickname}')">Unban</button>` :
+                            `<button class="action-btn ban-btn" onclick="banUser('${userData.nickname}')">Ban</button>`
+                        }
+                    </div>
+                `;
+
+                usersList.appendChild(userDiv);
+            });
+        }
+
+        // Ban user function
+        window.banUser = function(nickname) {
+            if (confirm(`${nickname} kullanıcısını banlamak istediğinizden emin misiniz?`)) {
+                bannedUsers.add(nickname);
+                saveBannedUsers();
+                sendDJMessage(`${nickname} kullanıcısı banlandı.`);
+                
+                // Refresh users display
+                const usersRef = ref(database, 'users');
+                onValue(usersRef, (snapshot) => {
+                    displayUsers(snapshot.val());
+                }, { once: true });
+            }
+        };
+
+        // Unban user function
+        window.unbanUser = function(nickname) {
+            bannedUsers.delete(nickname);
+            saveBannedUsers();
+            sendDJMessage(`${nickname} kullanıcısının banı kaldırıldı.`);
+            
+            // Refresh users display
+            const usersRef = ref(database, 'users');
+            onValue(usersRef, (snapshot) => {
+                displayUsers(snapshot.val());
+            }, { once: true });
+        };
+
+        // Warn user function
+        window.warnUser = function(nickname) {
+            const reason = prompt(`${nickname} kullanıcısına uyarı mesajı:`);
+            if (reason) {
+                sendDJMessage(`⚠️ ${nickname}: ${reason}`);
+            }
+        };
+
+        // Send DJ message
+        function sendDJMessage(messageText) {
+            if (!messageText.trim()) return;
+
+            const messagesRef = ref(database, 'messages');
+            push(messagesRef, {
+                nickname: `DJ ${currentDJ}`,
+                message: messageText,
+                timestamp: Date.now(),
+                isDJ: true,
+                color: selectedColor // Add selected color
+            });
+        }
+
+        // Chat input events
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
             }
         });
 
-        // Playlist Management - DÜZELTİLDİ
-        addSongBtn.addEventListener('click', () => {
-            addNewSong();
+        // Update input text color as preview
+        chatInput.addEventListener('input', () => {
+            chatInput.style.color = selectedColor;
         });
 
+        chatInput.addEventListener('focus', () => {
+            chatInput.style.color = selectedColor;
+            chatInput.style.borderColor = selectedColor;
+        });
+
+        chatInput.addEventListener('blur', () => {
+            chatInput.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+        });
+
+        sendChatBtn.addEventListener('click', sendMessage);
+
+        function sendMessage() {
+            const message = chatInput.value.trim();
+            if (message) {
+                sendDJMessage(message);
+                chatInput.value = '';
+                chatInput.style.color = '#ffffff'; // Reset input color
+            }
+        }
+
+        // Clear chat
+        clearChatBtn.addEventListener('click', () => {
+            if (confirm('Tüm sohbet geçmişini silmek istediğinizden emin misiniz?')) {
+                const messagesRef = ref(database, 'messages');
+                remove(messagesRef);
+            }
+        });
+
+        // Theme buttons
+        document.querySelectorAll('.theme-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const text = btn.getAttribute('data-text');
+                chatInput.value = text + chatInput.value;
+                chatInput.focus();
+            });
+        });
+
+        // Color picker buttons
+        document.querySelectorAll('.color-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Remove active class from all buttons
+                document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+                
+                // Add active class to clicked button
+                btn.classList.add('active');
+                
+                // Update selected color
+                selectedColor = btn.getAttribute('data-color');
+                
+                // Update chat input border color as preview
+                chatInput.style.borderColor = selectedColor;
+                
+                // Update placeholder to show selected color
+                const colorName = btn.getAttribute('title');
+                chatInput.placeholder = `${colorName} ile DJ mesajı yaz... (Enter ile gönder)`;
+            });
+        });
+
+        // Playlist Management
+        function addNewSong() {
+            const songTitle = newSongInput.value.trim();
+            if (!songTitle) return;
+
+            if (playlist.length >= 50) {
+                alert('Playlist dolu! (Maksimum 50 şarkı)');
+                return;
+            }
+
+            playlist.push({
+                id: Date.now(),
+                title: songTitle,
+                addedAt: new Date().toLocaleTimeString('tr-TR')
+            });
+
+            localStorage.setItem('djPlaylist', JSON.stringify(playlist));
+            updatePlaylistDisplay();
+            newSongInput.value = '';
+        }
+
+        // Add song events
+        addSongBtn.addEventListener('click', addNewSong);
         newSongInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
+                e.preventDefault();
                 addNewSong();
             }
         });
 
-        function addNewSong() {
-            const songName = newSongInput.value.trim();
-            if (songName && playlist.length < 50) {
-                playlist.push({
-                    id: Date.now(),
-                    title: songName,
-                    addedAt: new Date().toLocaleString('tr-TR')
-                });
-                newSongInput.value = '';
-                updatePlaylistDisplay();
-                savePlaylist();
-                
-                // Send notification
-                sendDJMessage(`🎵 Playlist'e eklendi: ${songName}`);
-            } else if (playlist.length >= 50) {
-                alert('Playlist maksimum 50 şarkı içerebilir!');
-            }
-        }
-
-        clearPlaylistBtn.addEventListener('click', () => {
-            if (confirm('Tüm playlist silinecek. Emin misiniz?')) {
-                playlist = [];
-                currentSongIndex = 0;
-                updatePlaylistDisplay();
-                savePlaylist();
-                sendDJMessage('🗑️ Playlist temizlendi!');
-            }
-        });
-
-        shuffleBtn.addEventListener('click', () => {
-            for (let i = playlist.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [playlist[i], playlist[j]] = [playlist[j], playlist[i]];
-            }
-            updatePlaylistDisplay();
-            savePlaylist();
-            sendDJMessage('🔀 Playlist karıştırıldı!');
-        });
-
-        nextSongBtn.addEventListener('click', () => {
-            if (playlist.length > 0) {
-                currentSongIndex = (currentSongIndex + 1) % playlist.length;
-                const currentSong = playlist[currentSongIndex];
-                currentPlayingSong.textContent = currentSong.title;
-                updatePlaylistDisplay();
-                
-                // Send next song message
-                sendDJMessage(`🎵 Sonraki şarkı: ${currentSong.title} 🎵`);
-            }
-        });
-
-        // Update Playlist Display
+        // Update playlist display
         function updatePlaylistDisplay() {
-            playlistItems.innerHTML = '';
             playlistCount.textContent = playlist.length;
+            
+            if (playlist.length === 0) {
+                playlistItems.innerHTML = '<div style="text-align: center; opacity: 0.7; padding: 20px;">Playlist boş</div>';
+                return;
+            }
 
+            playlistItems.innerHTML = '';
             playlist.forEach((song, index) => {
-                const itemDiv = document.createElement('div');
-                itemDiv.className = `playlist-item ${index === currentSongIndex ? 'playing' : ''}`;
-                
-                itemDiv.innerHTML = `
-                    <div class="playlist-item-number">${index + 1}</div>
-                    <div class="playlist-item-title">${song.title}</div>
-                    <div class="playlist-item-actions">
-                        <button class="playlist-btn play" onclick="playSong(${index})">
-                            <i class="fas fa-play"></i>
-                        </button>
-                        <button class="playlist-btn up" onclick="moveSong(${index}, -1)">
-                            <i class="fas fa-arrow-up"></i>
-                        </button>
-                        <button class="playlist-btn down" onclick="moveSong(${index}, 1)">
-                            <i class="fas fa-arrow-down"></i>
-                        </button>
-                        <button class="playlist-btn delete" onclick="deleteSong(${index})">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
+                const songDiv = document.createElement('div');
+                songDiv.className = 'playlist-item';
+                songDiv.innerHTML = `
+                    <span class="playlist-item-number">${index + 1}</span>
+                    <span style="flex: 1;">${song.title}</span>
+                    <button onclick="removeSong(${song.id})" style="background: #e74c3c; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer;">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 `;
-                
-                playlistItems.appendChild(itemDiv);
+                playlistItems.appendChild(songDiv);
             });
         }
 
-        // Playlist Functions
-        window.playSong = function(index) {
-            currentSongIndex = index;
-            const song = playlist[index];
-            currentPlayingSong.textContent = song.title;
+        // Remove song function
+        window.removeSong = function(songId) {
+            playlist = playlist.filter(song => song.id !== songId);
+            localStorage.setItem('djPlaylist', JSON.stringify(playlist));
             updatePlaylistDisplay();
-            sendDJMessage(`🎵 Şimdi çalıyor: ${song.title} 🎵`);
         };
 
-        window.moveSong = function(index, direction) {
-            const newIndex = index + direction;
-            if (newIndex >= 0 && newIndex < playlist.length) {
-                [playlist[index], playlist[newIndex]] = [playlist[newIndex], playlist[index]];
-                
-                // Update current song index if needed
-                if (currentSongIndex === index) {
-                    currentSongIndex = newIndex;
-                } else if (currentSongIndex === newIndex) {
-                    currentSongIndex = index;
-                }
-                
-                updatePlaylistDisplay();
-                savePlaylist();
-            }
-        };
-
-        window.deleteSong = function(index) {
-            const deletedSong = playlist[index];
-            playlist.splice(index, 1);
-            
-            // Adjust current song index
-            if (currentSongIndex > index) {
-                currentSongIndex--;
-            } else if (currentSongIndex === index && currentSongIndex >= playlist.length) {
-                currentSongIndex = playlist.length - 1;
-            }
-            
-            updatePlaylistDisplay();
-            savePlaylist();
-            sendDJMessage(`🗑️ Playlist'ten silindi: ${deletedSong.title}`);
-        };
-
-        // Save/Load Playlist
-        function savePlaylist() {
-            localStorage.setItem('djPlaylist', JSON.stringify({
-                playlist: playlist,
-                currentSongIndex: currentSongIndex
-            }));
-        }
-
-        function loadPlaylist() {
-            const saved = localStorage.getItem('djPlaylist');
-            if (saved) {
-                const data = JSON.parse(saved);
-                playlist = data.playlist || [];
-                currentSongIndex = data.currentSongIndex || 0;
+        // Clear playlist
+        clearPlaylistBtn.addEventListener('click', () => {
+            if (confirm('Tüm playlist\'i temizlemek istediğinizden emin misiniz?')) {
+                playlist = [];
+                localStorage.setItem('djPlaylist', JSON.stringify(playlist));
                 updatePlaylistDisplay();
             }
-        }
+        });
 
-        // User Management - YENİ
-        function listenToUsers() {
-            const usersRef = ref(database, 'users');
-            onValue(usersRef, (snapshot) => {
-                connectedUsers.clear();
-                userList.innerHTML = '';
-                const users = snapshot.val();
-                
-                if (users) {
-                    Object.entries(users).forEach(([key, user]) => {
-                        connectedUsers.set(key, user);
-                        addUserToList(key, user);
-                    });
-                }
-                
-                userCount.textContent = connectedUsers.size;
-            });
-        }
-
-        function addUserToList(userId, user) {
-            const userDiv = document.createElement('div');
-            userDiv.className = `user-item ${bannedUsers.has(user.nickname) ? 'banned' : ''}`;
-            
-            const isBanned = bannedUsers.has(user.nickname);
-            
-            userDiv.innerHTML = `
-                <div class="user-avatar">${user.avatar || user.nickname.charAt(0).toUpperCase()}</div>
-                <div class="user-info">
-                    <div class="user-name">${user.nickname}</div>
-                    <div class="user-status">${isBanned ? 'Banlı' : 'Aktif'}</div>
-                </div>
-                <div class="user-actions">
-                    ${!isBanned ? `
-                        <button class="user-action-btn warn-btn" onclick="warnUser('${user.nickname}')">
-                            <i class="fas fa-exclamation-triangle"></i>
-                        </button>
-                        <button class="user-action-btn ban-btn" onclick="banUser('${user.nickname}')">
-                            <i class="fas fa-ban"></i>
-                        </button>
-                    ` : `
-                        <button class="user-action-btn unban-btn" onclick="unbanUser('${user.nickname}')">
-                            <i class="fas fa-check"></i>
-                        </button>
-                    `}
-                </div>
-            `;
-            
-            userList.appendChild(userDiv);
-        }
-
-        // User Moderation Functions
-        window.warnUser = function(nickname) {
-            sendDJMessage(`⚠️ UYARI: ${nickname}, lütfen kurallara uyun!`);
-        };
-
-        window.banUser = function(nickname) {
-            if (confirm(`${nickname} kullanıcısını banlamak istediğinizden emin misiniz?`)) {
-                bannedUsers.add(nickname);
-                localStorage.setItem('bannedUsers', JSON.stringify([...bannedUsers]));
-                sendDJMessage(`🚫 ${nickname} kullanıcısı banlandı!`);
-                listenToUsers(); // Refresh user list
-            }
-        };
-
-        window.unbanUser = function(nickname) {
-            bannedUsers.delete(nickname);
-            localStorage.setItem('bannedUsers', JSON.stringify([...bannedUsers]));
-            sendDJMessage(`✅ ${nickname} kullanıcısının banı kaldırıldı!`);
-            listenToUsers(); // Refresh user list
-        };
-
-        // Load banned users on init
-        function loadBannedUsers() {
-            const saved = localStorage.getItem('bannedUsers');
-            if (saved) {
-                bannedUsers = new Set(JSON.parse(saved));
-            }
-        }
-
-        // Chat Functionality
-        function listenToChat() {
-            const messagesRef = ref(database, 'messages');
-            onValue(messagesRef, (snapshot) => {
-                djChatMessages.innerHTML = '';
-                const messages = snapshot.val();
-                
-                if (messages) {
-                    Object.values(messages).slice(-100).forEach(message => {
-                        // Check if user is banned
-                        if (!bannedUsers.has(message.sender)) {
-                            addMessageToChat(message);
-                        }
-                    });
-                    scrollChatToBottom();
-                }
-            });
-        }
-
-        function addMessageToChat(message) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${message.isDJ ? 'dj' : 'user'}`;
-            
-            const headerContent = message.isDJ 
-                ? `<span class="dj-badge">DJ</span> ${message.sender} • ${message.time}`
-                : `${message.sender} • ${message.time}`;
-            
-            messageDiv.innerHTML = `
-                <div class="message-header">${headerContent}</div>
-                <div>${message.text}</div>
-            `;
-            
-            djChatMessages.appendChild(messageDiv);
-        }
-
-        function sendDJMessage(text) {
-            if (!text.trim() || !currentDJ) return;
-
-            const messagesRef = ref(database, 'messages');
-            const newMessage = {
-                text: text,
-                sender: currentDJ,
-                timestamp: serverTimestamp(),
-                time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
-                isDJ: true
-            };
-
-            push(messagesRef, newMessage);
-        }
-
-        function scrollChatToBottom() {
-            djChatMessages.scrollTop = djChatMessages.scrollHeight;
-        }
-
-        // Chat Clear Function - YENİ
-        clearChatBtn.addEventListener('click', () => {
-            if (confirm('Tüm chat geçmişi silinecek. Emin misiniz?')) {
-                const messagesRef = ref(database, 'messages');
-                remove(messagesRef).then(() => {
-                    sendDJMessage('🧹 Chat temizlendi!');
-                }).catch((error) => {
-                    console.error('Chat temizleme hatası:', error);
-                });
+        // Song controls
+        updateSongBtn.addEventListener('click', () => {
+            const songTitle = songTitleInput.value.trim();
+            if (songTitle) {
+                currentPlayingSong.textContent = songTitle;
+                localStorage.setItem('currentSong', songTitle);
+                sendDJMessage(`🎵 Şu anda çalıyor: ${songTitle}`);
+                songTitleInput.value = '';
             }
         });
 
-        // Chat Input Events
-        djSendBtn.addEventListener('click', () => {
-            const message = djMessageInput.value.trim();
-            if (message) {
-                sendDJMessage(message);
-                djMessageInput.value = '';
-            }
-        });
-
-        // Enter key to send message
-        djMessageInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                const message = djMessageInput.value.trim();
-                if (message) {
-                    sendDJMessage(message);
-                    djMessageInput.value = '';
-                }
-            }
-        });
-
-        // Emoji Support
-        document.querySelectorAll('.emoji-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const emoji = btn.getAttribute('data-emoji');
-                djMessageInput.value += emoji;
-                djMessageInput.focus();
-            });
-        });
-
-        // Theme URL Support - YENİ
-        document.querySelectorAll('.theme-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const theme = btn.getAttribute('data-theme');
-                djMessageInput.value += theme;
-                djMessageInput.focus();
-            });
-        });
-
-        // Quick Action Messages
-        document.querySelectorAll('.quick-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const message = btn.getAttribute('data-message');
-                sendDJMessage(message);
-            });
-        });
-
-        // Statistics Update
-        function updateStatistics() {
-            // Simulated listener count
-            const listenerCount = Math.floor(Math.random() * 50) + connectedUsers.size;
-            totalListeners.textContent = listenerCount;
-            
-            // Chat activity counter
-            const messagesRef = ref(database, 'messages');
-            onValue(messagesRef, (snapshot) => {
-                const messages = snapshot.val();
-                if (messages) {
-                    chatActivity.textContent = Object.keys(messages).length;
-                }
-            });
+        // Load saved song
+        const savedSong = localStorage.getItem('currentSong');
+        if (savedSong) {
+            currentPlayingSong.textContent = savedSong;
         }
 
-        // Broadcast Time Counter
-        function startBroadcastTimeCounter() {
-            setInterval(() => {
-                if (broadcastStartTime) {
-                    const elapsed = Date.now() - broadcastStartTime;
-                    const hours = Math.floor(elapsed / 3600000);
-                    const minutes = Math.floor((elapsed % 3600000) / 60000);
-                    const seconds = Math.floor((elapsed % 60000) / 1000);
-                    
-                    // Update in a smaller stat display if available
-                } else {
-                    // Reset time display
-                }
-            }, 1000);
-        }
-
-        // Song input enter key
-        songTitleInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                updateSongBtn.click();
-            }
-        });
-
-        // Initialize on load
+        // Load banned users on startup
         loadBannedUsers();
+
+        // Initialize color picker
+        chatInput.style.color = selectedColor;
+        chatInput.placeholder = "Beyaz ile DJ mesajı yaz... (Enter ile gönder)";
+
+        // Show login modal on startup
+        djLoginModal.classList.remove('hidden');
     </script>
 </body>
 </html>
