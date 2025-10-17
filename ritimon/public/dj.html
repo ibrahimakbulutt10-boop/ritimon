@@ -638,6 +638,7 @@
         </div>
     </div>
 
+    <script src="/socket.io/socket.io.js"></script>
     <script type="module">
         // Firebase v9 imports
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js';
@@ -658,6 +659,7 @@
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
+        const socket = io();
 
         // Global variables
         let currentDJ = null;
@@ -736,8 +738,9 @@
                 djPanel.classList.remove('hidden');
                 djLoginError.textContent = '';
                 
-                // Start listening to chat and users
-                startFirebaseListeners();
+                // Socket: DJ olarak gerçek sohbete katıl
+                socket.emit('join', { nickname: `DJ ${username}` });
+                socket.emit('dj login', { nickname: `DJ ${username}` });
                 
                 // Load playlist
                 updatePlaylistDisplay();
@@ -875,15 +878,8 @@
         // Ban user function
         window.banUser = function(nickname) {
             if (confirm(`${nickname} kullanıcısını banlamak istediğinizden emin misiniz?`)) {
-                bannedUsers.add(nickname);
-                saveBannedUsers();
-                sendDJMessage(`${nickname} kullanıcısı banlandı.`);
-                
-                // Refresh users display
-                const usersRef = ref(database, 'users');
-                onValue(usersRef, (snapshot) => {
-                    displayUsers(snapshot.val());
-                }, { once: true });
+                socket.emit('banUser', { targetNickname: nickname, reason: 'DJ tarafından ban' });
+                appendSystemMessage(`🚫 ${nickname} banlandı`);
             }
         };
 
@@ -904,23 +900,75 @@
         window.warnUser = function(nickname) {
             const reason = prompt(`${nickname} kullanıcısına uyarı mesajı:`);
             if (reason) {
-                sendDJMessage(`⚠️ ${nickname}: ${reason}`);
+                socket.emit('warnUser', { targetNickname: nickname, reason });
+                appendSystemMessage(`⚠️ ${nickname} uyarıldı: ${reason}`);
             }
         };
 
         // Send DJ message
         function sendDJMessage(messageText) {
             if (!messageText.trim()) return;
-
-            const messagesRef = ref(database, 'messages');
-            push(messagesRef, {
-                nickname: `DJ ${currentDJ}`,
-                message: messageText,
-                timestamp: Date.now(),
-                isDJ: true,
-                color: selectedColor // Add selected color
+            socket.emit('chat message', {
+                text: messageText,
+                timestamp: new Date().toISOString()
             });
         }
+
+        // Socket.IO helpers
+        function appendSocketMessage(data) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            if (data.isDJ) messageDiv.classList.add('dj-message');
+            const time = new Date(data.timestamp).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+            messageDiv.innerHTML = `
+                <div class="message-header">
+                    <span class="message-author">${data.nickname}</span>
+                    <span class="message-time">${time}</span>
+                </div>
+                <div class="message-content">${data.text}</div>
+            `;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function appendSystemMessage(text) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message dj-message';
+            const time = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+            messageDiv.innerHTML = `
+                <div class="message-header">
+                    <span class="message-author">DJ Sistem</span>
+                    <span class="message-time">${time}</span>
+                </div>
+                <div class="message-content">${text}</div>
+            `;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function displayUsersFromSocket(users) {
+            userCount.textContent = users.length;
+            usersList.innerHTML = '';
+            users.forEach(userData => {
+                const userDiv = document.createElement('div');
+                userDiv.className = 'user-item';
+                userDiv.innerHTML = `
+                    <span class="user-name">${userData.nickname}</span>
+                    <div class="user-actions">
+                        <button class="action-btn warn-btn" onclick="warnUser('${userData.nickname}')">Uyar</button>
+                        <button class="action-btn ban-btn" onclick="banUser('${userData.nickname}')">Ban</button>
+                    </div>
+                `;
+                usersList.appendChild(userDiv);
+            });
+        }
+
+        // Socket.IO listeners
+        socket.on('userList', (users) => displayUsersFromSocket(users));
+        socket.on('chat message', (data) => appendSocketMessage(data));
+        socket.on('userWarned', (d) => appendSystemMessage(`⚠️ ${d.targetNickname} uyarıldı - ${d.reason}`));
+        socket.on('userBanned', (d) => appendSystemMessage(`🚫 ${d.targetNickname} yasaklandı - ${d.reason}`));
+        socket.on('userMuted', (d) => appendSystemMessage(`🔇 ${d.targetNickname} ${d.duration} dk susturuldu - ${d.reason}`));
 
         // Chat input events
         chatInput.addEventListener('keypress', (e) => {
