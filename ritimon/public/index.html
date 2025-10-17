@@ -17,8 +17,9 @@
             color: white;
             height: 100vh;
             display: flex;
-            align-items: center;
-            justify-content: center;
+            align-items: flex-start;
+            justify-content: flex-start;
+            padding: 40px;
         }
 
         body::before {
@@ -35,8 +36,8 @@
         }
 
         .container {
-            text-align: center;
-            max-width: 600px;
+            text-align: left;
+            max-width: 720px;
             padding: 40px;
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(20px);
@@ -52,12 +53,38 @@
         .logo h1 {
             font-size: 3rem;
             font-weight: 900;
-            background: linear-gradient(45deg, #ff4081, #ff6ec7, #4ecdc4);
+            background: linear-gradient(90deg, #ff4081, #ff6ec7, #4ecdc4, #ff4081);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            margin-bottom: 10px;
+            margin-bottom: 6px;
+            background-size: 200% auto;
+            animation: shine 5s linear infinite;
         }
+
+        @keyframes shine {
+            0% { background-position: 0% center; }
+            100% { background-position: 200% center; }
+        }
+
+        .slogan {
+            font-size: 1.05rem;
+            color: #4ecdc4;
+            opacity: 0.95;
+            margin: -6px 0 18px 0;
+        }
+
+        .live-now {
+            display: flex;
+            gap: 10px;
+            align-items: baseline;
+            margin: 8px 0 22px 0;
+            font-size: 1rem;
+        }
+
+        .live-now .label { opacity: 0.8; }
+        .live-now .dj { color: #ff6ec7; font-weight: 700; }
+        .live-now .song { color: #4ecdc4; font-weight: 600; }
 
         .logo p {
             font-size: 1.2rem;
@@ -145,6 +172,27 @@
             font-weight: bold;
         }
 
+        .dj-ticker {
+            position: relative;
+            margin-top: 16px;
+            height: 28px;
+            overflow: hidden;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .dj-ticker .ticker-track {
+            position: absolute;
+            white-space: nowrap;
+            will-change: transform;
+            animation: tickerMove 15s linear infinite;
+        }
+
+        @keyframes tickerMove {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
         @media (max-width: 768px) {
             .container {
                 margin: 20px;
@@ -166,14 +214,21 @@
 <body>
     <div class="container">
         <div class="logo">
-            <h1>🎧 RitimON FM</h1>
-            <p>Flatcast Tarzı Canlı Chat & Radyo Platformu</p>
+            <h1>RitimON FM</h1>
+            <p class="slogan">Listelerde değil <strong>RUHUNUZDA</strong> yankılanır</p>
+        </div>
+
+        <div class="live-now">
+            <span class="label">Yayında:</span>
+            <span class="dj" id="liveDJ">DJ bekleniyor</span>
+            <span>—</span>
+            <span class="song" id="liveSong">Müzik yükleniyor...</span>
         </div>
 
         <div class="chat-options">
             <a href="main-chat.html" class="btn btn-primary">
                 <i class="fas fa-comments"></i>
-                <span>Ana Sohbet Odasına Katıl</span>
+                <span>RitimON da sohbet</span>
                 <small>Yeni entegre chat deneyimi - Takma ad ile direkt giriş</small>
             </a>
 
@@ -197,6 +252,58 @@
                 <strong>DJ olmak için:</strong> Şifre: <code>4545</code>
             </p>
         </div>
+
+        <div class="dj-ticker" aria-label="Yayındaki DJ'ler">
+            <div class="ticker-track" id="djTickerText">DJ yok</div>
+        </div>
     </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        (function() {
+            const socket = io();
+            const liveDJEl = document.getElementById('liveDJ');
+            const liveSongEl = document.getElementById('liveSong');
+            const tickerEl = document.getElementById('djTickerText');
+            const activeDJs = new Set();
+
+            function updateTicker() {
+                if (activeDJs.size === 0) {
+                    tickerEl.textContent = 'DJ yok';
+                    return;
+                }
+                const text = Array.from(activeDJs).join('   •   ');
+                // duplicate to make marquee fuller
+                tickerEl.textContent = `${text}   —   ${text}`;
+            }
+
+            socket.on('now playing', (data) => {
+                try {
+                    if (data && data.dj) liveDJEl.textContent = data.dj;
+                    if (data && data.song) liveSongEl.textContent = data.song;
+                } catch {}
+            });
+
+            socket.on('stop playing', (data) => {
+                liveSongEl.textContent = 'Yayın kapalı';
+            });
+
+            socket.on('dj login', (d) => {
+                if (d && d.nickname) {
+                    activeDJs.add(d.nickname);
+                    updateTicker();
+                }
+            });
+
+            socket.on('dj logout', (d) => {
+                if (d && d.nickname) {
+                    activeDJs.delete(d.nickname);
+                    updateTicker();
+                }
+            });
+
+            // Also refresh online users periodically to infer DJs if needed
+            setInterval(() => socket.emit && socket.emit('userBack'), 60000);
+        })();
+    </script>
 </body>
 </html>
