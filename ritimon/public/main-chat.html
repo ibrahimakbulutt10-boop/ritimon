@@ -1,220 +1,147 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RitimON FM - Ana Sohbet</title>
-  <meta name="description" content="RitimON FM - Canlı radyo ve sohbet platformu" />
-  <meta name="theme-color" content="#ff4081" />
-  <link rel="icon" href="favicon.ico" />
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="main-chat.css" />
-</head>
-<body>
-  <!-- Header -->
-  <div class="header">
-    <div class="header-left">
-      <div class="logo">
-        <span class="logo-text">RitimON FM</span>
-        <span class="logo-subtitle">🎧 Canlı Radyo & Chat</span>
-      </div>
-    </div>
-    <div class="header-center">
-      <div class="now-playing">
-        <div class="now-playing-label">🎵 Şu anda çalan:</div>
-        <div id="currentSong" class="current-song">Müzik yükleniyor...</div>
-        <div id="currentDJ" class="current-dj">DJ bekleniyor</div>
-      </div>
-    </div>
-    <div class="header-right">
-      <div class="online-count">
-        <span id="onlineCount">0</span> çevrimiçi
-      </div>
-      <div class="dj-status">
-        <span id="djStatus">🔴 Yayın kapalı</span>
-      </div>
-    </div>
-  </div>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RitimON FM - Ana Sohbet Odası</title>
+    <meta name="description" content="RitimON FM Modern Chat Platformu" />
+    <meta name="theme-color" content="#ff4081" />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-  <!-- Main Container -->
-  <div class="main-container">
-    <!-- Chat Area (Sol taraf - %70) -->
-    <div class="chat-area">
-      <!-- Chat Messages -->
-      <div class="chat-messages" id="chatMessages">
-        <div class="welcome-message">
-          <div class="welcome-content">
-            <h3>🎧 RitimON FM Sohbet Odasına Hoş Geldiniz!</h3>
-            <p>Müzik dinlerken diğer kullanıcılarla sohbet edin</p>
-            <p class="rules">📋 <strong>Kurallar:</strong> Saygılı olun, spam yapmayın, eğlenceli vakit geçirin!</p>
-          </div>
-        </div>
-      </div>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            min-height: 100vh;
+            color: white;
+            overflow-x: hidden;
+            position: relative;
+        }
 
-      <!-- Chat Input -->
-      <div class="chat-input-container">
-        <div class="input-section">
-          <div class="input-group">
-            <input type="text" id="messageInput" placeholder="Mesajınızı yazın..." maxlength="200" />
-            <button id="sendBtn" class="send-btn">
-              <span>📤</span>
-            </button>
-          </div>
-          <div class="emoji-bar">
-            <button class="emoji-btn" onclick="addEmoji('😊')">😊</button>
-            <button class="emoji-btn" onclick="addEmoji('🎵')">🎵</button>
-            <button class="emoji-btn" onclick="addEmoji('❤️')">❤️</button>
-            <button class="emoji-btn" onclick="addEmoji('🔥')">🔥</button>
-            <button class="emoji-btn" onclick="addEmoji('👍')">👍</button>
-            <button class="emoji-btn" onclick="addEmoji('👏')">👏</button>
-            <button class="emoji-btn" onclick="addEmoji('🎉')">🎉</button>
-            <button class="emoji-btn" onclick="addEmoji('⚡')">⚡</button>
-          </div>
-        </div>
-        <div class="char-counter">
-          <span id="charCount">0</span>/200
-        </div>
-      </div>
-    </div>
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(255, 64, 129, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(78, 205, 196, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(255, 193, 7, 0.05) 0%, transparent 50%);
+        }
 
-    <!-- Right Panel (Sağ taraf - %30) -->
-    <div class="right-panel">
-      <!-- User List -->
-      <div class="user-list-section">
-        <div class="section-header">
-          <h3>👥 Çevrimiçi Kullanıcılar</h3>
-          <span id="userCount" class="user-count-badge">0</span>
-        </div>
-        <div id="userList" class="user-list">
-          <!-- Users will be added here -->
-        </div>
-      </div>
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
 
-      <!-- DJ Panel -->
-      <div class="dj-panel-section">
-        <div class="section-header">
-          <h3>🎙️ DJ Paneli</h3>
-          <span id="djPanelStatus" class="status-indicator">Giriş yapılmadı</span>
-        </div>
-        
-        <!-- DJ Login -->
-        <div id="djLogin" class="dj-login">
-          <div class="form-group">
-            <input type="text" id="djNickname" placeholder="DJ adınız" />
-          </div>
-          <div class="form-group">
-            <input type="password" id="djPassword" placeholder="DJ şifresi" />
-          </div>
-          <button onclick="djLogin()" class="btn btn-primary">🎙️ DJ Giriş</button>
-        </div>
+        .modal-content {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+            max-width: 450px;
+            width: 90%;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
 
-        <!-- DJ Controls -->
-        <div id="djControls" class="dj-controls" style="display:none;">
-          <!-- Quick Song Update -->
-          <div class="control-group">
-            <label>🎵 Şarkı Güncelle</label>
-            <div class="input-group">
-              <input type="text" id="songName" placeholder="Şarkı adı" />
-              <button onclick="updateSong()" class="btn btn-sm">Güncelle</button>
-            </div>
-          </div>
+        .modal h2 {
+            font-family: 'Orbitron', monospace;
+            color: #ff4081;
+            margin-bottom: 10px;
+            font-size: 2rem;
+            background: linear-gradient(45deg, #ff4081, #ff6ec7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
 
-          <!-- Quick Actions -->
-          <div class="control-group">
-            <label>⚡ Hızlı İşlemler</label>
-            <div class="quick-actions">
-              <button onclick="startBroadcast()" id="broadcastBtn" class="btn btn-success btn-sm">📡 Yayın Başlat</button>
-              <button onclick="stopBroadcast()" id="stopBtn" class="btn btn-danger btn-sm" disabled>⏹️ Durdur</button>
-            </div>
-          </div>
+        .modal-subtitle {
+            color: #4ecdc4;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
 
-          <!-- Announcements -->
-          <div class="control-group">
-            <label>📢 Duyuru</label>
-            <div class="input-group">
-              <input type="text" id="announcementText" placeholder="Duyuru yazın" />
-              <button onclick="sendAnnouncement()" class="btn btn-sm">Gönder</button>
-            </div>
-          </div>
+        .form-group {
+            margin-bottom: 25px;
+            text-align: left;
+        }
 
-          <!-- Sound Effects -->
-          <div class="control-group">
-            <label>🔊 Ses Efektleri</label>
-            <div class="sound-effects">
-              <button onclick="playSoundEffect('applause')" class="effect-btn">👏</button>
-              <button onclick="playSoundEffect('cheer')" class="effect-btn">🎉</button>
-              <button onclick="playSoundEffect('drumroll')" class="effect-btn">🥁</button>
-              <button onclick="playSoundEffect('bell')" class="effect-btn">🔔</button>
-            </div>
-          </div>
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 500;
+        }
 
-          <!-- DJ Actions -->
-          <div class="dj-actions">
-            <button onclick="goToFullDJPanel()" class="btn btn-secondary btn-sm">🎛️ Tam DJ Panel</button>
-            <button onclick="djLogout()" class="btn btn-warning btn-sm">🚪 Çıkış</button>
-          </div>
-        </div>
-      </div>
+        .form-group input {
+            width: 100%;
+            padding: 15px 20px;
+            border: none;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1.1rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
 
-      <!-- Stats -->
-      <div class="stats-section">
-        <div class="section-header">
-          <h3>📊 İstatistikler</h3>
-        </div>
-        <div class="stats-grid">
-          <div class="stat-item">
-            <span class="stat-number" id="totalUsers">0</span>
-            <span class="stat-label">Toplam Kullanıcı</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-number" id="activeDJs">0</span>
-            <span class="stat-label">Aktif DJ</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-number" id="uptime">0</span>
-            <span class="stat-label">Çalışma Saati</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+        .form-group input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
 
-  <!-- User Join Modal -->
-  <div id="joinModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>🎧 RitimON FM'e Hoş Geldiniz!</h2>
-      </div>
-      <div class="modal-body">
-        <div class="form-group">
-          <label for="userNickname">Takma adınızı girin:</label>
-          <input type="text" id="userNickname" placeholder="Takma adınız" maxlength="20" />
-        </div>
-        <button onclick="joinChat()" class="btn btn-primary btn-large">💬 Sohbete Katıl</button>
-      </div>
-      <div class="modal-footer">
-        <p>Kurallara uygun davranmayı unutmayın! 😊</p>
-      </div>
-    </div>
-  </div>
+        .form-group input:focus {
+            outline: none;
+            border-color: #ff4081;
+            box-shadow: 0 0 20px rgba(255, 64, 129, 0.3);
+            background: rgba(255, 255, 255, 0.15);
+        }
 
-  <!-- Context Menu -->
-  <div id="contextMenu" class="context-menu" style="display: none;">
-    <div class="context-menu-item" onclick="warnUser()">
-      <span class="context-icon">⚠️</span>
-      <span>Uyarı Ver</span>
-    </div>
-    <div class="context-menu-item" onclick="muteUser()">
-      <span class="context-icon">🔇</span>
-      <span>Sustur</span>
-    </div>
-    <div class="context-menu-item" onclick="viewProfile()">
-      <span class="context-icon">👤</span>
-      <span>Profil</span>
-    </div>
-  </div>
+        .btn-join {
+            width: 100%;
+            padding: 15px 20px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(45deg, #ff4081, #ff6ec7);
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 15px;
+        }
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="main-chat.js"></script>
-</body>
-</html>
+        .btn-join:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 64, 129, 0.4);
+        }
+
+        .back-link {
+            color: #4ecdc4;
+            text-decoration: none;
+            font-size: 0.9rem;
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+        }
+
+        .back-link:hover {
+            opacity: 1;
+        }
