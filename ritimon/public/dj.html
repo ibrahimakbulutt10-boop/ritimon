@@ -541,6 +541,19 @@
                         <input type="text" id="newSongInput" placeholder="Şarkı adı girin..." maxlength="100">
                         <button id="addSongBtn" class="btn-success">Ekle</button>
                     </div>
+                    <!-- PC'den şarkı yükleme -->
+                    <div class="input-group">
+                        <i class="fas fa-file-audio"></i>
+                        <input type="file" id="musicFileInputDJ" accept="audio/*" multiple>
+                    </div>
+                    <div class="playlist-actions">
+                        <button id="prevSongBtn" class="btn btn-secondary">⏮️ Önceki</button>
+                        <button id="nextSongBtn" class="btn btn-secondary">⏭️ Sonraki</button>
+                        <button id="loopToggleBtn" class="btn btn-info">♾️ Sonsuz: Kapalı</button>
+                    </div>
+                    <div style="margin:8px 0 12px;color:rgba(255,255,255,.7);font-size:12px;">
+                        İpucu: Playlist öğelerini sürükleyip bırakarak yeniden sıralayın veya ses dosyalarını doğrudan listeye sürükleyin.
+                    </div>
                     <div class="playlist-items" id="playlistItems">
                         <!-- Playlist items will be added here -->
                     </div>
@@ -625,6 +638,7 @@
         </div>
     </div>
 
+    <script src="/socket.io/socket.io.js"></script>
     <script type="module">
         // Firebase v9 imports
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js';
@@ -645,12 +659,16 @@
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
+        const socket = io();
 
         // Global variables
         let currentDJ = null;
         let selectedColor = '#ffffff'; // Default white color
         let playlist = JSON.parse(localStorage.getItem('djPlaylist')) || [];
         let bannedUsers = new Set(JSON.parse(localStorage.getItem('bannedUsers')) || []);
+        let currentIndex = 0; // aktif şarkı indexi
+        let loopEnabled = false; // varsayılan: kapalı
+        let draggedIndex = null; // sürüklenen öğe indexi
 
         // Valid DJ credentials
         const validDJs = {
@@ -681,6 +699,10 @@
         const newSongInput = document.getElementById('newSongInput');
         const addSongBtn = document.getElementById('addSongBtn');
         const playlistItems = document.getElementById('playlistItems');
+        const musicFileInputDJ = document.getElementById('musicFileInputDJ');
+        const prevSongBtn = document.getElementById('prevSongBtn');
+        const nextSongBtn = document.getElementById('nextSongBtn');
+        const loopToggleBtn = document.getElementById('loopToggleBtn');
         const playlistCount = document.getElementById('playlistCount');
         const clearPlaylistBtn = document.getElementById('clearPlaylistBtn');
 
@@ -716,8 +738,9 @@
                 djPanel.classList.remove('hidden');
                 djLoginError.textContent = '';
                 
-                // Start listening to chat and users
-                startFirebaseListeners();
+                // Socket: DJ olarak gerçek sohbete katıl
+                socket.emit('join', { nickname: `DJ ${username}` });
+                socket.emit('dj login', { nickname: `DJ ${username}` });
                 
                 // Load playlist
                 updatePlaylistDisplay();
@@ -855,15 +878,8 @@
         // Ban user function
         window.banUser = function(nickname) {
             if (confirm(`${nickname} kullanıcısını banlamak istediğinizden emin misiniz?`)) {
-                bannedUsers.add(nickname);
-                saveBannedUsers();
-                sendDJMessage(`${nickname} kullanıcısı banlandı.`);
-                
-                // Refresh users display
-                const usersRef = ref(database, 'users');
-                onValue(usersRef, (snapshot) => {
-                    displayUsers(snapshot.val());
-                }, { once: true });
+                socket.emit('banUser', { targetNickname: nickname, reason: 'DJ tarafından ban' });
+                appendSystemMessage(`🚫 ${nickname} banlandı`);
             }
         };
 
@@ -884,23 +900,75 @@
         window.warnUser = function(nickname) {
             const reason = prompt(`${nickname} kullanıcısına uyarı mesajı:`);
             if (reason) {
-                sendDJMessage(`⚠️ ${nickname}: ${reason}`);
+                socket.emit('warnUser', { targetNickname: nickname, reason });
+                appendSystemMessage(`⚠️ ${nickname} uyarıldı: ${reason}`);
             }
         };
 
         // Send DJ message
         function sendDJMessage(messageText) {
             if (!messageText.trim()) return;
-
-            const messagesRef = ref(database, 'messages');
-            push(messagesRef, {
-                nickname: `DJ ${currentDJ}`,
-                message: messageText,
-                timestamp: Date.now(),
-                isDJ: true,
-                color: selectedColor // Add selected color
+            socket.emit('chat message', {
+                text: messageText,
+                timestamp: new Date().toISOString()
             });
         }
+
+        // Socket.IO helpers
+        function appendSocketMessage(data) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            if (data.isDJ) messageDiv.classList.add('dj-message');
+            const time = new Date(data.timestamp).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+            messageDiv.innerHTML = `
+                <div class="message-header">
+                    <span class="message-author">${data.nickname}</span>
+                    <span class="message-time">${time}</span>
+                </div>
+                <div class="message-content">${data.text}</div>
+            `;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function appendSystemMessage(text) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message dj-message';
+            const time = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+            messageDiv.innerHTML = `
+                <div class="message-header">
+                    <span class="message-author">DJ Sistem</span>
+                    <span class="message-time">${time}</span>
+                </div>
+                <div class="message-content">${text}</div>
+            `;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function displayUsersFromSocket(users) {
+            userCount.textContent = users.length;
+            usersList.innerHTML = '';
+            users.forEach(userData => {
+                const userDiv = document.createElement('div');
+                userDiv.className = 'user-item';
+                userDiv.innerHTML = `
+                    <span class="user-name">${userData.nickname}</span>
+                    <div class="user-actions">
+                        <button class="action-btn warn-btn" onclick="warnUser('${userData.nickname}')">Uyar</button>
+                        <button class="action-btn ban-btn" onclick="banUser('${userData.nickname}')">Ban</button>
+                    </div>
+                `;
+                usersList.appendChild(userDiv);
+            });
+        }
+
+        // Socket.IO listeners
+        socket.on('userList', (users) => displayUsersFromSocket(users));
+        socket.on('chat message', (data) => appendSocketMessage(data));
+        socket.on('userWarned', (d) => appendSystemMessage(`⚠️ ${d.targetNickname} uyarıldı - ${d.reason}`));
+        socket.on('userBanned', (d) => appendSystemMessage(`🚫 ${d.targetNickname} yasaklandı - ${d.reason}`));
+        socket.on('userMuted', (d) => appendSystemMessage(`🔇 ${d.targetNickname} ${d.duration} dk susturuldu - ${d.reason}`));
 
         // Chat input events
         chatInput.addEventListener('keypress', (e) => {
@@ -1016,9 +1084,15 @@
             playlist.forEach((song, index) => {
                 const songDiv = document.createElement('div');
                 songDiv.className = 'playlist-item';
+                songDiv.setAttribute('draggable', 'true');
+                songDiv.dataset.index = String(index);
+                const isCurrent = index === currentIndex;
                 songDiv.innerHTML = `
                     <span class="playlist-item-number">${index + 1}</span>
-                    <span style="flex: 1;">${song.title}</span>
+                    <span style="flex: 1; ${isCurrent ? 'font-weight:700;color:#4ecdc4;' : ''}">${song.title}</span>
+                    <button data-action="play" data-index="${index}" title="Çal" style="background:#44a08d;color:white;border:none;border-radius:4px;padding:4px 8px;cursor:pointer;margin-right:6px;">
+                        <i class="fas fa-play"></i>
+                    </button>
                     <button onclick="removeSong(${song.id})" style="background: #e74c3c; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer;">
                         <i class="fas fa-trash"></i>
                     </button>
@@ -1069,6 +1143,100 @@
 
         // Show login modal on startup
         djLoginModal.classList.remove('hidden');
+
+        // ---------- Playlist: Drag & Drop reorder ----------
+        playlistItems.addEventListener('dragstart', (e) => {
+            const target = e.target.closest('.playlist-item');
+            if (!target) return;
+            draggedIndex = Number(target.dataset.index);
+        });
+
+        playlistItems.addEventListener('dragover', (e) => {
+            e.preventDefault();
+        });
+
+        playlistItems.addEventListener('drop', (e) => {
+            e.preventDefault();
+            // If files dropped, treat as upload
+            if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                const files = Array.from(e.dataTransfer.files);
+                files.filter(f => f.type.startsWith('audio/')).forEach(uploadFileFromPC);
+                return;
+            }
+            const target = e.target.closest('.playlist-item');
+            if (!target) return;
+            const targetIndex = Number(target.dataset.index);
+            if (isNaN(draggedIndex) || isNaN(targetIndex) || draggedIndex === targetIndex) return;
+            const [moved] = playlist.splice(draggedIndex, 1);
+            playlist.splice(targetIndex, 0, moved);
+            localStorage.setItem('djPlaylist', JSON.stringify(playlist));
+            updatePlaylistDisplay();
+        });
+
+        // Play on button click within playlist
+        playlistItems.addEventListener('click', (e) => {
+            const btn = e.target.closest('button[data-action="play"]');
+            if (!btn) return;
+            const idx = Number(btn.dataset.index);
+            if (isNaN(idx)) return;
+            setCurrentSongByIndex(idx);
+        });
+
+        // ---------- Playlist: Skip/Prev + Infinite loop ----------
+        prevSongBtn.addEventListener('click', () => {
+            if (playlist.length === 0) return;
+            const prev = currentIndex - 1;
+            const nextIndex = prev < 0 ? (loopEnabled ? playlist.length - 1 : 0) : prev;
+            setCurrentSongByIndex(nextIndex);
+        });
+
+        nextSongBtn.addEventListener('click', () => {
+            if (playlist.length === 0) return;
+            const nxt = currentIndex + 1;
+            const nextIndex = nxt >= playlist.length ? (loopEnabled ? 0 : playlist.length - 1) : nxt;
+            setCurrentSongByIndex(nextIndex);
+        });
+
+        loopToggleBtn.addEventListener('click', () => {
+            loopEnabled = !loopEnabled;
+            loopToggleBtn.textContent = `♾️ Sonsuz: ${loopEnabled ? 'Açık' : 'Kapalı'}`;
+        });
+
+        function setCurrentSongByIndex(index) {
+            if (playlist.length === 0) return;
+            if (index < 0 || index >= playlist.length) return;
+            // Şarkıyı çal ve listeden kaldır (kalıcı depolama yok)
+            const [played] = playlist.splice(index, 1);
+            const title = played.title;
+            currentPlayingSong.textContent = title;
+            localStorage.setItem('currentSong', title);
+            sendDJMessage(`🎵 Şu anda çalıyor: ${title}`);
+            // Eğer blobUrl varsa bellekten serbest bırak
+            try { if (played.blobUrl) URL.revokeObjectURL(played.blobUrl); } catch {}
+            // Sonraki index ayarı
+            currentIndex = Math.min(index, playlist.length - 1);
+            localStorage.setItem('djPlaylist', JSON.stringify(playlist));
+            updatePlaylistDisplay();
+        }
+
+        // ---------- PC Upload into playlist (server-backed) ----------
+        musicFileInputDJ.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files || []);
+            files.filter(f => f.type.startsWith('audio/')).forEach(uploadFileFromPC);
+            // Reset input so selecting the same files again will trigger change
+            musicFileInputDJ.value = '';
+        });
+
+        async function uploadFileFromPC(file) {
+            // Sunucuya yükleme YOK: tarayıcıda geçici olarak tut
+            const blobUrl = URL.createObjectURL(file);
+            const id = Date.now() + Math.floor(Math.random() * 1000);
+            const title = file.name.replace(/\.[^/.]+$/, '');
+            playlist.push({ id, title, addedAt: new Date().toLocaleTimeString('tr-TR'), blobUrl });
+            localStorage.setItem('djPlaylist', JSON.stringify(playlist));
+            updatePlaylistDisplay();
+            sendDJMessage(`🎵 Eklendi (yerel): ${file.name}`);
+        }
     </script>
 </body>
 </html>
