@@ -75,15 +75,9 @@
       <div id="userList"></div>
     </div>
   </div>
-// Ana sayfadan nickname al
-const urlParams = new URLSearchParams(window.location.search);
-const urlNickname = urlParams.get('nickname');
-if (urlNickname) {
-    document.getElementById('nicknameInput').value = urlNickname;
-}
+
   <script src="/socket.io/socket.io.js"></script>
   <script src="chat-stream.js"></script>
 </body>
 </html>
-
 
