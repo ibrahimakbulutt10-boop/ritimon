@@ -1,275 +1,1367 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DJ Paneli - RitimON FM</title>
-  <link rel="stylesheet" href="dj.css" />
-  <link rel="icon" href="favicon.ico" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RitimON FM - DJ Paneli</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            min-height: 100vh;
+            color: white;
+            overflow-x: hidden;
+        }
+
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(255, 64, 129, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(78, 205, 196, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(255, 193, 7, 0.05) 0%, transparent 50%);
+        }
+
+        /* DJ Login Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .modal-content {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+            max-width: 450px;
+            width: 90%;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header h2 {
+            font-family: 'Orbitron', monospace;
+            color: #ff4081;
+            margin-bottom: 10px;
+            font-size: 2rem;
+            background: linear-gradient(45deg, #ff4081, #ff6ec7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .modal-header p {
+            color: #4ecdc4;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .input-group i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #4ecdc4;
+            z-index: 1;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 15px 20px 15px 45px;
+            border: none;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1.1rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .input-group input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #ff4081;
+            box-shadow: 0 0 20px rgba(255, 64, 129, 0.3);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 15px 20px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(45deg, #ff4081, #ff6ec7);
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 15px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 64, 129, 0.4);
+        }
+
+        .error-message {
+            color: #ff6b6b;
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* DJ Panel Layout */
+        .dj-container {
+            display: flex;
+            height: 100vh;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        /* Left Side - DJ Controls */
+        .dj-controls {
+            width: 50%;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Right Side - DJ Chat */
+        .dj-chat-section {
+            width: 50%;
+            display: flex;
+            flex-direction: column;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* DJ Header */
+        .dj-header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            padding: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .dj-header h1 {
+            font-family: 'Orbitron', monospace;
+            color: #ff4081;
+            font-size: 1.5rem;
+            margin: 0;
+        }
+
+        .dj-welcome {
+            color: #4ecdc4;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .header-right {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .btn-secondary {
+            padding: 8px 16px;
+            background: rgba(78, 205, 196, 0.2);
+            color: #4ecdc4;
+            border: 1px solid #4ecdc4;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(78, 205, 196, 0.3);
+        }
+
+        .btn-logout {
+            padding: 8px 16px;
+            background: rgba(255, 107, 107, 0.2);
+            color: #ff6b6b;
+            border: 1px solid #ff6b6b;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-logout:hover {
+            background: rgba(255, 107, 107, 0.3);
+        }
+
+        /* Control Sections */
+        .control-section {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .control-section h3 {
+            color: #4ecdc4;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Broadcast Controls */
+        .broadcast-status {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #broadcastIndicator {
+            color: #ff6b6b;
+        }
+
+        #broadcastIndicator.live {
+            color: #4ecdc4;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-success {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(78, 205, 196, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        /* Song Controls */
+        .current-playing {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        #currentPlayingSong {
+            color: #4ecdc4;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+
+        /* Playlist Styles */
+        .playlist-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .playlist-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .playlist-header span {
+            font-weight: 600;
+            color: #4ecdc4;
+        }
+
+        .playlist-items {
+            max-height: 200px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .playlist-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.2s ease;
+        }
+
+        .playlist-item:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateX(3px);
+        }
+
+        .playlist-item.playing {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+            border-color: #4ecdc4;
+        }
+
+        .playlist-item-number {
+            width: 24px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .playlist-item-title {
+            flex: 1;
+            font-size: 0.9rem;
+            color: white;
+        }
+
+        .playlist-item-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .playlist-btn {
+            width: 28px;
+            height: 28px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            transition: all 0.2s ease;
+        }
+
+        .playlist-btn.play {
+            background: #4ecdc4;
+            color: white;
+        }
+
+        .playlist-btn.delete {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .playlist-btn.up {
+            background: #ffd93d;
+            color: #333;
+        }
+
+        .playlist-btn.down {
+            background: #6c5ce7;
+            color: white;
+        }
+
+        .playlist-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .playlist-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-warning {
+            background: linear-gradient(45deg, #ffd93d, #f39c12);
+            color: #333;
+        }
+
+        .btn-info {
+            background: linear-gradient(45deg, #74b9ff, #0984e3);
+            color: white;
+        }
+
+        /* DJ Chat Section */
+        .chat-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+        }
+
+        .chat-header h3 {
+            color: #ff4081;
+            font-family: 'Orbitron', monospace;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chat-subtitle {
+            color: #4ecdc4;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        /* Chat Messages - BÜYÜK ALAN */
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            min-height: 400px; /* BÜYÜK CHAT ALANI */
+        }
+
+        .message {
+            padding: 12px 18px;
+            border-radius: 18px;
+            max-width: 80%;
+            word-wrap: break-word;
+            animation: fadeInUp 0.3s ease;
+            position: relative;
+        }
+
+        .message.dj {
+            align-self: flex-end;
+            background: linear-gradient(45deg, #ff4081, #ff6ec7);
+            color: white;
+            border: 2px solid #ff4081;
+        }
+
+        .message.user {
+            align-self: flex-start;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .message-header {
+            font-size: 0.8rem;
+            opacity: 0.7;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dj-badge {
+            background: #ff4081;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+
+        /* Chat Input - BÜYÜK MESAJ KUTUSU */
+        .chat-input-container {
+            padding: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+        }
+
+        .chat-input-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .chat-input {
+            width: 100%;
+            padding: 20px; /* BÜYÜK MESAJ KUTUSU */
+            border: none;
+            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1.1rem; /* BÜYÜK FONT */
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            resize: vertical;
+            min-height: 60px; /* BÜYÜK YÜKSEKLİK */
+            max-height: 120px;
+        }
+
+        .chat-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: #ff4081;
+            box-shadow: 0 0 20px rgba(255, 64, 129, 0.3);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Emoji Support */
+        .emoji-toolbar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .emoji-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .emoji-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        .send-btn {
+            padding: 15px 25px;
+            border: none;
+            border-radius: 15px;
+            background: linear-gradient(45deg, #ff4081, #ff6ec7);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.1rem;
+        }
+
+        .send-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 64, 129, 0.4);
+        }
+
+        .input-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        /* Statistics */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-icon {
+            font-size: 1.5rem;
+            color: #4ecdc4;
+            margin-bottom: 8px;
+        }
+
+        .stat-number {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .quick-btn {
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .quick-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateX(5px);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .dj-container {
+                flex-direction: column;
+                height: auto;
+            }
+            
+            .dj-controls, .dj-chat-section {
+                width: 100%;
+            }
+            
+            .chat-messages {
+                min-height: 300px;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="dj-container">
-    <!-- Header -->
-    <div class="dj-header">
-      <h1>🎙️ RitimON FM DJ Paneli</h1>
-      <div class="status-indicator">
-        <span id="connectionStatus">Bağlantı durumu: Bekleniyor</span>
-      </div>
-    </div>
+    <div class="bg-animation"></div>
 
-    <!-- Login Panel -->
-    <div id="loginPanel" class="login-panel">
-      <div class="glass-card">
-        <h2>🔐 DJ Girişi</h2>
-        <div class="form-group">
-          <label for="djNickname">DJ Adınız:</label>
-          <input type="text" id="djNickname" placeholder="DJ adınızı girin" />
-        </div>
-        <div class="form-group">
-          <label for="djpass">Şifre:</label>
-          <input type="password" id="djpass" placeholder="DJ şifresi" />
-        </div>
-        <button onclick="checkPassword()" class="btn btn-primary">Giriş Yap</button>
-        <div id="loginError" class="error-message"></div>
-      </div>
-    </div>
-
-    <!-- DJ Controls -->
-    <div id="djControls" class="dj-controls" style="display:none;">
-      <div class="controls-grid">
-        <!-- Stream Controls -->
-        <div class="control-card">
-          <h3>📡 Yayın Kontrolü</h3>
-          <div class="control-buttons">
-            <button onclick="startStream()" class="btn btn-success" id="startBtn">
-              ▶️ Yayını Başlat
-            </button>
-            <button onclick="stopStream()" class="btn btn-danger" id="stopBtn" disabled>
-              ⏹️ Yayını Durdur
-            </button>
-          </div>
-          <div class="stream-status">
-            <span id="streamStatus">Yayın kapalı</span>
-          </div>
-        </div>
-
-        <!-- Music Controls -->
-        <div class="control-card">
-          <h3>🎵 Müzik Kontrolü</h3>
-          <div class="music-controls">
-            <div class="form-group">
-              <label for="songName">Şarkı Adı:</label>
-              <input type="text" id="songName" placeholder="Şu anda çalan şarkı" />
+    <!-- DJ Login Modal -->
+    <div id="djLoginModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-microphone"></i> DJ Paneli</h2>
+                <p>RitimON FM DJ Kontrol Merkezi</p>
             </div>
-            <div class="form-group">
-              <label for="artistName">Sanatçı:</label>
-              <input type="text" id="artistName" placeholder="Sanatçı adı" />
-            </div>
-            <button onclick="updateNowPlaying()" class="btn btn-info">
-              🎶 Şarkı Bilgisini Güncelle
-            </button>
-          </div>
-        </div>
-
-        <!-- Announcements -->
-        <div class="control-card">
-          <h3>📢 Duyurular</h3>
-          <div class="announcement-controls">
-            <div class="form-group">
-              <label for="announcementText">Duyuru Metni:</label>
-              <textarea id="announcementText" placeholder="Duyuru yazısını buraya girin..." rows="3"></textarea>
-            </div>
-            <button onclick="sendAnnouncement()" class="btn btn-warning">
-              📢 Duyuru Gönder
-            </button>
-          </div>
-        </div>
-
-        <!-- Sound Effects -->
-        <div class="control-card">
-          <h3>🔊 Ses Efektleri</h3>
-          <div class="sound-effects">
-            <div class="effect-buttons">
-              <button onclick="playSoundEffect('applause')" class="btn btn-effect">
-                👏 Alkış
-              </button>
-              <button onclick="playSoundEffect('cheer')" class="btn btn-effect">
-                🎉 Kutlama
-              </button>
-              <button onclick="playSoundEffect('drumroll')" class="btn btn-effect">
-                🥁 Davul
-              </button>
-              <button onclick="playSoundEffect('bell')" class="btn btn-effect">
-                🔔 Zil
-              </button>
-              <button onclick="playSoundEffect('whistle')" class="btn btn-effect">
-                📯 Düdük
-              </button>
-              <button onclick="playSoundEffect('airhorn')" class="btn btn-effect">
-                📢 Hava Korna
-              </button>
-            </div>
-            <div class="custom-sound">
-              <div class="form-group">
-                <label for="customSoundText">Özel Ses Efekti:</label>
-                <input type="text" id="customSoundText" placeholder="Ses efekti açıklaması..." />
-              </div>
-              <button onclick="playCustomEffect()" class="btn btn-secondary">
-                🔊 Özel Efekt
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Music Upload -->
-        <div class="control-card">
-          <h3>🎵 Geçici Müzik Yükleme</h3>
-          <div class="temp-warning">
-            <span class="warning-icon">⚠️</span>
-            <span>Yüklenen dosyalar geçicidir ve çalındıktan sonra otomatik silinir!</span>
-          </div>
-          <div class="upload-section">
-            <div class="upload-area" id="uploadArea">
-              <div class="upload-content">
-                <div class="upload-icon">🎵</div>
-                <h4>Ses Dosyası Yükle</h4>
-                <p>MP3, WAV, OGG dosyalarını sürükleyip bırakın</p>
-                <p class="temp-info">📝 Geçici dosya - çalındıktan sonra silinir</p>
-                <input type="file" id="musicFileInput" accept="audio/*" multiple style="display: none;" />
-                <button onclick="document.getElementById('musicFileInput').click()" class="btn btn-primary">
-                  📁 Dosya Seç
+            <form id="djLoginForm">
+                <div class="input-group">
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="djUsername" placeholder="DJ Adınız" required>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="djPassword" placeholder="DJ Şifreniz" required>
+                </div>
+                <button type="submit" class="btn-primary">
+                    <i class="fas fa-sign-in-alt"></i> DJ Paneline Giriş
                 </button>
-              </div>
-            </div>
-            <div class="upload-progress" id="uploadProgress" style="display: none;">
-              <div class="progress-bar">
-                <div class="progress-fill" id="uploadProgressFill"></div>
-              </div>
-              <span id="uploadStatus">Yükleniyor...</span>
-            </div>
-          </div>
+                <div id="djLoginError" class="error-message"></div>
+            </form>
         </div>
-
-        <!-- Playlist Management -->
-        <div class="control-card">
-          <h3>📋 Playlist Yönetimi</h3>
-          <div class="playlist-controls">
-            <div class="form-group">
-              <label for="songTitle">Şarkı Adı:</label>
-              <input type="text" id="songTitle" placeholder="Şarkı adını girin" />
-            </div>
-            <div class="form-group">
-              <label for="artistName">Sanatçı:</label>
-              <input type="text" id="artistName" placeholder="Sanatçı adını girin" />
-            </div>
-            <div class="playlist-actions">
-              <button onclick="addToPlaylist()" class="btn btn-success">
-                ➕ Manuel Ekle
-              </button>
-              <button onclick="addUploadedToPlaylist()" class="btn btn-info">
-                🎵 Yüklenen Ekle
-              </button>
-              <button onclick="clearPlaylist()" class="btn btn-warning">
-                🗑️ Temizle
-              </button>
-            </div>
-          </div>
-          <div class="playlist-display">
-            <h4>📝 Gelecek Şarkılar</h4>
-            <div id="playlistItems" class="playlist-items">
-              <!-- Playlist items will appear here -->
-            </div>
-          </div>
-        </div>
-
-        <!-- Music Library -->
-        <div class="control-card">
-          <h3>📚 Müzik Kütüphanesi</h3>
-          <div class="music-library">
-            <div class="library-controls">
-              <input type="text" id="searchLibrary" placeholder="Müzik ara..." />
-              <button onclick="refreshLibrary()" class="btn btn-secondary">
-                🔄 Yenile
-              </button>
-            </div>
-            <div id="musicLibrary" class="library-items">
-              <!-- Music library items will appear here -->
-            </div>
-          </div>
-        </div>
-
-        <!-- Quick Actions -->
-        <div class="control-card">
-          <h3>⚡ Hızlı İşlemler</h3>
-          <div class="quick-actions">
-            <button onclick="requestSong()" class="btn btn-secondary">
-              🎤 Şarkı İsteği
-            </button>
-            <button onclick="showStats()" class="btn btn-secondary">
-              📊 İstatistikler
-            </button>
-            <button onclick="playNextSong()" class="btn btn-info">
-              ⏭️ Sonraki Şarkı
-            </button>
-            <button onclick="emergencyStop()" class="btn btn-danger">
-              🚨 Acil Durdur
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Live Chat Feed -->
-      <div class="chat-feed">
-        <div class="chat-header">
-          <h3>💬 Canlı Chat</h3>
-          <div class="chat-controls">
-            <button onclick="toggleAutoScroll()" class="btn btn-secondary" id="autoScrollBtn">
-              📌 Otomatik Kaydır
-            </button>
-            <button onclick="clearChat()" class="btn btn-warning">
-              🗑️ Chat Temizle
-            </button>
-          </div>
-        </div>
-        <div id="liveChat" class="chat-messages">
-          <!-- Live chat messages will appear here -->
-        </div>
-        <div class="chat-input-section">
-          <div class="input-group">
-            <input type="text" id="djChatInput" placeholder="Mesajınızı yazın..." maxlength="200" />
-            <button onclick="sendDJMessage()" class="btn btn-primary">
-              📤 Gönder
-            </button>
-          </div>
-          <div class="quick-responses">
-            <button onclick="sendQuickResponse('Merhaba dinleyiciler! 🎧')" class="quick-btn">👋 Selam</button>
-            <button onclick="sendQuickResponse('Teşekkürler dinlediğiniz için! ❤️')" class="quick-btn">❤️ Teşekkür</button>
-            <button onclick="sendQuickResponse('Şarkı isteklerinizi bekliyorum! 🎵')" class="quick-btn">🎵 İstek</button>
-            <button onclick="sendQuickResponse('Güzel bir akşam geçiriyoruz! 🌟')" class="quick-btn">🌟 Akşam</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- DJ Info -->
-      <div class="dj-info">
-        <div class="info-item">
-          <span class="label">DJ:</span>
-          <span id="currentDJName">-</span>
-        </div>
-        <div class="info-item">
-          <span class="label">Başlangıç:</span>
-          <span id="djStartTime">-</span>
-        </div>
-        <div class="info-item">
-          <span class="label">Çevrimiçi:</span>
-          <span id="onlineUsers">0</span> kullanıcı
-        </div>
-      </div>
     </div>
-  </div>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="dj-stream.js"></script>
+    <!-- DJ Control Panel -->
+    <div id="djPanel" class="hidden">
+        <!-- DJ Header -->
+        <header class="dj-header">
+            <div class="header-left">
+                <h1><i class="fas fa-microphone"></i> RitimON FM - DJ Paneli</h1>
+                <div class="dj-welcome">
+                    Hoş geldin, <span id="welcomeDJ">DJ</span>!
+                </div>
+            </div>
+            <div class="header-right">
+                <a href="/" target="_blank" class="btn-secondary">
+                    <i class="fas fa-comments"></i> Ana Chat
+                </a>
+                <button id="djLogoutBtn" class="btn-logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </header>
+
+        <div class="dj-container">
+            <!-- Left Side - DJ Controls -->
+            <div class="dj-controls">
+                <!-- Broadcast Controls -->
+                <div class="control-section">
+                    <h3><i class="fas fa-broadcast-tower"></i> Yayın Kontrolü</h3>
+                    <div class="broadcast-controls">
+                        <div class="broadcast-status" id="broadcastStatus">
+                            <div class="status-indicator">
+                                <i class="fas fa-circle" id="broadcastIndicator"></i>
+                                <span id="broadcastText">Yayın Dışı</span>
+                            </div>
+                        </div>
+                        
+                        <div class="control-buttons">
+                            <button id="startBroadcastBtn" class="btn-success">
+                                <i class="fas fa-play"></i> Yayını Başlat
+                            </button>
+                            <button id="stopBroadcastBtn" class="btn-danger hidden">
+                                <i class="fas fa-stop"></i> Yayını Durdur
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Song Controls -->
+                <div class="control-section">
+                    <h3><i class="fas fa-music"></i> Şarkı Kontrolü</h3>
+                    <div class="song-controls">
+                        <div class="input-group">
+                            <i class="fas fa-music"></i>
+                            <input type="text" id="songTitleInput" placeholder="Şu anda çalan şarkı..." maxlength="100">
+                            <button id="updateSongBtn" class="btn-primary">
+                                <i class="fas fa-refresh"></i> Güncelle
+                            </button>
+                        </div>
+                        
+                        <div class="current-playing">
+                            <strong>Şu Anda Çalan:</strong>
+                            <div id="currentPlayingSong">RitimON FM - Yayın Dışı</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Playlist Section -->
+                <div class="control-section">
+                    <h3><i class="fas fa-list-music"></i> Playlist Yönetimi</h3>
+                    <div class="playlist-section">
+                        <!-- Add Song -->
+                        <div class="add-song-form">
+                            <div class="input-group">
+                                <i class="fas fa-plus"></i>
+                                <input type="text" id="newSongInput" placeholder="Şarkı adı girin..." maxlength="100">
+                                <button id="addSongBtn" class="btn-success">
+                                    <i class="fas fa-plus"></i> Ekle
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Playlist -->
+                        <div class="playlist-container">
+                            <div class="playlist-header">
+                                <span>Playlist (<span id="playlistCount">0</span>/50)</span>
+                                <button id="clearPlaylistBtn" class="btn-warning btn-sm">
+                                    <i class="fas fa-trash"></i> Temizle
+                                </button>
+                            </div>
+                            
+                            <div id="playlistItems" class="playlist-items">
+                                <!-- Playlist items will be added here -->
+                            </div>
+                        </div>
+                        
+                        <!-- Quick Actions -->
+                        <div class="playlist-actions">
+                            <button id="shuffleBtn" class="btn-secondary btn-sm">
+                                <i class="fas fa-random"></i> Karıştır
+                            </button>
+                            <button id="nextSongBtn" class="btn-primary btn-sm">
+                                <i class="fas fa-forward"></i> Sonraki
+                            </button>
+                            <button id="autoPlayBtn" class="btn-info btn-sm">
+                                <i class="fas fa-play"></i> Otomatik Çal
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statistics -->
+                <div class="control-section">
+                    <h3><i class="fas fa-chart-bar"></i> İstatistikler</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fas fa-users"></i></div>
+                            <div class="stat-info">
+                                <div class="stat-number" id="totalListeners">0</div>
+                                <div class="stat-label">Dinleyici</div>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                            <div class="stat-info">
+                                <div class="stat-number" id="broadcastTime">00:00</div>
+                                <div class="stat-label">Yayın Süresi</div>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fas fa-comments"></i></div>
+                            <div class="stat-info">
+                                <div class="stat-number" id="chatActivity">0</div>
+                                <div class="stat-label">Chat Mesajı</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="control-section">
+                    <h3><i class="fas fa-bolt"></i> Hızlı İşlemler</h3>
+                    <div class="quick-actions">
+                        <button class="quick-btn" data-message="🎵 Yeni şarkı başlıyor! 🎵">
+                            <i class="fas fa-music"></i> Yeni Şarkı Duyurusu
+                        </button>
+                        <button class="quick-btn" data-message="📻 RitimON FM'de kalın! En iyi müzikler burada! 📻">
+                            <i class="fas fa-bullhorn"></i> Promosyon Mesajı
+                        </button>
+                        <button class="quick-btn" data-message="💬 Sohbete katılın! Mesajlarınızı bekliyoruz! 💬">
+                            <i class="fas fa-comments"></i> Chat Teşviki
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side - DJ Chat -->
+            <div class="dj-chat-section">
+                <div class="chat-header">
+                    <h3><i class="fas fa-comments"></i> DJ Sohbet</h3>
+                    <div class="chat-subtitle">Dinleyicilerinizle canlı sohbet edin</div>
+                </div>
+                
+                <div class="chat-messages" id="djChatMessages">
+                    <!-- Mesajlar buraya eklenecek -->
+                </div>
+                
+                <div class="chat-input-container">
+                    <div class="chat-input-wrapper">
+                        <!-- Emoji Toolbar -->
+                        <div class="emoji-toolbar">
+                            <button class="emoji-btn" data-emoji="🎵">🎵</button>
+                            <button class="emoji-btn" data-emoji="📻">📻</button>
+                            <button class="emoji-btn" data-emoji="🎧">🎧</button>
+                            <button class="emoji-btn" data-emoji="🎤">🎤</button>
+                            <button class="emoji-btn" data-emoji="🔥">🔥</button>
+                            <button class="emoji-btn" data-emoji="💖">💖</button>
+                            <button class="emoji-btn" data-emoji="👏">👏</button>
+                            <button class="emoji-btn" data-emoji="😄">😄</button>
+                            <button class="emoji-btn" data-emoji="😍">😍</button>
+                            <button class="emoji-btn" data-emoji="🤘">🤘</button>
+                        </div>
+                        
+                        <div class="input-controls">
+                            <textarea class="chat-input" id="djMessageInput" placeholder="DJ mesajınızı yazın... (Enter ile gönderin)" maxlength="500"></textarea>
+                            <button class="send-btn" id="djSendBtn">
+                                <i class="fas fa-paper-plane"></i> Gönder
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Firebase Configuration
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+        import { getDatabase, ref, push, onValue, serverTimestamp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDScnST7m9TrW67Fz-UYljEfUr9YZxBHF8",
+            authDomain: "radyoapp-81787.firebaseapp.com",
+            databaseURL: "https://radyoapp-81787-default-rtdb.firebaseio.com",
+            projectId: "radyoapp-81787",
+            storageBucket: "radyoapp-81787.firebasestorage.app",
+            messagingSenderId: "788981302037",
+            appId: "1:788981302037:web:778f82c0cfb6492c1a1f1c",
+            measurementId: "G-3NLHLL0DGL"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        let currentDJ = null;
+        let playlist = [];
+        let currentSongIndex = 0;
+        let broadcastStartTime = null;
+
+        // DOM Elements
+        const djLoginModal = document.getElementById('djLoginModal');
+        const djPanel = document.getElementById('djPanel');
+        const djUsername = document.getElementById('djUsername');
+        const djPassword = document.getElementById('djPassword');
+        const djLoginForm = document.getElementById('djLoginForm');
+        const djLoginError = document.getElementById('djLoginError');
+        const welcomeDJ = document.getElementById('welcomeDJ');
+        const djLogoutBtn = document.getElementById('djLogoutBtn');
+
+        // Broadcast Controls
+        const startBroadcastBtn = document.getElementById('startBroadcastBtn');
+        const stopBroadcastBtn = document.getElementById('stopBroadcastBtn');
+        const broadcastIndicator = document.getElementById('broadcastIndicator');
+        const broadcastText = document.getElementById('broadcastText');
+
+        // Song Controls
+        const songTitleInput = document.getElementById('songTitleInput');
+        const updateSongBtn = document.getElementById('updateSongBtn');
+        const currentPlayingSong = document.getElementById('currentPlayingSong');
+
+        // Playlist Controls
+        const newSongInput = document.getElementById('newSongInput');
+        const addSongBtn = document.getElementById('addSongBtn');
+        const playlistItems = document.getElementById('playlistItems');
+        const playlistCount = document.getElementById('playlistCount');
+        const clearPlaylistBtn = document.getElementById('clearPlaylistBtn');
+        const shuffleBtn = document.getElementById('shuffleBtn');
+        const nextSongBtn = document.getElementById('nextSongBtn');
+        const autoPlayBtn = document.getElementById('autoPlayBtn');
+
+        // Chat Elements
+        const djChatMessages = document.getElementById('djChatMessages');
+        const djMessageInput = document.getElementById('djMessageInput');
+        const djSendBtn = document.getElementById('djSendBtn');
+
+        // Statistics
+        const totalListeners = document.getElementById('totalListeners');
+        const broadcastTime = document.getElementById('broadcastTime');
+        const chatActivity = document.getElementById('chatActivity');
+
+        // DJ Authentication
+        const validDJs = {
+            'admin': 'dj123',
+            'dj1': 'pass1',
+            'dj2': 'pass2'
+        };
+
+        // DJ Login
+        djLoginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const username = djUsername.value.trim();
+            const password = djPassword.value.trim();
+
+            if (validDJs[username] && validDJs[username] === password) {
+                currentDJ = username;
+                welcomeDJ.textContent = username;
+                djLoginModal.style.display = 'none';
+                djPanel.classList.remove('hidden');
+                djLoginError.textContent = '';
+                
+                // Initialize DJ session
+                initializeDJSession();
+            } else {
+                djLoginError.textContent = 'Hatalı kullanıcı adı veya şifre!';
+            }
+        });
+
+        // DJ Logout
+        djLogoutBtn.addEventListener('click', () => {
+            currentDJ = null;
+            djPanel.classList.add('hidden');
+            djLoginModal.style.display = 'flex';
+            djUsername.value = '';
+            djPassword.value = '';
+        });
+
+        // Initialize DJ Session
+        function initializeDJSession() {
+            // Start listening to chat messages
+            listenToChat();
+            
+            // Load saved playlist
+            loadPlaylist();
+            
+            // Update statistics
+            updateStatistics();
+            
+            // Start broadcast time counter
+            startBroadcastTimeCounter();
+        }
+
+        // Broadcast Controls
+        startBroadcastBtn.addEventListener('click', () => {
+            broadcastIndicator.classList.add('live');
+            broadcastText.textContent = 'Canlı Yayında';
+            startBroadcastBtn.classList.add('hidden');
+            stopBroadcastBtn.classList.remove('hidden');
+            broadcastStartTime = Date.now();
+            
+            // Send broadcast start message
+            sendDJMessage('📻 Canlı yayın başladı! Hoş geldiniz! 🎵');
+        });
+
+        stopBroadcastBtn.addEventListener('click', () => {
+            broadcastIndicator.classList.remove('live');
+            broadcastText.textContent = 'Yayın Dışı';
+            stopBroadcastBtn.classList.add('hidden');
+            startBroadcastBtn.classList.remove('hidden');
+            broadcastStartTime = null;
+            
+            // Send broadcast end message
+            sendDJMessage('📻 Yayın sona erdi. Tekrar bekleriz! 👋');
+        });
+
+        // Song Controls
+        updateSongBtn.addEventListener('click', () => {
+            const songTitle = songTitleInput.value.trim();
+            if (songTitle) {
+                currentPlayingSong.textContent = songTitle;
+                songTitleInput.value = '';
+                
+                // Send song update to chat
+                sendDJMessage(`🎵 Şimdi çalıyor: ${songTitle} 🎵`);
+            }
+        });
+
+        // Playlist Management
+        addSongBtn.addEventListener('click', () => {
+            const songName = newSongInput.value.trim();
+            if (songName && playlist.length < 50) {
+                playlist.push({
+                    id: Date.now(),
+                    title: songName,
+                    addedAt: new Date().toLocaleString('tr-TR')
+                });
+                newSongInput.value = '';
+                updatePlaylistDisplay();
+                savePlaylist();
+            }
+        });
+
+        clearPlaylistBtn.addEventListener('click', () => {
+            if (confirm('Tüm playlist silinecek. Emin misiniz?')) {
+                playlist = [];
+                currentSongIndex = 0;
+                updatePlaylistDisplay();
+                savePlaylist();
+            }
+        });
+
+        shuffleBtn.addEventListener('click', () => {
+            for (let i = playlist.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [playlist[i], playlist[j]] = [playlist[j], playlist[i]];
+            }
+            updatePlaylistDisplay();
+            savePlaylist();
+        });
+
+        nextSongBtn.addEventListener('click', () => {
+            if (playlist.length > 0) {
+                currentSongIndex = (currentSongIndex + 1) % playlist.length;
+                const currentSong = playlist[currentSongIndex];
+                currentPlayingSong.textContent = currentSong.title;
+                updatePlaylistDisplay();
+                
+                // Send next song message
+                sendDJMessage(`🎵 Sonraki şarkı: ${currentSong.title} 🎵`);
+            }
+        });
+
+        // Update Playlist Display
+        function updatePlaylistDisplay() {
+            playlistItems.innerHTML = '';
+            playlistCount.textContent = playlist.length;
+
+            playlist.forEach((song, index) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = `playlist-item ${index === currentSongIndex ? 'playing' : ''}`;
+                
+                itemDiv.innerHTML = `
+                    <div class="playlist-item-number">${index + 1}</div>
+                    <div class="playlist-item-title">${song.title}</div>
+                    <div class="playlist-item-actions">
+                        <button class="playlist-btn play" onclick="playSong(${index})">
+                            <i class="fas fa-play"></i>
+                        </button>
+                        <button class="playlist-btn up" onclick="moveSong(${index}, -1)">
+                            <i class="fas fa-arrow-up"></i>
+                        </button>
+                        <button class="playlist-btn down" onclick="moveSong(${index}, 1)">
+                            <i class="fas fa-arrow-down"></i>
+                        </button>
+                        <button class="playlist-btn delete" onclick="deleteSong(${index})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                
+                playlistItems.appendChild(itemDiv);
+            });
+        }
+
+        // Playlist Functions
+        window.playSong = function(index) {
+            currentSongIndex = index;
+            const song = playlist[index];
+            currentPlayingSong.textContent = song.title;
+            updatePlaylistDisplay();
+            sendDJMessage(`🎵 Şimdi çalıyor: ${song.title} 🎵`);
+        };
+
+        window.moveSong = function(index, direction) {
+            const newIndex = index + direction;
+            if (newIndex >= 0 && newIndex < playlist.length) {
+                [playlist[index], playlist[newIndex]] = [playlist[newIndex], playlist[index]];
+                
+                // Update current song index if needed
+                if (currentSongIndex === index) {
+                    currentSongIndex = newIndex;
+                } else if (currentSongIndex === newIndex) {
+                    currentSongIndex = index;
+                }
+                
+                updatePlaylistDisplay();
+                savePlaylist();
+            }
+        };
+
+        window.deleteSong = function(index) {
+            playlist.splice(index, 1);
+            
+            // Adjust current song index
+            if (currentSongIndex > index) {
+                currentSongIndex--;
+            } else if (currentSongIndex === index && currentSongIndex >= playlist.length) {
+                currentSongIndex = playlist.length - 1;
+            }
+            
+            updatePlaylistDisplay();
+            savePlaylist();
+        };
+
+        // Save/Load Playlist
+        function savePlaylist() {
+            localStorage.setItem('djPlaylist', JSON.stringify({
+                playlist: playlist,
+                currentSongIndex: currentSongIndex
+            }));
+        }
+
+        function loadPlaylist() {
+            const saved = localStorage.getItem('djPlaylist');
+            if (saved) {
+                const data = JSON.parse(saved);
+                playlist = data.playlist || [];
+                currentSongIndex = data.currentSongIndex || 0;
+                updatePlaylistDisplay();
+            }
+        }
+
+        // Chat Functionality
+        function listenToChat() {
+            const messagesRef = ref(database, 'messages');
+            onValue(messagesRef, (snapshot) => {
+                djChatMessages.innerHTML = '';
+                const messages = snapshot.val();
+                
+                if (messages) {
+                    Object.values(messages).slice(-50).forEach(message => {
+                        addMessageToChat(message);
+                    });
+                    scrollChatToBottom();
+                }
+            });
+        }
+
+        function addMessageToChat(message) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${message.isDJ ? 'dj' : 'user'}`;
+            
+            const headerContent = message.isDJ 
+                ? `<span class="dj-badge">DJ</span> ${message.sender} • ${message.time}`
+                : `${message.sender} • ${message.time}`;
+            
+            messageDiv.innerHTML = `
+                <div class="message-header">${headerContent}</div>
+                <div>${message.text}</div>
+            `;
+            
+            djChatMessages.appendChild(messageDiv);
+        }
+
+        function sendDJMessage(text) {
+            if (!text.trim() || !currentDJ) return;
+
+            const messagesRef = ref(database, 'messages');
+            const newMessage = {
+                text: text,
+                sender: currentDJ,
+                timestamp: serverTimestamp(),
+                time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
+                isDJ: true
+            };
+
+            push(messagesRef, newMessage);
+        }
+
+        function scrollChatToBottom() {
+            djChatMessages.scrollTop = djChatMessages.scrollHeight;
+        }
+
+        // Chat Input Events
+        djSendBtn.addEventListener('click', () => {
+            const message = djMessageInput.value.trim();
+            if (message) {
+                sendDJMessage(message);
+                djMessageInput.value = '';
+            }
+        });
+
+        // Enter key to send message
+        djMessageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                const message = djMessageInput.value.trim();
+                if (message) {
+                    sendDJMessage(message);
+                    djMessageInput.value = '';
+                }
+            }
+        });
+
+        // Emoji Support
+        document.querySelectorAll('.emoji-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const emoji = btn.getAttribute('data-emoji');
+                djMessageInput.value += emoji;
+                djMessageInput.focus();
+            });
+        });
+
+        // Quick Action Messages
+        document.querySelectorAll('.quick-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const message = btn.getAttribute('data-message');
+                sendDJMessage(message);
+            });
+        });
+
+        // Statistics Update
+        function updateStatistics() {
+            // Simulated listener count
+            const listenerCount = Math.floor(Math.random() * 50) + 10;
+            totalListeners.textContent = listenerCount;
+            
+            // Chat activity counter
+            const messagesRef = ref(database, 'messages');
+            onValue(messagesRef, (snapshot) => {
+                const messages = snapshot.val();
+                if (messages) {
+                    chatActivity.textContent = Object.keys(messages).length;
+                }
+            });
+        }
+
+        // Broadcast Time Counter
+        function startBroadcastTimeCounter() {
+            setInterval(() => {
+                if (broadcastStartTime) {
+                    const elapsed = Date.now() - broadcastStartTime;
+                    const hours = Math.floor(elapsed / 3600000);
+                    const minutes = Math.floor((elapsed % 3600000) / 60000);
+                    const seconds = Math.floor((elapsed % 60000) / 1000);
+                    
+                    broadcastTime.textContent = 
+                        `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                } else {
+                    broadcastTime.textContent = '00:00:00';
+                }
+            }, 1000);
+        }
+
+        // Song input enter key
+        newSongInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                addSongBtn.click();
+            }
+        });
+
+        songTitleInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                updateSongBtn.click();
+            }
+        });
+    </script>
 </body>
 </html>
-
