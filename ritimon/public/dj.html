@@ -541,6 +541,19 @@
                         <input type="text" id="newSongInput" placeholder="Şarkı adı girin..." maxlength="100">
                         <button id="addSongBtn" class="btn-success">Ekle</button>
                     </div>
+                    <!-- PC'den şarkı yükleme -->
+                    <div class="input-group">
+                        <i class="fas fa-file-audio"></i>
+                        <input type="file" id="musicFileInputDJ" accept="audio/*" multiple>
+                    </div>
+                    <div class="playlist-actions">
+                        <button id="prevSongBtn" class="btn btn-secondary">⏮️ Önceki</button>
+                        <button id="nextSongBtn" class="btn btn-secondary">⏭️ Sonraki</button>
+                        <button id="loopToggleBtn" class="btn btn-info">♾️ Sonsuz: Açık</button>
+                    </div>
+                    <div style="margin:8px 0 12px;color:rgba(255,255,255,.7);font-size:12px;">
+                        İpucu: Playlist öğelerini sürükleyip bırakarak yeniden sıralayın veya ses dosyalarını doğrudan listeye sürükleyin.
+                    </div>
                     <div class="playlist-items" id="playlistItems">
                         <!-- Playlist items will be added here -->
                     </div>
@@ -651,6 +664,9 @@
         let selectedColor = '#ffffff'; // Default white color
         let playlist = JSON.parse(localStorage.getItem('djPlaylist')) || [];
         let bannedUsers = new Set(JSON.parse(localStorage.getItem('bannedUsers')) || []);
+        let currentIndex = 0; // aktif şarkı indexi
+        let loopEnabled = true; // sonsuz döngü
+        let draggedIndex = null; // sürüklenen öğe indexi
 
         // Valid DJ credentials
         const validDJs = {
@@ -681,6 +697,10 @@
         const newSongInput = document.getElementById('newSongInput');
         const addSongBtn = document.getElementById('addSongBtn');
         const playlistItems = document.getElementById('playlistItems');
+        const musicFileInputDJ = document.getElementById('musicFileInputDJ');
+        const prevSongBtn = document.getElementById('prevSongBtn');
+        const nextSongBtn = document.getElementById('nextSongBtn');
+        const loopToggleBtn = document.getElementById('loopToggleBtn');
         const playlistCount = document.getElementById('playlistCount');
         const clearPlaylistBtn = document.getElementById('clearPlaylistBtn');
 
@@ -1016,9 +1036,15 @@
             playlist.forEach((song, index) => {
                 const songDiv = document.createElement('div');
                 songDiv.className = 'playlist-item';
+                songDiv.setAttribute('draggable', 'true');
+                songDiv.dataset.index = String(index);
+                const isCurrent = index === currentIndex;
                 songDiv.innerHTML = `
                     <span class="playlist-item-number">${index + 1}</span>
-                    <span style="flex: 1;">${song.title}</span>
+                    <span style="flex: 1; ${isCurrent ? 'font-weight:700;color:#4ecdc4;' : ''}">${song.title}</span>
+                    <button data-action="play" data-index="${index}" title="Çal" style="background:#44a08d;color:white;border:none;border-radius:4px;padding:4px 8px;cursor:pointer;margin-right:6px;">
+                        <i class="fas fa-play"></i>
+                    </button>
                     <button onclick="removeSong(${song.id})" style="background: #e74c3c; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer;">
                         <i class="fas fa-trash"></i>
                     </button>
@@ -1069,6 +1095,104 @@
 
         // Show login modal on startup
         djLoginModal.classList.remove('hidden');
+
+        // ---------- Playlist: Drag & Drop reorder ----------
+        playlistItems.addEventListener('dragstart', (e) => {
+            const target = e.target.closest('.playlist-item');
+            if (!target) return;
+            draggedIndex = Number(target.dataset.index);
+        });
+
+        playlistItems.addEventListener('dragover', (e) => {
+            e.preventDefault();
+        });
+
+        playlistItems.addEventListener('drop', (e) => {
+            e.preventDefault();
+            // If files dropped, treat as upload
+            if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                const files = Array.from(e.dataTransfer.files);
+                files.filter(f => f.type.startsWith('audio/')).forEach(uploadFileFromPC);
+                return;
+            }
+            const target = e.target.closest('.playlist-item');
+            if (!target) return;
+            const targetIndex = Number(target.dataset.index);
+            if (isNaN(draggedIndex) || isNaN(targetIndex) || draggedIndex === targetIndex) return;
+            const [moved] = playlist.splice(draggedIndex, 1);
+            playlist.splice(targetIndex, 0, moved);
+            localStorage.setItem('djPlaylist', JSON.stringify(playlist));
+            updatePlaylistDisplay();
+        });
+
+        // Play on button click within playlist
+        playlistItems.addEventListener('click', (e) => {
+            const btn = e.target.closest('button[data-action="play"]');
+            if (!btn) return;
+            const idx = Number(btn.dataset.index);
+            if (isNaN(idx)) return;
+            setCurrentSongByIndex(idx);
+        });
+
+        // ---------- Playlist: Skip/Prev + Infinite loop ----------
+        prevSongBtn.addEventListener('click', () => {
+            if (playlist.length === 0) return;
+            const prev = currentIndex - 1;
+            const nextIndex = prev < 0 ? (loopEnabled ? playlist.length - 1 : 0) : prev;
+            setCurrentSongByIndex(nextIndex);
+        });
+
+        nextSongBtn.addEventListener('click', () => {
+            if (playlist.length === 0) return;
+            const nxt = currentIndex + 1;
+            const nextIndex = nxt >= playlist.length ? (loopEnabled ? 0 : playlist.length - 1) : nxt;
+            setCurrentSongByIndex(nextIndex);
+        });
+
+        loopToggleBtn.addEventListener('click', () => {
+            loopEnabled = !loopEnabled;
+            loopToggleBtn.textContent = `♾️ Sonsuz: ${loopEnabled ? 'Açık' : 'Kapalı'}`;
+        });
+
+        function setCurrentSongByIndex(index) {
+            if (playlist.length === 0) return;
+            if (index < 0 || index >= playlist.length) return;
+            currentIndex = index;
+            const song = playlist[currentIndex];
+            const title = song.title;
+            currentPlayingSong.textContent = title;
+            localStorage.setItem('currentSong', title);
+            sendDJMessage(`🎵 Şu anda çalıyor: ${title}`);
+            updatePlaylistDisplay();
+        }
+
+        // ---------- PC Upload into playlist (server-backed) ----------
+        musicFileInputDJ.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files || []);
+            files.filter(f => f.type.startsWith('audio/')).forEach(uploadFileFromPC);
+            // Reset input so selecting the same files again will trigger change
+            musicFileInputDJ.value = '';
+        });
+
+        async function uploadFileFromPC(file) {
+            try {
+                const formData = new FormData();
+                formData.append('musicFile', file);
+                formData.append('uploadedBy', currentDJ || 'DJ');
+                const res = await fetch('/api/upload-music', { method: 'POST', body: formData });
+                if (!res.ok) throw new Error('Yükleme başarısız');
+                const json = await res.json();
+                const musicInfo = json.musicInfo;
+                // Add to local playlist
+                playlist.push({ id: musicInfo.id, title: musicInfo.originalName.replace(/\.[^/.]+$/, ''), addedAt: new Date().toLocaleTimeString('tr-TR') });
+                localStorage.setItem('djPlaylist', JSON.stringify(playlist));
+                updatePlaylistDisplay();
+                sendDJMessage(`🎵 Yüklendi: ${musicInfo.originalName}`);
+            } catch (err) {
+                console.error('Yükleme hatası', err);
+                alert(`Yükleme hatası: ${file.name}`);
+            }
+        }
     </script>
 </body>
 </html>
