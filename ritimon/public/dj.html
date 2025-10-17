@@ -549,7 +549,7 @@
                     <div class="playlist-actions">
                         <button id="prevSongBtn" class="btn btn-secondary">⏮️ Önceki</button>
                         <button id="nextSongBtn" class="btn btn-secondary">⏭️ Sonraki</button>
-                        <button id="loopToggleBtn" class="btn btn-info">♾️ Sonsuz: Açık</button>
+                        <button id="loopToggleBtn" class="btn btn-info">♾️ Sonsuz: Kapalı</button>
                     </div>
                     <div style="margin:8px 0 12px;color:rgba(255,255,255,.7);font-size:12px;">
                         İpucu: Playlist öğelerini sürükleyip bırakarak yeniden sıralayın veya ses dosyalarını doğrudan listeye sürükleyin.
@@ -665,7 +665,7 @@
         let playlist = JSON.parse(localStorage.getItem('djPlaylist')) || [];
         let bannedUsers = new Set(JSON.parse(localStorage.getItem('bannedUsers')) || []);
         let currentIndex = 0; // aktif şarkı indexi
-        let loopEnabled = true; // sonsuz döngü
+        let loopEnabled = false; // varsayılan: kapalı
         let draggedIndex = null; // sürüklenen öğe indexi
 
         // Valid DJ credentials
@@ -1157,12 +1157,17 @@
         function setCurrentSongByIndex(index) {
             if (playlist.length === 0) return;
             if (index < 0 || index >= playlist.length) return;
-            currentIndex = index;
-            const song = playlist[currentIndex];
-            const title = song.title;
+            // Şarkıyı çal ve listeden kaldır (kalıcı depolama yok)
+            const [played] = playlist.splice(index, 1);
+            const title = played.title;
             currentPlayingSong.textContent = title;
             localStorage.setItem('currentSong', title);
             sendDJMessage(`🎵 Şu anda çalıyor: ${title}`);
+            // Eğer blobUrl varsa bellekten serbest bırak
+            try { if (played.blobUrl) URL.revokeObjectURL(played.blobUrl); } catch {}
+            // Sonraki index ayarı
+            currentIndex = Math.min(index, playlist.length - 1);
+            localStorage.setItem('djPlaylist', JSON.stringify(playlist));
             updatePlaylistDisplay();
         }
 
@@ -1175,23 +1180,14 @@
         });
 
         async function uploadFileFromPC(file) {
-            try {
-                const formData = new FormData();
-                formData.append('musicFile', file);
-                formData.append('uploadedBy', currentDJ || 'DJ');
-                const res = await fetch('/api/upload-music', { method: 'POST', body: formData });
-                if (!res.ok) throw new Error('Yükleme başarısız');
-                const json = await res.json();
-                const musicInfo = json.musicInfo;
-                // Add to local playlist
-                playlist.push({ id: musicInfo.id, title: musicInfo.originalName.replace(/\.[^/.]+$/, ''), addedAt: new Date().toLocaleTimeString('tr-TR') });
-                localStorage.setItem('djPlaylist', JSON.stringify(playlist));
-                updatePlaylistDisplay();
-                sendDJMessage(`🎵 Yüklendi: ${musicInfo.originalName}`);
-            } catch (err) {
-                console.error('Yükleme hatası', err);
-                alert(`Yükleme hatası: ${file.name}`);
-            }
+            // Sunucuya yükleme YOK: tarayıcıda geçici olarak tut
+            const blobUrl = URL.createObjectURL(file);
+            const id = Date.now() + Math.floor(Math.random() * 1000);
+            const title = file.name.replace(/\.[^/.]+$/, '');
+            playlist.push({ id, title, addedAt: new Date().toLocaleTimeString('tr-TR'), blobUrl });
+            localStorage.setItem('djPlaylist', JSON.stringify(playlist));
+            updatePlaylistDisplay();
+            sendDJMessage(`🎵 Eklendi (yerel): ${file.name}`);
         }
     </script>
 </body>

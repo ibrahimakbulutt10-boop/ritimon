@@ -15,6 +15,7 @@ const io = socketIo(server, {
 });
 
 const PORT = process.env.PORT || 3000;
+const DISABLE_UPLOADS = true; // Uploadlar devre dışı (istem üzerine)
 
 // Middleware
 app.use(express.json());
@@ -102,6 +103,9 @@ app.get('/api/status', (req, res) => {
 
 // File upload endpoint
 app.post('/api/upload', upload.single('musicFile'), (req, res) => {
+  if (DISABLE_UPLOADS) {
+    return res.status(403).json({ error: 'Upload devre dışı' });
+  }
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'Dosya yüklenmedi' });
@@ -139,6 +143,9 @@ app.post('/api/upload', upload.single('musicFile'), (req, res) => {
 
 // Alias endpoint for dj-stream.js expectations
 app.post('/api/upload-music', upload.single('musicFile'), (req, res) => {
+  if (DISABLE_UPLOADS) {
+    return res.status(403).json({ error: 'Upload devre dışı' });
+  }
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'Dosya yüklenmedi' });
