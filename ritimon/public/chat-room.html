@@ -20,6 +20,7 @@
       <div class="now-playing">
         <div id="currentSong">🎵 Şu anda çalan: Yükleniyor...</div>
         <button id="playPauseBtn" onclick="toggleRadio()" class="send-btn" style="margin-left:10px">▶️</button>
+        <button id="unmuteBtn" onclick="unmuteRadio()" class="send-btn" style="margin-left:6px; display:none">🔊 Aç</button>
       </div>
     </div>
 
@@ -92,6 +93,7 @@
       let isRadioPlaying = false;
       const radioEl = document.getElementById('radioStream');
       const playBtn = document.getElementById('playPauseBtn');
+      const unmuteBtn = document.getElementById('unmuteBtn');
 
       async function playRadio(){
         for(let i=0;i<STREAM_SOURCES.length;i++){
@@ -102,6 +104,7 @@
             streamIndex = (streamIndex + i) % STREAM_SOURCES.length;
             isRadioPlaying = true;
             playBtn.textContent = '⏸️';
+            if (!radioEl.muted) unmuteBtn.style.display = 'none';
             return;
           }catch(e){ /* try next */ }
         }
@@ -115,6 +118,38 @@
       window.toggleRadio = function(){
         if(isRadioPlaying) pauseRadio(); else playRadio();
       };
+
+      // Try autoplay on load; if blocked, start muted and show Unmute button
+      async function attemptAutoplay(){
+        try {
+          radioEl.muted = false;
+          await playRadio();
+        } catch (err) {
+          try {
+            radioEl.muted = true;
+            await playRadio();
+            // Show unmute prompt
+            unmuteBtn.style.display = 'inline-block';
+            // First user interaction will unmute
+            const firstInteract = () => { unmuteRadio(); };
+            document.addEventListener('click', firstInteract, { once: true });
+            document.addEventListener('keydown', firstInteract, { once: true });
+          } catch (err2) {
+            // give up; button remains for manual start
+          }
+        }
+      }
+
+      window.unmuteRadio = function(){
+        try{
+          radioEl.muted = false;
+          radioEl.play().catch(()=>{});
+          unmuteBtn.style.display = 'none';
+        }catch(e){}
+      }
+
+      // Kick off autoplay attempt
+      attemptAutoplay();
     })();
   </script>
 </body>
