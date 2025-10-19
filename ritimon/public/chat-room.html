@@ -39,10 +39,18 @@
         .back-link:hover { opacity: 1; }
         .chat-container { display: none; max-width: 1400px; margin: 0 auto; padding: 20px; height: 100vh; position: relative; }
         .chat-header { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px); border-radius: 15px 15px 0 0; padding: 20px;
-            border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; }
+            border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; gap: 20px; }
         .chat-info h1 { font-family: 'Orbitron', monospace; color: #ff4081; font-size: 1.8rem; margin: 0; }
         .chat-info .subtitle { color: #4ecdc4; font-size: 0.9rem; margin-top: 5px; }
         .user-info { display: flex; align-items: center; gap: 15px; }
+
+        .now-playing-bar { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; text-align: right; }
+        .now-playing-top { font-weight: 700; color: #ffc107; }
+        .now-playing-detail { color: #4ecdc4; font-size: 0.95rem; }
+        .radio-controls { display: flex; align-items: center; gap: 8px; }
+        .radio-btn { padding: 6px 10px; border: none; border-radius: 10px; background: linear-gradient(45deg, #4ecdc4, #44a08d); color: white; cursor: pointer; }
+        .radio-volume { width: 120px; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.2); -webkit-appearance: none; }
+        .radio-volume::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: #ff4081; cursor: pointer; }
         .user-avatar { width: 45px; height: 45px; border-radius: 50%; background: linear-gradient(45deg, #ff4081, #4ecdc4);
             display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; }
         .user-name { color: white; font-weight: 600; }
@@ -60,6 +68,11 @@
         .user-item .avatar { width: 35px; height: 35px; border-radius: 50%; background: linear-gradient(45deg, #4ecdc4, #44a08d);
             display: flex; align-items: center; justify-content: center; font-size: 0.9rem; font-weight: bold; }
         .chat-input-container { background: rgba(255,255,255,0.1); backdrop-filter: blur(20px); padding: 20px; border-radius: 0 0 15px 15px; border-top: 1px solid rgba(255,255,255,0.1); }
+        .format-toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 12px; }
+        .format-btn { padding: 8px 10px; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; background: rgba(255,255,255,0.08); color: white; cursor: pointer; }
+        .format-select { padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.08); color: white; }
+        .emoji-bar { display: grid; grid-template-columns: repeat(auto-fill, minmax(36px, 1fr)); gap: 6px; margin-top: 10px; }
+        .emoji-btn { padding: 6px; border: none; border-radius: 8px; background: rgba(255,255,255,0.08); color: white; cursor: pointer; }
         .chat-input-wrapper { display: flex; gap: 15px; align-items: center; }
         .chat-input { flex: 1; padding: 15px 20px; border: none; border-radius: 25px; background: rgba(255,255,255,0.1); color: white; font-size: 1rem; border: 1px solid rgba(255,255,255,0.2); transition: all 0.3s ease; }
         .chat-input::placeholder { color: rgba(255,255,255,0.5); }
@@ -94,6 +107,15 @@
                 <h1>RitimON FM</h1>
                 <div class="subtitle">Ana Sohbet Odası</div>
             </div>
+            <div class="now-playing-bar">
+                <div class="now-playing-top" id="npTop">🎙️ Yayındaki DJ: <span id="npDJ">Bekleniyor</span></div>
+                <div class="now-playing-detail">🎵 Şarkı: <span id="npSong">Yükleniyor...</span></div>
+                <div class="radio-controls">
+                    <button class="radio-btn" id="radioToggle">▶️</button>
+                    <button class="radio-btn" id="radioMute">🔇</button>
+                    <input type="range" class="radio-volume" id="radioVolume" min="0" max="100" value="60" />
+                </div>
+            </div>
             <div class="user-info">
                 <div class="user-avatar" id="userAvatar">?</div>
                 <div class="user-name" id="userName">Misafir</div>
@@ -102,15 +124,27 @@
         <div class="chat-main">
             <div class="chat-messages" id="chatMessages"></div>
             <div class="users-panel">
-                <div class="users-title">Aktif Kullanıcılar</div>
+                <div class="users-title">RitimON Dinleyicileri</div>
                 <div class="user-list" id="userList"></div>
             </div>
         </div>
         <div class="chat-input-container">
+            <div class="format-toolbar">
+                <select id="fontSizeSel" class="format-select">
+                    <option value="14">Küçük</option>
+                    <option value="16" selected>Normal</option>
+                    <option value="18">Büyük</option>
+                    <option value="22">Çok Büyük</option>
+                </select>
+                <button class="format-btn" id="boldBtn">B</button>
+                <button class="format-btn" id="italicBtn">I</button>
+                <button class="format-btn" id="colorBtn">Renk</button>
+            </div>
             <div class="chat-input-wrapper">
                 <input type="text" class="chat-input" id="messageInput" placeholder="Mesajınızı yazın..." maxlength="500">
                 <button class="send-btn" id="sendBtn">Gönder</button>
             </div>
+            <div class="emoji-bar" id="emojiBar"></div>
         </div>
     </div>
 
@@ -139,6 +173,12 @@
             'https://ritimon.radiostream321.com/;stream/1'
         ];
         let streamIndex = 0;
+        let isRadioPlaying = false;
+        const radioToggleBtn = document.getElementById('radioToggle');
+        const radioMuteBtn = document.getElementById('radioMute');
+        const radioVolume = document.getElementById('radioVolume');
+        const npDJ = document.getElementById('npDJ');
+        const npSong = document.getElementById('npSong');
 
         async function tryPlayStream() {
             for (let i = 0; i < STREAM_SOURCES.length; i++) {
@@ -147,6 +187,8 @@
                     radioEl.src = src;
                     await radioEl.play();
                     streamIndex = (streamIndex + i) % STREAM_SOURCES.length;
+                    isRadioPlaying = true;
+                    radioToggleBtn.textContent = '⏸️';
                     return true;
                 } catch (e) {}
             }
@@ -172,6 +214,38 @@
                 } catch(e) {}
             }
         }
+
+        // Radio UI events
+        radioToggleBtn.addEventListener('click', async () => {
+            if (isRadioPlaying) {
+                try { radioEl.pause(); } catch(e){}
+                isRadioPlaying = false;
+                radioToggleBtn.textContent = '▶️';
+            } else {
+                radioEl.volume = Number(radioVolume.value) / 100;
+                radioEl.muted = false;
+                const ok = await tryPlayStream();
+                if (!ok) {
+                    radioEl.muted = true;
+                    if (await tryPlayStream()) {
+                        const firstInteract = () => { radioEl.muted = false; radioEl.play().catch(()=>{}); cleanup(); };
+                        const cleanup = () => {
+                            document.removeEventListener('click', firstInteract);
+                            document.removeEventListener('keydown', firstInteract);
+                        };
+                        document.addEventListener('click', firstInteract, { once: true });
+                        document.addEventListener('keydown', firstInteract, { once: true });
+                    }
+                }
+            }
+        });
+        radioMuteBtn.addEventListener('click', () => {
+            radioEl.muted = !radioEl.muted;
+            radioMuteBtn.textContent = radioEl.muted ? '🔇' : '🔊';
+        });
+        radioVolume.addEventListener('input', (e) => {
+            try { radioEl.volume = Number(e.target.value) / 100; } catch(e){}
+        });
 
         function escapeHtml(text) {
             const div = document.createElement('div');
@@ -235,19 +309,48 @@
         socket.on('userLeft', (u) => addSystemMessage(`👋 ${u.nickname} sohbeti terk etti`));
         socket.on('userList', (users) => renderUserList(users));
         socket.on('announcement', (d) => addSystemMessage(`📢 ${d.dj}: ${d.text}`));
+        socket.on('now playing', (d) => { if (d?.dj) npDJ.textContent = d.dj; if (d?.song) npSong.textContent = d.song; });
         socket.on('userWarned', (d) => addSystemMessage(`⚠️ ${d.targetNickname} uyarıldı - ${d.reason}`));
         socket.on('userMuted', (d) => addSystemMessage(`🔇 ${d.targetNickname} ${d.duration} dk susturuldu - ${d.reason}`));
         socket.on('userBanned', (d) => addSystemMessage(`🚫 ${d.targetNickname} yasaklandı - ${d.reason}`));
+
+        // Emoji bar
+        const emojiBar = document.getElementById('emojiBar');
+        const emojis = ['😊','🎵','❤️','🔥','👍','👏','🎉','⚡','🥁','🎙️','🎧','🎶','💫','⭐','💖','😎','😂','🥳','🙌','🙏'];
+        emojis.forEach(em => {
+            const b = document.createElement('button'); b.className = 'emoji-btn'; b.textContent = em; b.addEventListener('click',()=>{
+                messageInput.value += em; messageInput.focus();
+            }); emojiBar.appendChild(b);
+        });
+
+        // Formatting
+        const fontSizeSel = document.getElementById('fontSizeSel');
+        const boldBtn = document.getElementById('boldBtn');
+        const italicBtn = document.getElementById('italicBtn');
+        const colorBtn = document.getElementById('colorBtn');
+        let isBold = false; let isItalic = false; let color = null;
+        fontSizeSel.addEventListener('change', ()=>{ messageInput.style.fontSize = fontSizeSel.value + 'px'; });
+        boldBtn.addEventListener('click', ()=>{ isBold = !isBold; messageInput.style.fontWeight = isBold ? '700' : '400'; });
+        italicBtn.addEventListener('click', ()=>{ isItalic = !isItalic; messageInput.style.fontStyle = isItalic ? 'italic' : 'normal'; });
+        colorBtn.addEventListener('click', ()=>{
+            const c = prompt('Mesaj rengi (hex veya isim):', color || '#ffffff');
+            if (c) { color = c; messageInput.style.color = color; }
+        });
 
         // Send message
         function sendMessage() {
             const message = messageInput.value.trim();
             if (!message || !currentUser) return;
             if (message.length > 500) { alert('Mesaj 500 karakterden uzun olamaz!'); return; }
-            const msg = { nickname: currentUser.nickname, text: message, timestamp: new Date().toISOString() };
+            const stylePrefix = `${isBold?'**':''}${isItalic?'*':''}`;
+            const styled = message; // sunucuya düz metin gönderiyoruz; client formatlıyor
+            const msg = { nickname: currentUser.nickname, text: styled, timestamp: new Date().toISOString() };
             socket.emit('chat message', msg);
             messageInput.value = '';
             msg.isOwn = true; addMessageToUI(msg);
+            // reset local only styling preview
+            messageInput.style.fontWeight = '400'; isBold = false;
+            messageInput.style.fontStyle = 'normal'; isItalic = false;
         }
 
         sendBtn.addEventListener('click', sendMessage);
