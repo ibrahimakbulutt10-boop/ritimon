@@ -257,6 +257,8 @@
             <div class="ticker-track" id="djTickerText">DJ yok</div>
         </div>
     </div>
+    <!-- Hidden audio for homepage autoplay with graceful unmute -->
+    <audio id="homeRadio" preload="none" crossorigin="anonymous"></audio>
     <script src="/socket.io/socket.io.js"></script>
     <script>
         (function() {
@@ -265,6 +267,13 @@
             const liveSongEl = document.getElementById('liveSong');
             const tickerEl = document.getElementById('djTickerText');
             const activeDJs = new Set();
+            const radioEl = document.getElementById('homeRadio');
+            const STREAM_SOURCES = [
+                'https://ritimon.radiostream321.com/',
+                'https://ritimon.radiostream321.com/stream',
+                'https://ritimon.radiostream321.com/;stream/1'
+            ];
+            let streamIndex = 0;
 
             function updateTicker() {
                 if (activeDJs.size === 0) {
@@ -274,6 +283,37 @@
                 const text = Array.from(activeDJs).join('   •   ');
                 // duplicate to make marquee fuller
                 tickerEl.textContent = `${text}   —   ${text}`;
+            }
+
+            async function playHomeRadio() {
+                for (let i = 0; i < STREAM_SOURCES.length; i++) {
+                    const src = STREAM_SOURCES[(streamIndex + i) % STREAM_SOURCES.length];
+                    try {
+                        radioEl.src = src;
+                        await radioEl.play();
+                        streamIndex = (streamIndex + i) % STREAM_SOURCES.length;
+                        return;
+                    } catch (e) { /* try next */ }
+                }
+            }
+
+            async function attemptAutoplay() {
+                try {
+                    radioEl.muted = false;
+                    await playHomeRadio();
+                } catch (err) {
+                    try {
+                        radioEl.muted = true;
+                        await playHomeRadio();
+                        const firstInteract = () => { radioEl.muted = false; radioEl.play().catch(()=>{}); cleanup(); };
+                        const cleanup = () => {
+                            document.removeEventListener('click', firstInteract);
+                            document.removeEventListener('keydown', firstInteract);
+                        };
+                        document.addEventListener('click', firstInteract, { once: true });
+                        document.addEventListener('keydown', firstInteract, { once: true });
+                    } catch (err2) { /* give up silently */ }
+                }
             }
 
             socket.on('now playing', (data) => {
@@ -303,6 +343,9 @@
 
             // Also refresh online users periodically to infer DJs if needed
             setInterval(() => socket.emit && socket.emit('userBack'), 60000);
+
+            // Kick off homepage autoplay attempt
+            attemptAutoplay();
         })();
     </script>
 </body>
