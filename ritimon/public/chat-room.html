@@ -19,6 +19,7 @@
       </div>
       <div class="now-playing">
         <div id="currentSong">🎵 Şu anda çalan: Yükleniyor...</div>
+        <button id="playPauseBtn" onclick="toggleRadio()" class="send-btn" style="margin-left:10px">▶️</button>
       </div>
     </div>
 
@@ -78,6 +79,44 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="chat-stream.js"></script>
+  <!-- Radio Player for Chat Room -->
+  <audio id="radioStream" preload="none" crossorigin="anonymous"></audio>
+  <script>
+    (function(){
+      const STREAM_SOURCES = [
+        'https://ritimon.radiostream321.com/',
+        'https://ritimon.radiostream321.com/stream',
+        'https://ritimon.radiostream321.com/;stream/1'
+      ];
+      let streamIndex = 0;
+      let isRadioPlaying = false;
+      const radioEl = document.getElementById('radioStream');
+      const playBtn = document.getElementById('playPauseBtn');
+
+      async function playRadio(){
+        for(let i=0;i<STREAM_SOURCES.length;i++){
+          const src = STREAM_SOURCES[(streamIndex + i) % STREAM_SOURCES.length];
+          try{
+            radioEl.src = src;
+            await radioEl.play();
+            streamIndex = (streamIndex + i) % STREAM_SOURCES.length;
+            isRadioPlaying = true;
+            playBtn.textContent = '⏸️';
+            return;
+          }catch(e){ /* try next */ }
+        }
+        alert('Yayın kaynaklarına bağlanılamadı');
+      }
+      function pauseRadio(){
+        try{ radioEl.pause(); }catch(e){}
+        isRadioPlaying = false;
+        playBtn.textContent = '▶️';
+      }
+      window.toggleRadio = function(){
+        if(isRadioPlaying) pauseRadio(); else playRadio();
+      };
+    })();
+  </script>
 </body>
 </html>
 
