@@ -1,1074 +1,275 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RitimON FM - DJ Paneli</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        /* Layout Styles - 30/70 Split */
-        .dj-main-layout {
-            display: flex;
-            height: calc(100vh - 80px);
-            gap: 20px;
-            padding: 20px;
-        }
-
-        .dj-controls-panel {
-            width: 30%;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 15px;
-            padding: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            overflow-y: auto;
-            max-height: 100%;
-        }
-
-        .dj-chat-panel {
-            width: 70%;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 15px;
-            padding: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* Chat Panel Styles */
-        .chat-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .chat-header h3 {
-            color: #4ecdc4;
-            margin: 0;
-        }
-
-        .chat-main {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            min-height: 0;
-        }
-
-        .chat-messages {
-            flex: 1;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 15px;
-            overflow-y: auto;
-            min-height: 300px;
-            max-height: 400px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .message {
-            margin-bottom: 12px;
-            padding: 10px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            border-left: 3px solid #4ecdc4;
-        }
-
-        .message-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 5px;
-        }
-
-        .message-author {
-            font-weight: bold;
-            color: #4ecdc4;
-        }
-
-        .message-time {
-            font-size: 0.8rem;
-            opacity: 0.7;
-        }
-
-        .message-content {
-            color: white;
-        }
-
-        .message-content.colored {
-            font-weight: 500;
-        }
-
-        .message.dj-message {
-            border-left-color: #f39c12;
-            background: rgba(243, 156, 18, 0.1);
-        }
-
-        .message.dj-message .message-author {
-            color: #f39c12;
-        }
-
-        .banned-user {
-            opacity: 0.5;
-            background: rgba(255, 0, 0, 0.1);
-            border-left-color: #ff4757;
-        }
-
-        /* Chat Input Styles */
-        .chat-input-section {
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            padding-top: 15px;
-        }
-
-        .theme-buttons {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 8px;
-            margin-bottom: 15px;
-        }
-
-        .theme-btn {
-            padding: 8px 4px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 6px;
-            color: white;
-            cursor: pointer;
-            font-size: 0.8rem;
-            transition: all 0.2s ease;
-        }
-
-        .theme-btn:hover {
-            background: rgba(78, 205, 196, 0.2);
-            border-color: #4ecdc4;
-        }
-
-        /* Color Picker Styles */
-        .color-picker-section {
-            margin-bottom: 15px;
-            padding: 15px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .color-buttons {
-            display: grid;
-            grid-template-columns: repeat(6, 1fr);
-            gap: 8px;
-        }
-
-        .color-btn {
-            width: 40px;
-            height: 40px;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            border-radius: 50%;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            position: relative;
-        }
-
-        .color-btn:hover {
-            transform: scale(1.1);
-            border-color: rgba(255, 255, 255, 0.5);
-        }
-
-        .color-btn.active {
-            border-color: #4ecdc4;
-            border-width: 3px;
-            transform: scale(1.1);
-            box-shadow: 0 0 15px rgba(78, 205, 196, 0.5);
-        }
-
-        .color-btn.active::after {
-            content: '✓';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: #000;
-            font-weight: bold;
-            font-size: 16px;
-            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
-        }
-
-        .chat-input-container {
-            display: flex;
-            gap: 10px;
-        }
-
-        .chat-input {
-            flex: 1;
-            padding: 12px 15px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            color: white;
-            font-size: 1rem;
-            resize: none;
-            min-height: 50px;
-        }
-
-        .chat-input:focus {
-            outline: none;
-            border-color: #4ecdc4;
-            background: rgba(255, 255, 255, 0.15);
-        }
-
-        .chat-input.color-preview:focus {
-            border-color: var(--selected-color, #4ecdc4);
-        }
-
-        .chat-send-btn {
-            padding: 12px 20px;
-            background: linear-gradient(45deg, #4ecdc4, #44a08d);
-            border: none;
-            border-radius: 8px;
-            color: white;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.2s ease;
-        }
-
-        .chat-send-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(78, 205, 196, 0.3);
-        }
-
-        /* User List Styles */
-        .users-section {
-            margin-bottom: 20px;
-        }
-
-        .users-list {
-            max-height: 200px;
-            overflow-y: auto;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 8px;
-            padding: 10px;
-        }
-
-        .user-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px;
-            margin-bottom: 5px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 6px;
-        }
-
-        .user-name {
-            color: white;
-            font-weight: 500;
-        }
-
-        .user-actions {
-            display: flex;
-            gap: 5px;
-        }
-
-        .action-btn {
-            padding: 4px 8px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.7rem;
-            color: white;
-        }
-
-        .warn-btn {
-            background: #f39c12;
-        }
-
-        .ban-btn {
-            background: #e74c3c;
-        }
-
-        .unban-btn {
-            background: #27ae60;
-        }
-
-        /* Control Panel Styles */
-        .control-section {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .control-section h3 {
-            color: #4ecdc4;
-            margin: 0 0 15px 0;
-            font-size: 1.1rem;
-        }
-
-        .input-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-
-        .input-group i {
-            color: #4ecdc4;
-            width: 20px;
-        }
-
-        .input-group input {
-            flex: 1;
-            padding: 8px 12px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 6px;
-            color: white;
-        }
-
-        .input-group input:focus {
-            outline: none;
-            border-color: #4ecdc4;
-        }
-
-        .btn-primary {
-            background: linear-gradient(45deg, #4ecdc4, #44a08d);
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 500;
-        }
-
-        .btn-success {
-            background: linear-gradient(45deg, #55a3ff, #003d82);
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-
-        .btn-danger {
-            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-
-        .btn-warning {
-            background: linear-gradient(45deg, #ffa502, #ff6348);
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-
-        /* Playlist Styles */
-        .playlist-items {
-            max-height: 200px;
-            overflow-y: auto;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 8px;
-            padding: 10px;
-        }
-
-        .playlist-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 6px;
-            margin-bottom: 5px;
-            color: white;
-        }
-
-        .playlist-item-number {
-            width: 20px;
-            height: 20px;
-            background: #4ecdc4;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.8rem;
-            font-weight: bold;
-            color: white;
-        }
-
-        /* Modal Styles */
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-
-        .modal-content {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 40px;
-            border-radius: 15px;
-            text-align: center;
-            max-width: 400px;
-            width: 90%;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-        }
-
-        .modal-header h2 {
-            color: white;
-            margin-bottom: 10px;
-        }
-
-        .modal-header p {
-            color: rgba(255, 255, 255, 0.8);
-            margin-bottom: 30px;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        /* Header Styles */
-        .dj-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px;
-            background: rgba(255, 255, 255, 0.05);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .header-left h1 {
-            color: #4ecdc4;
-            margin: 0;
-        }
-
-        .dj-welcome {
-            color: rgba(255, 255, 255, 0.8);
-            margin-top: 5px;
-        }
-
-        .btn-logout {
-            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 8px;
-            cursor: pointer;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DJ Paneli - RitimON FM</title>
+  <link rel="stylesheet" href="dj.css" />
+  <link rel="icon" href="favicon.ico" />
 </head>
-<body class="dj-body">
-    <!-- DJ Login Modal -->
-    <div id="djLoginModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2><i class="fas fa-microphone"></i> DJ Paneli</h2>
-                <p>RitimON FM DJ Kontrol Merkezi</p>
-            </div>
-            <form id="djLoginForm">
-                <div class="input-group">
-                    <i class="fas fa-user"></i>
-                    <input type="text" id="djUsername" placeholder="DJ Adınız" required>
-                </div>
-                <div class="input-group">
-                    <i class="fas fa-lock"></i>
-                    <input type="password" id="djPassword" placeholder="DJ Şifreniz" required>
-                </div>
-                <button type="submit" class="btn-primary">
-                    <i class="fas fa-sign-in-alt"></i> DJ Paneline Giriş
-                </button>
-                <div id="djLoginError" class="error-message"></div>
-            </form>
-        </div>
+<body>
+  <div class="dj-container">
+    <!-- Header -->
+    <div class="dj-header">
+      <h1>🎙️ RitimON FM DJ Paneli</h1>
+      <div class="status-indicator">
+        <span id="connectionStatus">Bağlantı durumu: Bekleniyor</span>
+      </div>
     </div>
 
-    <!-- DJ Control Panel -->
-    <div id="djPanel" class="hidden">
-        <!-- DJ Header -->
-        <header class="dj-header">
-            <div class="header-left">
-                <h1><i class="fas fa-microphone"></i> RitimON FM - DJ Paneli</h1>
-                <div class="dj-welcome">
-                    Hoş geldin, <span id="welcomeDJ">DJ</span>!
-                </div>
-            </div>
-            <div class="header-right">
-                <a href="/" target="_blank" class="btn-primary">
-                    <i class="fas fa-comments"></i> Ana Chat
-                </a>
-                <button id="djLogoutBtn" class="btn-logout">
-                    <i class="fas fa-sign-out-alt"></i>
-                </button>
-            </div>
-        </header>
-
-        <!-- Main Layout -->
-        <div class="dj-main-layout">
-            <!-- Controls Panel (30%) -->
-            <div class="dj-controls-panel">
-                <!-- Broadcast Controls -->
-                <div class="control-section">
-                    <h3><i class="fas fa-broadcast-tower"></i> Yayın Kontrolü</h3>
-                    <div class="input-group">
-                        <i class="fas fa-music"></i>
-                        <input type="text" id="songTitleInput" placeholder="Şu anda çalan şarkı..." maxlength="100">
-                        <button id="updateSongBtn" class="btn-primary">Güncelle</button>
-                    </div>
-                    <div style="margin-top: 10px; color: white;">
-                        <strong>Çalan:</strong> <span id="currentPlayingSong">RitimON FM</span>
-                    </div>
-                </div>
-
-                <!-- Playlist Section -->
-                <div class="control-section">
-                    <h3><i class="fas fa-list-music"></i> Playlist (<span id="playlistCount">0</span>/50)</h3>
-                    <div class="input-group">
-                        <i class="fas fa-plus"></i>
-                        <input type="text" id="newSongInput" placeholder="Şarkı adı girin..." maxlength="100">
-                        <button id="addSongBtn" class="btn-success">Ekle</button>
-                    </div>
-                    <div class="playlist-items" id="playlistItems">
-                        <!-- Playlist items will be added here -->
-                    </div>
-                    <button id="clearPlaylistBtn" class="btn-warning" style="width: 100%; margin-top: 10px;">
-                        <i class="fas fa-trash"></i> Playlist Temizle
-                    </button>
-                </div>
-            </div>
-
-            <!-- Chat Panel (70%) -->
-            <div class="dj-chat-panel">
-                <div class="chat-header">
-                    <h3><i class="fas fa-comments"></i> DJ Chat Kontrolü</h3>
-                    <button id="clearChatBtn" class="btn-danger">
-                        <i class="fas fa-broom"></i> Sohbeti Temizle
-                    </button>
-                </div>
-
-                <!-- Users Section -->
-                <div class="users-section">
-                    <h4 style="color: #4ecdc4; margin-bottom: 10px;">
-                        <i class="fas fa-users"></i> Aktif Kullanıcılar (<span id="userCount">0</span>)
-                    </h4>
-                    <div class="users-list" id="usersList">
-                        <!-- Users will be added here -->
-                    </div>
-                </div>
-
-                <!-- Chat Messages -->
-                <div class="chat-main">
-                    <div class="chat-messages" id="chatMessages">
-                        <!-- Messages will appear here -->
-                    </div>
-
-                    <!-- Chat Input Section -->
-                    <div class="chat-input-section">
-                        <!-- Theme Buttons -->
-                        <div class="theme-buttons">
-                            <button class="theme-btn" data-text="🎵 Müzik: ">🎵 Müzik</button>
-                            <button class="theme-btn" data-text="📢 Duyuru: ">📢 Duyuru</button>
-                            <button class="theme-btn" data-text="🎉 Etkinlik: ">🎉 Etkinlik</button>
-                            <button class="theme-btn" data-text="💝 Hediye: ">💝 Hediye</button>
-                            <button class="theme-btn" data-text="⭐ Özel: ">⭐ Özel</button>
-                            <button class="theme-btn" data-text="🚀 Hızlı: ">🚀 Hızlı</button>
-                            <button class="theme-btn" data-text="💫 Yeni: ">💫 Yeni</button>
-                            <button class="theme-btn" data-text="🔥 Hit: ">🔥 Hit</button>
-                            <button class="theme-btn" data-text="❤️ Favori: ">❤️ Favori</button>
-                            <button class="theme-btn" data-text="🎊 Parti: ">🎊 Parti</button>
-                        </div>
-
-                        <!-- Color Picker -->
-                        <div class="color-picker-section">
-                            <label style="color: #4ecdc4; font-weight: bold; margin-bottom: 8px; display: block;">
-                                <i class="fas fa-palette"></i> Mesaj Rengi:
-                            </label>
-                            <div class="color-buttons">
-                                <button class="color-btn active" data-color="#ffffff" style="background: #ffffff;" title="Beyaz"></button>
-                                <button class="color-btn" data-color="#4ecdc4" style="background: #4ecdc4;" title="Turkuaz"></button>
-                                <button class="color-btn" data-color="#ff6b6b" style="background: #ff6b6b;" title="Kırmızı"></button>
-                                <button class="color-btn" data-color="#ffa502" style="background: #ffa502;" title="Turuncu"></button>
-                                <button class="color-btn" data-color="#f9ca24" style="background: #f9ca24;" title="Sarı"></button>
-                                <button class="color-btn" data-color="#6c5ce7" style="background: #6c5ce7;" title="Mor"></button>
-                                <button class="color-btn" data-color="#a29bfe" style="background: #a29bfe;" title="Açık Mor"></button>
-                                <button class="color-btn" data-color="#fd79a8" style="background: #fd79a8;" title="Pembe"></button>
-                                <button class="color-btn" data-color="#00b894" style="background: #00b894;" title="Yeşil"></button>
-                                <button class="color-btn" data-color="#74b9ff" style="background: #74b9ff;" title="Mavi"></button>
-                                <button class="color-btn" data-color="#e17055" style="background: #e17055;" title="Kahverengi"></button>
-                                <button class="color-btn" data-color="#636e72" style="background: #636e72;" title="Gri"></button>
-                            </div>
-                        </div>
-
-                        <!-- Chat Input -->
-                        <div class="chat-input-container">
-                            <textarea id="chatInput" class="chat-input" placeholder="DJ mesajı yaz... (Enter ile gönder)" rows="2"></textarea>
-                            <button id="sendChatBtn" class="chat-send-btn">
-                                <i class="fas fa-paper-plane"></i> Gönder
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <!-- Login Panel -->
+    <div id="loginPanel" class="login-panel">
+      <div class="glass-card">
+        <h2>🔐 DJ Girişi</h2>
+        <div class="form-group">
+          <label for="djNickname">DJ Adınız:</label>
+          <input type="text" id="djNickname" placeholder="DJ adınızı girin" />
         </div>
+        <div class="form-group">
+          <label for="djpass">Şifre:</label>
+          <input type="password" id="djpass" placeholder="DJ şifresi" />
+        </div>
+        <button onclick="checkPassword()" class="btn btn-primary">Giriş Yap</button>
+        <div id="loginError" class="error-message"></div>
+      </div>
     </div>
 
-    <script type="module">
-        // Firebase v9 imports
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js';
-        import { getDatabase, ref, onValue, push, remove, off } from 'https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js';
+    <!-- DJ Controls -->
+    <div id="djControls" class="dj-controls" style="display:none;">
+      <div class="controls-grid">
+        <!-- Stream Controls -->
+        <div class="control-card">
+          <h3>📡 Yayın Kontrolü</h3>
+          <div class="control-buttons">
+            <button onclick="startStream()" class="btn btn-success" id="startBtn">
+              ▶️ Yayını Başlat
+            </button>
+            <button onclick="stopStream()" class="btn btn-danger" id="stopBtn" disabled>
+              ⏹️ Yayını Durdur
+            </button>
+          </div>
+          <div class="stream-status">
+            <span id="streamStatus">Yayın kapalı</span>
+          </div>
+        </div>
 
-        // Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyDScnST7m9TrW67Fz-UYljEfUr9YZxBHF8",
-            authDomain: "radyoapp-81787.firebaseapp.com",
-            databaseURL: "https://radyoapp-81787-default-rtdb.firebaseio.com",
-            projectId: "radyoapp-81787",
-            storageBucket: "radyoapp-81787.firebasestorage.app",
-            messagingSenderId: "788981302037",
-            appId: "1:788981302037:web:778f82c0cfb6492c1a1f1c",
-            measurementId: "G-3NLHLL0DGL"
-        };
+        <!-- Music Controls -->
+        <div class="control-card">
+          <h3>🎵 Müzik Kontrolü</h3>
+          <div class="music-controls">
+            <div class="form-group">
+              <label for="songName">Şarkı Adı:</label>
+              <input type="text" id="songName" placeholder="Şu anda çalan şarkı" />
+            </div>
+            <div class="form-group">
+              <label for="artistName">Sanatçı:</label>
+              <input type="text" id="artistName" placeholder="Sanatçı adı" />
+            </div>
+            <button onclick="updateNowPlaying()" class="btn btn-info">
+              🎶 Şarkı Bilgisini Güncelle
+            </button>
+          </div>
+        </div>
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const database = getDatabase(app);
+        <!-- Announcements -->
+        <div class="control-card">
+          <h3>📢 Duyurular</h3>
+          <div class="announcement-controls">
+            <div class="form-group">
+              <label for="announcementText">Duyuru Metni:</label>
+              <textarea id="announcementText" placeholder="Duyuru yazısını buraya girin..." rows="3"></textarea>
+            </div>
+            <button onclick="sendAnnouncement()" class="btn btn-warning">
+              📢 Duyuru Gönder
+            </button>
+          </div>
+        </div>
 
-        // Global variables
-        let currentDJ = null;
-        let selectedColor = '#ffffff'; // Default white color
-        let playlist = JSON.parse(localStorage.getItem('djPlaylist')) || [];
-        let bannedUsers = new Set(JSON.parse(localStorage.getItem('bannedUsers')) || []);
+        <!-- Sound Effects -->
+        <div class="control-card">
+          <h3>🔊 Ses Efektleri</h3>
+          <div class="sound-effects">
+            <div class="effect-buttons">
+              <button onclick="playSoundEffect('applause')" class="btn btn-effect">
+                👏 Alkış
+              </button>
+              <button onclick="playSoundEffect('cheer')" class="btn btn-effect">
+                🎉 Kutlama
+              </button>
+              <button onclick="playSoundEffect('drumroll')" class="btn btn-effect">
+                🥁 Davul
+              </button>
+              <button onclick="playSoundEffect('bell')" class="btn btn-effect">
+                🔔 Zil
+              </button>
+              <button onclick="playSoundEffect('whistle')" class="btn btn-effect">
+                📯 Düdük
+              </button>
+              <button onclick="playSoundEffect('airhorn')" class="btn btn-effect">
+                📢 Hava Korna
+              </button>
+            </div>
+            <div class="custom-sound">
+              <div class="form-group">
+                <label for="customSoundText">Özel Ses Efekti:</label>
+                <input type="text" id="customSoundText" placeholder="Ses efekti açıklaması..." />
+              </div>
+              <button onclick="playCustomEffect()" class="btn btn-secondary">
+                🔊 Özel Efekt
+              </button>
+            </div>
+          </div>
+        </div>
 
-        // Valid DJ credentials
-        const validDJs = {
-            'admin': '4545',
-            'dj1': '4545',
-            'dj2': '4545'
-        };
+        <!-- Music Upload -->
+        <div class="control-card">
+          <h3>🎵 Geçici Müzik Yükleme</h3>
+          <div class="temp-warning">
+            <span class="warning-icon">⚠️</span>
+            <span>Yüklenen dosyalar geçicidir ve çalındıktan sonra otomatik silinir!</span>
+          </div>
+          <div class="upload-section">
+            <div class="upload-area" id="uploadArea">
+              <div class="upload-content">
+                <div class="upload-icon">🎵</div>
+                <h4>Ses Dosyası Yükle</h4>
+                <p>MP3, WAV, OGG dosyalarını sürükleyip bırakın</p>
+                <p class="temp-info">📝 Geçici dosya - çalındıktan sonra silinir</p>
+                <input type="file" id="musicFileInput" accept="audio/*" multiple style="display: none;" />
+                <button onclick="document.getElementById('musicFileInput').click()" class="btn btn-primary">
+                  📁 Dosya Seç
+                </button>
+              </div>
+            </div>
+            <div class="upload-progress" id="uploadProgress" style="display: none;">
+              <div class="progress-bar">
+                <div class="progress-fill" id="uploadProgressFill"></div>
+              </div>
+              <span id="uploadStatus">Yükleniyor...</span>
+            </div>
+          </div>
+        </div>
 
-        // DOM elements
-        const djLoginModal = document.getElementById('djLoginModal');
-        const djPanel = document.getElementById('djPanel');
-        const djLoginForm = document.getElementById('djLoginForm');
-        const djUsernameInput = document.getElementById('djUsername');
-        const djPasswordInput = document.getElementById('djPassword');
-        const djLoginError = document.getElementById('djLoginError');
-        const welcomeDJ = document.getElementById('welcomeDJ');
-        const djLogoutBtn = document.getElementById('djLogoutBtn');
+        <!-- Playlist Management -->
+        <div class="control-card">
+          <h3>📋 Playlist Yönetimi</h3>
+          <div class="playlist-controls">
+            <div class="form-group">
+              <label for="songTitle">Şarkı Adı:</label>
+              <input type="text" id="songTitle" placeholder="Şarkı adını girin" />
+            </div>
+            <div class="form-group">
+              <label for="artistName">Sanatçı:</label>
+              <input type="text" id="artistName" placeholder="Sanatçı adını girin" />
+            </div>
+            <div class="playlist-actions">
+              <button onclick="addToPlaylist()" class="btn btn-success">
+                ➕ Manuel Ekle
+              </button>
+              <button onclick="addUploadedToPlaylist()" class="btn btn-info">
+                🎵 Yüklenen Ekle
+              </button>
+              <button onclick="clearPlaylist()" class="btn btn-warning">
+                🗑️ Temizle
+              </button>
+            </div>
+          </div>
+          <div class="playlist-display">
+            <h4>📝 Gelecek Şarkılar</h4>
+            <div id="playlistItems" class="playlist-items">
+              <!-- Playlist items will appear here -->
+            </div>
+          </div>
+        </div>
 
-        // Chat elements
-        const chatMessages = document.getElementById('chatMessages');
-        const chatInput = document.getElementById('chatInput');
-        const sendChatBtn = document.getElementById('sendChatBtn');
-        const clearChatBtn = document.getElementById('clearChatBtn');
-        const usersList = document.getElementById('usersList');
-        const userCount = document.getElementById('userCount');
+        <!-- Music Library -->
+        <div class="control-card">
+          <h3>📚 Müzik Kütüphanesi</h3>
+          <div class="music-library">
+            <div class="library-controls">
+              <input type="text" id="searchLibrary" placeholder="Müzik ara..." />
+              <button onclick="refreshLibrary()" class="btn btn-secondary">
+                🔄 Yenile
+              </button>
+            </div>
+            <div id="musicLibrary" class="library-items">
+              <!-- Music library items will appear here -->
+            </div>
+          </div>
+        </div>
 
-        // Playlist elements
-        const newSongInput = document.getElementById('newSongInput');
-        const addSongBtn = document.getElementById('addSongBtn');
-        const playlistItems = document.getElementById('playlistItems');
-        const playlistCount = document.getElementById('playlistCount');
-        const clearPlaylistBtn = document.getElementById('clearPlaylistBtn');
+        <!-- Quick Actions -->
+        <div class="control-card">
+          <h3>⚡ Hızlı İşlemler</h3>
+          <div class="quick-actions">
+            <button onclick="requestSong()" class="btn btn-secondary">
+              🎤 Şarkı İsteği
+            </button>
+            <button onclick="showStats()" class="btn btn-secondary">
+              📊 İstatistikler
+            </button>
+            <button onclick="playNextSong()" class="btn btn-info">
+              ⏭️ Sonraki Şarkı
+            </button>
+            <button onclick="emergencyStop()" class="btn btn-danger">
+              🚨 Acil Durdur
+            </button>
+          </div>
+        </div>
+      </div>
 
-        // Song control elements
-        const songTitleInput = document.getElementById('songTitleInput');
-        const updateSongBtn = document.getElementById('updateSongBtn');
-        const currentPlayingSong = document.getElementById('currentPlayingSong');
+      <!-- Live Chat Feed -->
+      <div class="chat-feed">
+        <div class="chat-header">
+          <h3>💬 Canlı Chat</h3>
+          <div class="chat-controls">
+            <button onclick="toggleAutoScroll()" class="btn btn-secondary" id="autoScrollBtn">
+              📌 Otomatik Kaydır
+            </button>
+            <button onclick="clearChat()" class="btn btn-warning">
+              🗑️ Chat Temizle
+            </button>
+          </div>
+        </div>
+        <div id="liveChat" class="chat-messages">
+          <!-- Live chat messages will appear here -->
+        </div>
+        <div class="chat-input-section">
+          <div class="input-group">
+            <input type="text" id="djChatInput" placeholder="Mesajınızı yazın..." maxlength="200" />
+            <button onclick="sendDJMessage()" class="btn btn-primary">
+              📤 Gönder
+            </button>
+          </div>
+          <div class="quick-responses">
+            <button onclick="sendQuickResponse('Merhaba dinleyiciler! 🎧')" class="quick-btn">👋 Selam</button>
+            <button onclick="sendQuickResponse('Teşekkürler dinlediğiniz için! ❤️')" class="quick-btn">❤️ Teşekkür</button>
+            <button onclick="sendQuickResponse('Şarkı isteklerinizi bekliyorum! 🎵')" class="quick-btn">🎵 İstek</button>
+            <button onclick="sendQuickResponse('Güzel bir akşam geçiriyoruz! 🌟')" class="quick-btn">🌟 Akşam</button>
+          </div>
+        </div>
+      </div>
 
-        // Load banned users
-        function loadBannedUsers() {
-            const stored = localStorage.getItem('bannedUsers');
-            if (stored) {
-                bannedUsers = new Set(JSON.parse(stored));
-            }
-        }
+      <!-- DJ Info -->
+      <div class="dj-info">
+        <div class="info-item">
+          <span class="label">DJ:</span>
+          <span id="currentDJName">-</span>
+        </div>
+        <div class="info-item">
+          <span class="label">Başlangıç:</span>
+          <span id="djStartTime">-</span>
+        </div>
+        <div class="info-item">
+          <span class="label">Çevrimiçi:</span>
+          <span id="onlineUsers">0</span> kullanıcı
+        </div>
+      </div>
+    </div>
+  </div>
 
-        // Save banned users
-        function saveBannedUsers() {
-            localStorage.setItem('bannedUsers', JSON.stringify([...bannedUsers]));
-        }
-
-        // DJ Login
-        djLoginForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            
-            const username = djUsernameInput.value.trim();
-            const password = djPasswordInput.value.trim();
-            
-            if (validDJs[username] && validDJs[username] === password) {
-                currentDJ = username;
-                welcomeDJ.textContent = username;
-                djLoginModal.classList.add('hidden');
-                djPanel.classList.remove('hidden');
-                djLoginError.textContent = '';
-                
-                // Start listening to chat and users
-                startFirebaseListeners();
-                
-                // Load playlist
-                updatePlaylistDisplay();
-            } else {
-                djLoginError.textContent = 'Hatalı kullanıcı adı veya şifre!';
-                djLoginError.style.color = '#ff6b6b';
-            }
-        });
-
-        // DJ Logout
-        djLogoutBtn.addEventListener('click', () => {
-            currentDJ = null;
-            djPanel.classList.add('hidden');
-            djLoginModal.classList.remove('hidden');
-            djUsernameInput.value = '';
-            djPasswordInput.value = '';
-            
-            // Stop listeners
-            stopFirebaseListeners();
-        });
-
-        // Firebase listeners
-        let messagesListener = null;
-        let usersListener = null;
-
-        function startFirebaseListeners() {
-            // Messages listener
-            const messagesRef = ref(database, 'messages');
-            messagesListener = onValue(messagesRef, (snapshot) => {
-                const messages = snapshot.val();
-                displayMessages(messages);
-            });
-
-            // Users listener
-            const usersRef = ref(database, 'users');
-            usersListener = onValue(usersRef, (snapshot) => {
-                const users = snapshot.val();
-                displayUsers(users);
-            });
-        }
-
-        function stopFirebaseListeners() {
-            if (messagesListener) {
-                const messagesRef = ref(database, 'messages');
-                off(messagesRef);
-                messagesListener = null;
-            }
-            if (usersListener) {
-                const usersRef = ref(database, 'users');
-                off(usersRef);
-                usersListener = null;
-            }
-        }
-
-        // Display messages
-        function displayMessages(messages) {
-            if (!messages) {
-                chatMessages.innerHTML = '<div style="text-align: center; opacity: 0.7; padding: 20px;">Henüz mesaj yok</div>';
-                return;
-            }
-
-            const messageArray = Object.values(messages);
-            messageArray.sort((a, b) => a.timestamp - b.timestamp);
-
-            chatMessages.innerHTML = '';
-            messageArray.forEach(message => {
-                // Skip banned users
-                if (bannedUsers.has(message.nickname)) return;
-
-                const messageDiv = document.createElement('div');
-                messageDiv.className = 'message';
-                
-                // Add DJ message styling
-                if (message.isDJ) {
-                    messageDiv.classList.add('dj-message');
-                }
-                
-                const time = new Date(message.timestamp).toLocaleTimeString('tr-TR', {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-
-                // Apply message color if exists
-                const messageColor = message.color || '#ffffff';
-                const coloredClass = message.color && message.color !== '#ffffff' ? 'colored' : '';
-
-                messageDiv.innerHTML = `
-                    <div class="message-header">
-                        <span class="message-author">${message.nickname}</span>
-                        <span class="message-time">${time}</span>
-                    </div>
-                    <div class="message-content ${coloredClass}" style="color: ${messageColor};">${message.message}</div>
-                `;
-
-                chatMessages.appendChild(messageDiv);
-            });
-
-            // Auto scroll to bottom
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-
-        // Display users
-        function displayUsers(users) {
-            if (!users) {
-                usersList.innerHTML = '<div style="text-align: center; opacity: 0.7; padding: 10px;">Aktif kullanıcı yok</div>';
-                userCount.textContent = '0';
-                return;
-            }
-
-            const userArray = Object.entries(users);
-            userCount.textContent = userArray.length;
-
-            usersList.innerHTML = '';
-            userArray.forEach(([userId, userData]) => {
-                const userDiv = document.createElement('div');
-                userDiv.className = 'user-item';
-                
-                const isBanned = bannedUsers.has(userData.nickname);
-                
-                userDiv.innerHTML = `
-                    <span class="user-name" style="${isBanned ? 'opacity: 0.5; text-decoration: line-through;' : ''}">${userData.nickname}</span>
-                    <div class="user-actions">
-                        <button class="action-btn warn-btn" onclick="warnUser('${userData.nickname}')">Uyar</button>
-                        ${isBanned ? 
-                            `<button class="action-btn unban-btn" onclick="unbanUser('${userData.nickname}')">Unban</button>` :
-                            `<button class="action-btn ban-btn" onclick="banUser('${userData.nickname}')">Ban</button>`
-                        }
-                    </div>
-                `;
-
-                usersList.appendChild(userDiv);
-            });
-        }
-
-        // Ban user function
-        window.banUser = function(nickname) {
-            if (confirm(`${nickname} kullanıcısını banlamak istediğinizden emin misiniz?`)) {
-                bannedUsers.add(nickname);
-                saveBannedUsers();
-                sendDJMessage(`${nickname} kullanıcısı banlandı.`);
-                
-                // Refresh users display
-                const usersRef = ref(database, 'users');
-                onValue(usersRef, (snapshot) => {
-                    displayUsers(snapshot.val());
-                }, { once: true });
-            }
-        };
-
-        // Unban user function
-        window.unbanUser = function(nickname) {
-            bannedUsers.delete(nickname);
-            saveBannedUsers();
-            sendDJMessage(`${nickname} kullanıcısının banı kaldırıldı.`);
-            
-            // Refresh users display
-            const usersRef = ref(database, 'users');
-            onValue(usersRef, (snapshot) => {
-                displayUsers(snapshot.val());
-            }, { once: true });
-        };
-
-        // Warn user function
-        window.warnUser = function(nickname) {
-            const reason = prompt(`${nickname} kullanıcısına uyarı mesajı:`);
-            if (reason) {
-                sendDJMessage(`⚠️ ${nickname}: ${reason}`);
-            }
-        };
-
-        // Send DJ message
-        function sendDJMessage(messageText) {
-            if (!messageText.trim()) return;
-
-            const messagesRef = ref(database, 'messages');
-            push(messagesRef, {
-                nickname: `DJ ${currentDJ}`,
-                message: messageText,
-                timestamp: Date.now(),
-                isDJ: true,
-                color: selectedColor // Add selected color
-            });
-        }
-
-        // Chat input events
-        chatInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-            }
-        });
-
-        // Update input text color as preview
-        chatInput.addEventListener('input', () => {
-            chatInput.style.color = selectedColor;
-        });
-
-        chatInput.addEventListener('focus', () => {
-            chatInput.style.color = selectedColor;
-            chatInput.style.borderColor = selectedColor;
-        });
-
-        chatInput.addEventListener('blur', () => {
-            chatInput.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-        });
-
-        sendChatBtn.addEventListener('click', sendMessage);
-
-        function sendMessage() {
-            const message = chatInput.value.trim();
-            if (message) {
-                sendDJMessage(message);
-                chatInput.value = '';
-                chatInput.style.color = '#ffffff'; // Reset input color
-            }
-        }
-
-        // Clear chat
-        clearChatBtn.addEventListener('click', () => {
-            if (confirm('Tüm sohbet geçmişini silmek istediğinizden emin misiniz?')) {
-                const messagesRef = ref(database, 'messages');
-                remove(messagesRef);
-            }
-        });
-
-        // Theme buttons
-        document.querySelectorAll('.theme-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const text = btn.getAttribute('data-text');
-                chatInput.value = text + chatInput.value;
-                chatInput.focus();
-            });
-        });
-
-        // Color picker buttons
-        document.querySelectorAll('.color-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                // Remove active class from all buttons
-                document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
-                
-                // Add active class to clicked button
-                btn.classList.add('active');
-                
-                // Update selected color
-                selectedColor = btn.getAttribute('data-color');
-                
-                // Update chat input border color as preview
-                chatInput.style.borderColor = selectedColor;
-                
-                // Update placeholder to show selected color
-                const colorName = btn.getAttribute('title');
-                chatInput.placeholder = `${colorName} ile DJ mesajı yaz... (Enter ile gönder)`;
-            });
-        });
-
-        // Playlist Management
-        function addNewSong() {
-            const songTitle = newSongInput.value.trim();
-            if (!songTitle) return;
-
-            if (playlist.length >= 50) {
-                alert('Playlist dolu! (Maksimum 50 şarkı)');
-                return;
-            }
-
-            playlist.push({
-                id: Date.now(),
-                title: songTitle,
-                addedAt: new Date().toLocaleTimeString('tr-TR')
-            });
-
-            localStorage.setItem('djPlaylist', JSON.stringify(playlist));
-            updatePlaylistDisplay();
-            newSongInput.value = '';
-        }
-
-        // Add song events
-        addSongBtn.addEventListener('click', addNewSong);
-        newSongInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                addNewSong();
-            }
-        });
-
-        // Update playlist display
-        function updatePlaylistDisplay() {
-            playlistCount.textContent = playlist.length;
-            
-            if (playlist.length === 0) {
-                playlistItems.innerHTML = '<div style="text-align: center; opacity: 0.7; padding: 20px;">Playlist boş</div>';
-                return;
-            }
-
-            playlistItems.innerHTML = '';
-            playlist.forEach((song, index) => {
-                const songDiv = document.createElement('div');
-                songDiv.className = 'playlist-item';
-                songDiv.innerHTML = `
-                    <span class="playlist-item-number">${index + 1}</span>
-                    <span style="flex: 1;">${song.title}</span>
-                    <button onclick="removeSong(${song.id})" style="background: #e74c3c; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer;">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                `;
-                playlistItems.appendChild(songDiv);
-            });
-        }
-
-        // Remove song function
-        window.removeSong = function(songId) {
-            playlist = playlist.filter(song => song.id !== songId);
-            localStorage.setItem('djPlaylist', JSON.stringify(playlist));
-            updatePlaylistDisplay();
-        };
-
-        // Clear playlist
-        clearPlaylistBtn.addEventListener('click', () => {
-            if (confirm('Tüm playlist\'i temizlemek istediğinizden emin misiniz?')) {
-                playlist = [];
-                localStorage.setItem('djPlaylist', JSON.stringify(playlist));
-                updatePlaylistDisplay();
-            }
-        });
-
-        // Song controls
-        updateSongBtn.addEventListener('click', () => {
-            const songTitle = songTitleInput.value.trim();
-            if (songTitle) {
-                currentPlayingSong.textContent = songTitle;
-                localStorage.setItem('currentSong', songTitle);
-                sendDJMessage(`🎵 Şu anda çalıyor: ${songTitle}`);
-                songTitleInput.value = '';
-            }
-        });
-
-        // Load saved song
-        const savedSong = localStorage.getItem('currentSong');
-        if (savedSong) {
-            currentPlayingSong.textContent = savedSong;
-        }
-
-        // Load banned users on startup
-        loadBannedUsers();
-
-        // Initialize color picker
-        chatInput.style.color = selectedColor;
-        chatInput.placeholder = "Beyaz ile DJ mesajı yaz... (Enter ile gönder)";
-
-        // Show login modal on startup
-        djLoginModal.classList.remove('hidden');
-    </script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="dj-stream.js"></script>
 </body>
 </html>
+
