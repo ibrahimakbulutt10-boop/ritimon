@@ -32,9 +32,12 @@ const radioStream = document.getElementById('radioStream');
 // Configure your stream here (HTTPS recommended). If you have multiple providers,
 // pick one below or rotate/fallback.
 const STREAM_SOURCES = [
-    // Secure links preferred; if provider only offers http, you must proxy over https
-    'https://ritimon.radio12345.com/stream',
+    // Primary (tested):
+    'https://ritimon.radiostream321.com/',
+    // Variations (fallbacks):
     'https://ritimon.radiostream321.com/stream',
+    'https://ritimon.radiostream321.com/;stream/1',
+    'https://ritimon.radio12345.com/stream',
     'https://ritimon.radiostream123.com/stream'
 ];
 let currentStreamIndex = 0;
