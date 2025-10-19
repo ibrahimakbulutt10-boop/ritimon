@@ -127,6 +127,9 @@
                 </div>
                 <div class="player-controls">
                     <button class="play-btn" id="playBtn" onclick="togglePlay()">▶️</button>
+                    <button id="unmuteBtn" onclick="unmuteAudio()" style="display:none; margin-left:10px; padding:12px 20px; border:none; border-radius:12px; background:linear-gradient(45deg, #4ecdc4, #44a08d); color:white; font-weight:600; cursor:pointer;">
+                        🔊 Aç
+                    </button>
                 </div>
                 <div class="volume-control">
                     <span class="volume-icon">🔊</span>
@@ -168,6 +171,7 @@
             'https://ritimon.radiostream321.com/;stream/1'
         ];
         let streamIndex = 0;
+        const unmuteBtn = document.getElementById('unmuteBtn');
 
         // Socket events
         socket.on('now playing', (data) => {
@@ -199,6 +203,7 @@
             if (isPlaying) {
                 try { audioEl.pause(); } catch(e){}
                 isPlaying = false;
+                unmuteBtn.style.display = 'none';
             } else {
                 // set volume and try play
                 audioEl.volume = Number(currentVolume) / 100;
@@ -217,6 +222,8 @@
                         };
                         document.addEventListener('click', firstInteract, { once: true });
                         document.addEventListener('keydown', firstInteract, { once: true });
+                        // show unmute helper
+                        unmuteBtn.style.display = 'inline-block';
                     }
                 }
                 if (ok) isPlaying = true;
@@ -232,6 +239,14 @@
         function changeVolume(value) {
             currentVolume = value;
             try { audioEl.volume = Number(value) / 100; } catch(e){}
+        }
+
+        function unmuteAudio() {
+            try {
+                audioEl.muted = false;
+                audioEl.play().catch(()=>{});
+                unmuteBtn.style.display = 'none';
+            } catch (e) {}
         }
 
         // DJ Management (local-only UI)
@@ -296,6 +311,8 @@
                         document.addEventListener('click', firstInteract, { once: true });
                         document.addEventListener('keydown', firstInteract, { once: true });
                         isPlaying = true; updatePlayButton();
+                        // show unmute helper on initial load
+                        unmuteBtn.style.display = 'inline-block';
                     }
                 } catch(e){}
             }
