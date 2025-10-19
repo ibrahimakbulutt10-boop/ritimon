@@ -10,6 +10,7 @@ let songHistory = [];
 let totalSongsPlayed = 0;
 let musicLibrary = [];
 let uploadedFiles = [];
+let draggedIndex = null; // for drag & drop reordering
 
 // DOM Elements
 const loginPanel = document.getElementById('loginPanel');
@@ -46,10 +47,13 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('djNickname').value = savedDJ;
     }
     
-    // Initialize upload functionality
+    // Initialize upload functionality (local-only, no server upload)
     initializeUpload();
     
-    // Load music library
+    // Initialize drag & drop for playlist
+    initPlaylistDnD();
+    
+    // Initialize empty library (local)
     loadMusicLibrary();
 });
 
@@ -373,13 +377,17 @@ function updatePlaylistDisplay() {
     playlist.forEach((song, index) => {
         const item = document.createElement('div');
         item.className = 'playlist-item';
+        item.setAttribute('draggable', 'true');
+        item.dataset.index = String(index);
         item.innerHTML = `
             <div class="playlist-song">
                 <span class="song-number">${index + 1}.</span>
                 <span class="song-title">${song.title}</span>
                 ${song.artist ? `<span class="song-artist"> - ${song.artist}</span>` : ''}
             </div>
-            <button onclick="removeFromPlaylist(${index})" class="remove-btn">❌</button>
+            <div>
+              <button onclick="removeFromPlaylist(${index})" class="remove-btn" title="Kaldır">❌</button>
+            </div>
         `;
         playlistItems.appendChild(item);
     });
@@ -399,7 +407,7 @@ function playNextSong() {
     }
     
     if (currentSongIndex >= playlist.length) {
-        currentSongIndex = 0; // Loop back to start
+        currentSongIndex = 0; // döngü
     }
     
     const song = playlist[currentSongIndex];
@@ -484,7 +492,7 @@ function getPlaylistStats() {
     };
 }
 
-// Upload Functions
+// Upload Functions (local-only)
 function initializeUpload() {
     const uploadArea = document.getElementById('uploadArea');
     const fileInput = document.getElementById('musicFileInput');
@@ -533,66 +541,52 @@ function uploadFiles(files) {
 }
 
 function uploadFile(file) {
-    const formData = new FormData();
-    formData.append('musicFile', file);
-    formData.append('uploadedBy', djNickname);
-    
     const uploadProgress = document.getElementById('uploadProgress');
     const uploadProgressFill = document.getElementById('uploadProgressFill');
     const uploadStatus = document.getElementById('uploadStatus');
     
-    // Show progress
+    // Fake progress UI then add locally (no server upload)
     uploadProgress.style.display = 'block';
-    uploadStatus.textContent = `${file.name} yükleniyor...`;
+    uploadStatus.textContent = `${file.name} işleniyor...`;
     
-    const xhr = new XMLHttpRequest();
-    
-    xhr.upload.addEventListener('progress', (e) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+        const id = Date.now() + Math.floor(Math.random() * 1000);
+        const musicInfo = {
+            id,
+            originalName: file.name,
+            size: file.size,
+            uploadedAt: Date.now(),
+            uploadedBy: djNickname || 'DJ',
+            // local-only playback reference
+            blobUrl: URL.createObjectURL(new Blob([reader.result]))
+        };
+        musicLibrary.push(musicInfo);
+        uploadedFiles.push(musicInfo);
+        updateMusicLibrary();
+        uploadStatus.textContent = `${file.name} eklendi`;
+        setTimeout(() => {
+            uploadProgress.style.display = 'none';
+            uploadProgressFill.style.width = '0%';
+        }, 1200);
+        addSystemMessage(`🎵 ${file.name} eklendi (yerel)`);
+    };
+    reader.onprogress = (e) => {
         if (e.lengthComputable) {
             const percentComplete = (e.loaded / e.total) * 100;
             uploadProgressFill.style.width = percentComplete + '%';
         }
-    });
-    
-    xhr.addEventListener('load', () => {
-        if (xhr.status === 200) {
-            const response = JSON.parse(xhr.responseText);
-            uploadedFiles.push(response.musicInfo);
-            updateMusicLibrary();
-            
-            uploadStatus.textContent = `${file.name} başarıyla yüklendi!`;
-            setTimeout(() => {
-                uploadProgress.style.display = 'none';
-                uploadProgressFill.style.width = '0%';
-            }, 2000);
-            
-            addSystemMessage(`🎵 ${file.name} yüklendi`);
-        } else {
-            const error = JSON.parse(xhr.responseText);
-            showError(`Yükleme hatası: ${error.error}`);
-            uploadProgress.style.display = 'none';
-        }
-    });
-    
-    xhr.addEventListener('error', () => {
-        showError('Dosya yüklenirken hata oluştu!');
+    };
+    reader.onerror = () => {
+        showError('Dosya okunamadı');
         uploadProgress.style.display = 'none';
-    });
-    
-    xhr.open('POST', '/api/upload-music');
-    xhr.send(formData);
+    };
+    reader.readAsArrayBuffer(file);
 }
 
 function loadMusicLibrary() {
-    fetch('/api/music-library')
-        .then(response => response.json())
-        .then(data => {
-            musicLibrary = data;
-            updateMusicLibrary();
-        })
-        .catch(error => {
-            console.error('Müzik kütüphanesi yüklenemedi:', error);
-        });
+    // Local-only: nothing to fetch, just render what we have
+    updateMusicLibrary();
 }
 
 function updateMusicLibrary() {
@@ -608,16 +602,16 @@ function updateMusicLibrary() {
         const item = document.createElement('div');
         item.className = 'library-item';
         
-        const fileSize = (music.size / (1024 * 1024)).toFixed(2);
-        const uploadDate = new Date(music.uploadedAt).toLocaleDateString('tr-TR');
+        const fileSize = music.size ? (music.size / (1024 * 1024)).toFixed(2) : '—';
+        const uploadDate = music.uploadedAt ? new Date(music.uploadedAt).toLocaleDateString('tr-TR') : '-';
         
         item.innerHTML = `
             <div class="library-item-info">
-                <div class="library-item-title">${music.originalName}</div>
+                <div class="library-item-title">${music.originalName || music.title}</div>
                 <div class="library-item-details">
                     <span>📅 ${uploadDate}</span>
                     <span>📊 ${fileSize} MB</span>
-                    <span>👤 ${music.uploadedBy}</span>
+                    <span>👤 ${music.uploadedBy || 'DJ'}</span>
                 </div>
             </div>
             <div class="library-item-actions">
@@ -632,7 +626,7 @@ function updateMusicLibrary() {
 }
 
 function playMusic(path) {
-    // Bu fonksiyon gerçek ses çalma için kullanılacak
+    // Simulate now playing announcement only (real audio is streamed externally)
     const fullSong = path.split('/').pop().replace(/\.[^/.]+$/, "");
     socket.emit('dj play', { song: fullSong });
     addSystemMessage(`🎵 ${fullSong} çalınıyor`);
@@ -641,7 +635,8 @@ function playMusic(path) {
 function playMusicById(musicId) {
     const music = musicLibrary.find(m => m.id === musicId);
     if (music) {
-        const fullSong = music.originalName.replace(/\.[^/.]+$/, "");
+        const baseName = (music.originalName || music.title || '').replace(/\.[^/.]+$/, "");
+        const fullSong = baseName || `Parça #${musicId}`;
         socket.emit('dj play', { song: fullSong, musicId: musicId });
         addSystemMessage(`🎵 ${fullSong} çalınıyor (geçici dosya)`);
     }
@@ -651,12 +646,13 @@ function addMusicToPlaylist(musicId) {
     const music = musicLibrary.find(m => m.id === musicId);
     if (music) {
         const song = {
-            title: music.originalName.replace(/\.[^/.]+$/, ""),
+            title: (music.originalName || music.title || '').replace(/\.[^/.]+$/, ""),
             artist: 'Uploaded',
             id: music.id,
             addedBy: djNickname,
             addedAt: new Date().toISOString(),
-            path: music.path
+            path: music.path,
+            blobUrl: music.blobUrl
         };
         
         playlist.push(song);
@@ -667,21 +663,11 @@ function addMusicToPlaylist(musicId) {
 
 function deleteMusic(musicId) {
     if (confirm('Bu müzik dosyasını silmek istediğinizden emin misiniz?')) {
-        fetch(`/api/music/${musicId}`, {
-            method: 'DELETE'
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                musicLibrary = musicLibrary.filter(m => m.id !== musicId);
-                updateMusicLibrary();
-                addSystemMessage('🗑️ Müzik dosyası silindi');
-            }
-        })
-        .catch(error => {
-            console.error('Dosya silme hatası:', error);
-            showError('Dosya silinirken hata oluştu!');
-        });
+        const target = musicLibrary.find(m => m.id === musicId);
+        if (target && target.blobUrl) { try { URL.revokeObjectURL(target.blobUrl); } catch(e){} }
+        musicLibrary = musicLibrary.filter(m => m.id !== musicId);
+        updateMusicLibrary();
+        addSystemMessage('🗑️ Müzik dosyası silindi');
     }
 }
 
@@ -856,3 +842,24 @@ setInterval(() => {
             .catch(error => console.error('Kullanıcı sayısı güncellenemedi:', error));
     }
 }, 30000);
+
+// Playlist Drag & Drop
+function initPlaylistDnD() {
+    const list = document.getElementById('playlistItems');
+    list.addEventListener('dragstart', (e) => {
+        const target = e.target.closest('.playlist-item');
+        if (!target) return;
+        draggedIndex = Number(target.dataset.index);
+    });
+    list.addEventListener('dragover', (e) => { e.preventDefault(); });
+    list.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const target = e.target.closest('.playlist-item');
+        if (!target) return;
+        const targetIndex = Number(target.dataset.index);
+        if (isNaN(draggedIndex) || isNaN(targetIndex) || draggedIndex === targetIndex) return;
+        const [moved] = playlist.splice(draggedIndex, 1);
+        playlist.splice(targetIndex, 0, moved);
+        updatePlaylistDisplay();
+    });
+}

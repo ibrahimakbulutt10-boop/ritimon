@@ -29,6 +29,18 @@ const djInitial = document.getElementById('djInitial');
 const djDuration = document.getElementById('djDuration');
 const vinyl = document.getElementById('vinyl');
 const radioStream = document.getElementById('radioStream');
+// Configure your stream here (HTTPS recommended). If you have multiple providers,
+// pick one below or rotate/fallback.
+const STREAM_SOURCES = [
+    // Primary (tested):
+    'https://ritimon.radiostream321.com/',
+    // Variations (fallbacks):
+    'https://ritimon.radiostream321.com/stream',
+    'https://ritimon.radiostream321.com/;stream/1',
+    'https://ritimon.radio12345.com/stream',
+    'https://ritimon.radiostream123.com/stream'
+];
+let currentStreamIndex = 0;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
@@ -153,16 +165,27 @@ function togglePlay() {
 }
 
 function playRadio() {
-    // For demo purposes, we'll simulate radio playback
-    // In a real implementation, you would connect to an actual radio stream
-    isPlaying = true;
-    playIcon.textContent = '⏸️';
-    vinyl.classList.add('playing');
-    
-    // Simulate progress
-    startProgressSimulation();
-    
-    console.log('Radyo çalmaya başladı');
+    // Try to play real stream source; fallback on errors
+    const tryPlay = async () => {
+        for (let i = 0; i < STREAM_SOURCES.length; i++) {
+            const src = STREAM_SOURCES[(currentStreamIndex + i) % STREAM_SOURCES.length];
+            try {
+                radioStream.src = src;
+                await radioStream.play();
+                currentStreamIndex = (currentStreamIndex + i) % STREAM_SOURCES.length;
+                isPlaying = true;
+                playIcon.textContent = '⏸️';
+                vinyl.classList.add('playing');
+                console.log('Radyo çalıyor:', src);
+                return;
+            } catch (err) {
+                console.warn('Stream play error, trying next source:', src, err);
+            }
+        }
+        // If all failed, show error
+        addSystemMessage('🔴 Yayın kaynaklarına bağlanılamadı');
+    };
+    tryPlay();
 }
 
 function pauseRadio() {
