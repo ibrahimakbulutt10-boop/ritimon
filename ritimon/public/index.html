@@ -144,7 +144,7 @@
                 </div>
                 <div class="chat-form">
                     <input type="text" class="nickname-input" id="nicknameInput" placeholder="Takma adınızı girin" maxlength="20">
-                    <a href="#" class="btn-chat" onclick="joinChat()">💬 Sohbete Katıl</a>
+                    <a href="/main-chat.html?ts=16" class="btn-chat" onclick="joinChat()">💬 Sohbete Katıl</a>
                     <a href="dj.html" class="btn-chat" style="background:linear-gradient(45deg,#ff6b6b,#ee5a52)">🎙️ DJ Girişi</a>
                 </div>
             </div>
@@ -295,7 +295,7 @@
             const nickname = document.getElementById('nicknameInput').value.trim();
             if (!nickname) { alert('Lütfen takma ad girin!'); return; }
             localStorage.setItem('chatNickname', nickname);
-            window.location.href = 'main-chat.html';
+            window.location.href = '/main-chat.html?ts=16';
         }
 
         // Load saved nickname
