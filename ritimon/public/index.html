@@ -668,15 +668,12 @@
         // Chat
         function joinChat() {
             const nickname = document.getElementById('nicknameInput').value.trim();
-            
             if (!nickname) {
                 alert('Lütfen takma ad girin!');
                 return;
             }
-            
-            // Store nickname and redirect
             localStorage.setItem('chatNickname', nickname);
-            window.location.href = 'chat-room.html';
+            window.location.href = 'main-chat.html';
         }
 
         // Load saved nickname
