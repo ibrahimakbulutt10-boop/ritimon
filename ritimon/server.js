@@ -78,9 +78,8 @@ app.get('/main-chat', (req, res) => {
 });
 
 app.get('/chat-room', (req, res) => {
-  const primary = path.join(__dirname, 'public', 'chat-room.html');
-  const fallback = path.join(__dirname, 'public', 'chat.html');
-  res.sendFile(fs.existsSync(primary) ? primary : fallback);
+  const primary = path.join(__dirname, 'public', 'main-chat.html');
+  res.sendFile(primary);
 });
 
 app.get('/dj', (req, res) => {

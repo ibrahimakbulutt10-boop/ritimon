@@ -1,31 +1,9 @@
 ⚠️ Port 3000 kullanımda. Yedek porta geçiliyor...
-🎵 RitimON FM Server çalışıyor: http://localhost:32775
-🎧 Ana Chat: http://localhost:32775/main-chat
-🎙️ DJ Panel: http://localhost:32775/dj
-📊 API Status: http://localhost:32775/api/status
-🎵 RitimON FM Server çalışıyor: http://localhost:32775
-🎧 Ana Chat: http://localhost:32775/main-chat
-🎙️ DJ Panel: http://localhost:32775/dj
-📊 API Status: http://localhost:32775/api/status
-Error: Sadece ses dosyaları yüklenebilir!
-    at fileFilter (/workspace/ritimon/server.js:52:10)
-    at wrappedFileFilter (/workspace/ritimon/node_modules/multer/index.js:44:7)
-    at Multipart.<anonymous> (/workspace/ritimon/node_modules/multer/lib/make-middleware.js:109:7)
-    at Multipart.emit (node:events:519:28)
-    at HeaderParser.cb (/workspace/ritimon/node_modules/busboy/lib/types/multipart.js:358:14)
-    at HeaderParser.push (/workspace/ritimon/node_modules/busboy/lib/types/multipart.js:162:20)
-    at SBMH.ssCb [as _cb] (/workspace/ritimon/node_modules/busboy/lib/types/multipart.js:394:37)
-    at feed (/workspace/ritimon/node_modules/streamsearch/lib/sbmh.js:219:14)
-    at SBMH.push (/workspace/ritimon/node_modules/streamsearch/lib/sbmh.js:104:16)
-    at Multipart._write (/workspace/ritimon/node_modules/busboy/lib/types/multipart.js:567:19)
-Error: Sadece ses dosyaları yüklenebilir!
-    at fileFilter (/workspace/ritimon/server.js:52:10)
-    at wrappedFileFilter (/workspace/ritimon/node_modules/multer/index.js:44:7)
-    at Multipart.<anonymous> (/workspace/ritimon/node_modules/multer/lib/make-middleware.js:109:7)
-    at Multipart.emit (node:events:519:28)
-    at HeaderParser.cb (/workspace/ritimon/node_modules/busboy/lib/types/multipart.js:358:14)
-    at HeaderParser.push (/workspace/ritimon/node_modules/busboy/lib/types/multipart.js:162:20)
-    at SBMH.ssCb [as _cb] (/workspace/ritimon/node_modules/busboy/lib/types/multipart.js:394:37)
-    at feed (/workspace/ritimon/node_modules/streamsearch/lib/sbmh.js:219:14)
-    at SBMH.push (/workspace/ritimon/node_modules/streamsearch/lib/sbmh.js:104:16)
-    at Multipart._write (/workspace/ritimon/node_modules/busboy/lib/types/multipart.js:567:19)
+🎵 RitimON FM Server çalışıyor: http://localhost:35581
+🎧 Ana Chat: http://localhost:35581/main-chat
+🎙️ DJ Panel: http://localhost:35581/dj
+📊 API Status: http://localhost:35581/api/status
+🎵 RitimON FM Server çalışıyor: http://localhost:35581
+🎧 Ana Chat: http://localhost:35581/main-chat
+🎙️ DJ Panel: http://localhost:35581/dj
+📊 API Status: http://localhost:35581/api/status

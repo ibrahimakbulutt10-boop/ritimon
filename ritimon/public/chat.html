@@ -3,25 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sohbet Girişi</title>
-  <link rel="stylesheet" href="style.css" />
+  <title>Yönlendiriliyor...</title>
+  <meta http-equiv="refresh" content="0; url=main-chat.html" />
+  <style>body{font-family:system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial;display:flex;align-items:center;justify-content:center;height:100vh;background:#0f1021;color:#fff}</style>
 </head>
 <body>
-  <div class="container">
-    <div class="glass-panel">
-      <h2>🎤 Sohbete Katıl</h2>
-      <input type="text" id="nickname" placeholder="Takma adınızı girin" />
-      <button onclick="startChat()" class="btn">Giriş Yap</button>
-    </div>
+  <div>
+    <p>RitimON FM chat yeni sayfaya taşındı. Yönlendiriliyor...</p>
+    <p><a href="main-chat.html" style="color:#4ecdc4">main-chat.html</a></p>
   </div>
   <script>
-    function startChat() {
-      const nick = document.getElementById('nickname').value;
-      if (nick.trim() !== "") {
-        localStorage.setItem("nickname", nick);
-        window.location.href = "chat-room.html";
+    // Eski depolanan takma ad varsa, yeni ana sayfa için kullanalım
+    try {
+      const oldNick = localStorage.getItem('nickname');
+      if (oldNick && !localStorage.getItem('chatNickname')) {
+        localStorage.setItem('chatNickname', oldNick);
       }
-    }
+    } catch (e) {}
+    // JS ile de yönlendir (meta kaçırılırsa)
+    try { window.location.replace('main-chat.html'); } catch (e) {}
   </script>
 </body>
 </html>
