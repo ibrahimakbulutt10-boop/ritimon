@@ -83,8 +83,12 @@ app.get('/main-chat', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'main-chat.html'));
 });
 
-app.get('/chat-room', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'chat-room.html'));
+// Backward compatibility: redirect old chat-room to main-chat
+app.get(['/chat-room', '/chat-room.html'], (req, res) => {
+  res.redirect(301, '/main-chat');
+});
+app.get('/main-chat', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'main-chat.html'));
 });
 
 app.get('/dj', (req, res) => {
