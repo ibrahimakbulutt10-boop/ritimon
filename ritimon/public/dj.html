@@ -531,6 +531,17 @@
                     <div style="margin-top: 10px; color: white;">
                         <strong>Çalan:</strong> <span id="currentPlayingSong">RitimON FM</span>
                     </div>
+                    <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                        <button id="pttBtn" class="btn-success" title="Bas-Konuş (mouse ile basılı tut)">🎙️ PTT</button>
+                        <button id="micToggleBtn" class="btn-secondary">Mic: Kapalı</button>
+                        <label style="font-size:12px; opacity:.9;">Mic Ses
+                            <input type="range" id="micVol" min="0" max="100" value="70" style="width:120px; vertical-align:middle;">
+                        </label>
+                        <label style="font-size:12px; opacity:.9;">Müzik Ses
+                            <input type="range" id="trackVol" min="0" max="100" value="80" style="width:120px; vertical-align:middle;">
+                        </label>
+                    </div>
+                    <audio id="djPreview" controls preload="none" style="width:100%; margin-top:10px;"></audio>
                 </div>
 
                 <!-- Playlist Section -->
