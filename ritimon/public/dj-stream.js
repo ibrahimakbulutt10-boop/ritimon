@@ -11,6 +11,8 @@ let totalSongsPlayed = 0;
 let musicLibrary = [];
 let uploadedFiles = [];
 let draggedIndex = null; // for drag & drop reordering
+let livekitRoom = null;
+let livekitLocalTracks = [];
 
 // DOM Elements
 const loginPanel = document.getElementById('loginPanel');
@@ -55,6 +57,14 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize empty library (local)
     loadMusicLibrary();
+
+    // Prepare LiveKit publish buttons if available
+    const publishBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    if (publishBtn && stopBtn) {
+        publishBtn.addEventListener('click', startWebBroadcast);
+        stopBtn.addEventListener('click', stopWebBroadcast);
+    }
 });
 
 // Socket Events
@@ -862,4 +872,42 @@ function initPlaylistDnD() {
         playlist.splice(targetIndex, 0, moved);
         updatePlaylistDisplay();
     });
+}
+
+// ---------------- LiveKit Web DJ (browser publish) ----------------
+async function startWebBroadcast() {
+    try {
+        const identity = 'dj_' + (djNickname || 'anon');
+        const tokenResp = await fetch(`/api/livekit/token?role=publisher&identity=${encodeURIComponent(identity)}`);
+        const { token, url, room } = await tokenResp.json();
+        if (!token || !url) {
+            showError('Canlı yayın yapılandırması eksik (LiveKit).');
+            return;
+        }
+        // Lazy import LiveKit client
+        const { connect, createLocalTracks } = await import('https://cdn.skypack.dev/livekit-client');
+        livekitRoom = await connect(url, token);
+        // Mic (PTT için toggle edilebilir), sistem sesi yok; yerel playlist sadece duyuru gönderir
+        livekitLocalTracks = await createLocalTracks({ audio: true });
+        for (const t of livekitLocalTracks) await livekitRoom.localParticipant.publishTrack(t);
+        updateStreamStatus('Yayın aktif 🟢');
+        document.getElementById('startBtn').disabled = true;
+        document.getElementById('stopBtn').disabled = false;
+        addSystemMessage('🔴 Web DJ yayını başladı');
+    } catch (e) {
+        console.error('Web publish error', e);
+        showError('Yayın başlatılamadı');
+    }
+}
+
+async function stopWebBroadcast() {
+    try {
+        for (const t of livekitLocalTracks) { try { await t.stop(); } catch(e){} }
+        livekitLocalTracks = [];
+        if (livekitRoom) { try { await livekitRoom.disconnect(); } catch(e){} livekitRoom = null; }
+        updateStreamStatus('Yayın kapalı 🔴');
+        document.getElementById('startBtn').disabled = false;
+        document.getElementById('stopBtn').disabled = true;
+        addSystemMessage('⏹️ Web DJ yayını durdu');
+    } catch(e) {}
 }

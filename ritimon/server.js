@@ -4,6 +4,13 @@ const socketIo = require('socket.io');
 const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
+let LiveKitAccessToken;
+try {
+  // Optional require; only used if LIVEKIT envs are set
+  ({ AccessToken: LiveKitAccessToken } = require('@livekit/server-sdk'));
+} catch (e) {
+  // dependency may not be installed yet; endpoint will guard
+}
 
 const app = express();
 const server = http.createServer(app);
@@ -454,4 +461,35 @@ server.listen(PORT, () => {
   console.log(`🎧 Ana Chat: http://localhost:${PORT}/main-chat`);
   console.log(`🎙️ DJ Panel: http://localhost:${PORT}/dj`);
   console.log(`📊 API Status: http://localhost:${PORT}/api/status`);
+});
+
+// LiveKit token endpoint (publisher/subscriber)
+app.get('/api/livekit/token', (req, res) => {
+  try {
+    const { role = 'subscriber', identity, room = 'ritimon' } = req.query || {};
+    if (!process.env.LIVEKIT_URL || !process.env.LIVEKIT_API_KEY || !process.env.LIVEKIT_API_SECRET) {
+      return res.status(503).json({ error: 'LiveKit not configured' });
+    }
+    if (!LiveKitAccessToken) {
+      return res.status(500).json({ error: 'LiveKit server SDK missing' });
+    }
+    if (!identity) {
+      return res.status(400).json({ error: 'identity is required' });
+    }
+    const at = new LiveKitAccessToken(process.env.LIVEKIT_API_KEY, process.env.LIVEKIT_API_SECRET, {
+      identity: String(identity).slice(0, 64),
+      ttl: '1h',
+    });
+    at.addGrant({
+      room,
+      roomJoin: true,
+      canPublish: role === 'publisher',
+      canSubscribe: true,
+    });
+    const token = at.toJwt();
+    res.json({ token, url: process.env.LIVEKIT_URL, room });
+  } catch (err) {
+    console.error('LiveKit token error:', err);
+    res.status(500).json({ error: 'token generation failed' });
+  }
 });
