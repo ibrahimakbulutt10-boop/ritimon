@@ -145,6 +145,7 @@
                 <div class="chat-form">
                     <input type="text" class="nickname-input" id="nicknameInput" placeholder="Takma adınızı girin" maxlength="20">
                     <a href="#" class="btn-chat" onclick="joinChat()">💬 Sohbete Katıl</a>
+                    <a href="dj.html" class="btn-chat" style="background:linear-gradient(45deg,#ff6b6b,#ee5a52)">🎙️ DJ Girişi</a>
                 </div>
             </div>
         </div>
@@ -172,6 +173,23 @@
         ];
         let streamIndex = 0;
         const unmuteBtn = document.getElementById('unmuteBtn');
+
+        // LiveKit subscribe (dinleyici) - DJ Web Yayını varsa öncelikli
+        let lkRoom = null; let usingLiveKit = false;
+        async function tryLiveKitSubscribe() {
+            try {
+                const id = 'listener_' + Math.random().toString(36).slice(2,8);
+                const r = await fetch(`/api/livekit/token?role=subscriber&identity=${id}`);
+                if (!r.ok) return false; const { token, url } = await r.json(); if (!token || !url) return false;
+                const { connect } = await import('https://cdn.skypack.dev/livekit-client');
+                lkRoom = await connect(url, token);
+                lkRoom.on('trackSubscribed', (track) => { if (track.kind === 'audio') { track.attach(audioEl); } });
+                // Oda içinde mevcut yayınlar varsa abone ol
+                lkRoom.participants.forEach(p=>{ p.tracks.forEach(pub=>{ if (pub.audioTrack) pub.audioTrack.attach(audioEl); }); });
+                usingLiveKit = true;
+                return true;
+            } catch(e) { return false; }
+        }
 
         // Socket events
         socket.on('now playing', (data) => {
@@ -207,9 +225,17 @@
             } else {
                 // set volume and try play
                 audioEl.volume = Number(currentVolume) / 100;
-                // try unmuted first
-                audioEl.muted = false;
-                let ok = await tryPlaySequence();
+                // Önce LiveKit dene (varsa)
+                let ok = await tryLiveKitSubscribe();
+                if (ok) {
+                    // tarayıcı politikasına göre muted başlatılabilir
+                    try { audioEl.muted = false; await audioEl.play(); } catch(e) { audioEl.muted = true; await audioEl.play().catch(()=>{}); unmuteBtn.style.display = 'inline-block'; }
+                }
+                // Eğer LiveKit yoksa HTTP stream dene
+                if (!ok) {
+                    audioEl.muted = false;
+                    ok = await tryPlaySequence();
+                }
                 if (!ok) {
                     // try muted (some browsers require gesture)
                     audioEl.muted = true;
@@ -296,7 +322,9 @@
         // Attempt autoplay on load
         (async function attemptAutoplay(){
             try {
-                audioEl.muted = false; audioEl.volume = Number(currentVolume) / 100; const ok = await tryPlaySequence();
+                audioEl.muted = false; audioEl.volume = Number(currentVolume) / 100;
+                let ok = await tryLiveKitSubscribe();
+                if (!ok) { ok = await tryPlaySequence(); }
                 if (ok) { isPlaying = true; updatePlayButton(); return; }
                 throw new Error('unmuted failed');
             } catch (err) {
