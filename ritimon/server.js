@@ -14,7 +14,10 @@ const io = socketIo(server, {
   }
 });
 
-const PORT = process.env.PORT || 3000;
+// Port selection with fallbacks
+const INITIAL_PORT = Number(process.env.PORT) || 3000;
+let selectedPort = INITIAL_PORT;
+const triedPorts = new Set();
 
 // Middleware
 app.use(express.json());
@@ -71,7 +74,9 @@ app.get('/main-chat', (req, res) => {
 });
 
 app.get('/chat-room', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'chat-room.html'));
+  const primary = path.join(__dirname, 'public', 'chat-room.html');
+  const fallback = path.join(__dirname, 'public', 'chat.html');
+  res.sendFile(fs.existsSync(primary) ? primary : fallback);
 });
 
 app.get('/dj', (req, res) => {
@@ -79,7 +84,9 @@ app.get('/dj', (req, res) => {
 });
 
 app.get('/login', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+  const primary = path.join(__dirname, 'public', 'login.html');
+  const fallback = path.join(__dirname, 'public', 'index.html');
+  res.sendFile(fs.existsSync(primary) ? primary : fallback);
 });
 
 // API Endpoints
@@ -92,6 +99,21 @@ app.get('/api/status', (req, res) => {
     isLive: isLive,
     uptime: Math.floor((Date.now() - serverStartTime) / 1000)
   });
+});
+
+// Additional lightweight endpoints based on README
+app.get('/api/users', (req, res) => {
+  res.json({ users: Array.from(onlineUsers.values()) });
+});
+
+app.get('/api/djs', (req, res) => {
+  res.json({
+    djs: Array.from(activeDJs.entries()).map(([id, info]) => ({ id, ...info }))
+  });
+});
+
+app.get('/health', (_req, res) => {
+  res.status(200).json({ ok: true });
 });
 
 // File upload endpoint
@@ -366,10 +388,34 @@ io.on('connection', (socket) => {
   });
 });
 
-// Start server
-server.listen(PORT, () => {
-  console.log(`🎵 RitimON FM Server çalışıyor: http://localhost:${PORT}`);
-  console.log(`🎧 Ana Chat: http://localhost:${PORT}/main-chat`);
-  console.log(`🎙️ DJ Panel: http://localhost:${PORT}/dj`);
-  console.log(`📊 API Status: http://localhost:${PORT}/api/status`);
+// Start server with robust fallback if the preferred port is busy
+function attemptListen(port) {
+  if (triedPorts.has(port)) return;
+  triedPorts.add(port);
+  selectedPort = port;
+  server.listen(port, () => {
+    const addr = server.address();
+    const finalPort = typeof addr === 'object' && addr ? addr.port : port;
+    console.log(`🎵 RitimON FM Server çalışıyor: http://localhost:${finalPort}`);
+    console.log(`🎧 Ana Chat: http://localhost:${finalPort}/main-chat`);
+    console.log(`🎙️ DJ Panel: http://localhost:${finalPort}/dj`);
+    console.log(`📊 API Status: http://localhost:${finalPort}/api/status`);
+  });
+}
+
+server.on('error', (err) => {
+  if (err && err.code === 'EADDRINUSE') {
+    console.error(`⚠️ Port ${selectedPort} kullanımda. Yedek porta geçiliyor...`);
+    if (!triedPorts.has(3000)) {
+      attemptListen(3000);
+    } else {
+      // Let the OS choose a free ephemeral port
+      attemptListen(0);
+    }
+  } else {
+    console.error('Sunucu hatası:', err);
+    process.exit(1);
+  }
 });
+
+attemptListen(INITIAL_PORT);
