@@ -1,220 +1,229 @@
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RitimON FM - Ana Sohbet</title>
-  <meta name="description" content="RitimON FM - Canlı radyo ve sohbet platformu" />
-  <meta name="theme-color" content="#ff4081" />
-  <link rel="icon" href="favicon.ico" />
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="main-chat.css" />
-</head>
-<body>
-  <!-- Header -->
-  <div class="header">
-    <div class="header-left">
-      <div class="logo">
-        <span class="logo-text">RitimON FM</span>
-        <span class="logo-subtitle">🎧 Canlı Radyo & Chat</span>
-      </div>
+// RitimON FM - Main Chat Client (Socket.io)
+const socket = io();
+
+// State
+let myNickname = localStorage.getItem('chatNickname') || '';
+let isDJLoggedIn = false;
+
+// DOM
+const chatMessages = document.getElementById('chatMessages');
+const messageInput = document.getElementById('messageInput');
+const sendBtn = document.getElementById('sendBtn');
+const onlineCount = document.getElementById('onlineCount');
+const userCount = document.getElementById('userCount');
+const userList = document.getElementById('userList');
+const currentSongEl = document.getElementById('currentSong');
+const currentDJEl = document.getElementById('currentDJ');
+const djPanelStatus = document.getElementById('djPanelStatus');
+const joinModal = document.getElementById('joinModal');
+const userNicknameInput = document.getElementById('userNickname');
+const djLoginEl = document.getElementById('djLogin');
+const djControlsEl = document.getElementById('djControls');
+
+// Init
+document.addEventListener('DOMContentLoaded', () => {
+  // Populate status from API
+  fetch('/api/status')
+    .then(r => r.json())
+    .then(s => {
+      currentSongEl.textContent = s.currentSong;
+      currentDJEl.textContent = s.currentDJ;
+      onlineCount.textContent = s.onlineUsers;
+      userCount.textContent = s.onlineUsers;
+    })
+    .catch(() => {});
+
+  // Auto open modal if no nickname
+  if (!myNickname) {
+    joinModal.style.display = 'flex';
+    userNicknameInput.focus();
+  } else {
+    socket.emit('join', { nickname: myNickname });
+  }
+
+  // UI events
+  sendBtn.addEventListener('click', sendMessage);
+  messageInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') sendMessage();
+  });
+});
+
+// Expose helpers for HTML
+window.joinChat = function() {
+  const val = (userNicknameInput.value || '').trim();
+  if (!val) return;
+  myNickname = val;
+  localStorage.setItem('chatNickname', myNickname);
+  joinModal.style.display = 'none';
+  socket.emit('join', { nickname: myNickname });
+};
+
+window.addEmoji = function(emoji) {
+  messageInput.value += emoji;
+  messageInput.focus();
+};
+
+window.djLogin = function() {
+  const nickname = document.getElementById('djNickname').value.trim();
+  const pass = document.getElementById('djPassword').value;
+  if (!nickname) return;
+  if (pass !== '4545') {
+    djPanelStatus.textContent = 'Şifre yanlış';
+    djPanelStatus.classList.add('error');
+    return;
+  }
+  isDJLoggedIn = true;
+  djLoginEl.style.display = 'none';
+  djControlsEl.style.display = 'block';
+  socket.emit('dj login', { nickname });
+  djPanelStatus.textContent = 'DJ giriş yapıldı';
+  djPanelStatus.classList.remove('error');
+};
+
+window.djLogout = function() {
+  isDJLoggedIn = false;
+  djLoginEl.style.display = 'block';
+  djControlsEl.style.display = 'none';
+  socket.emit('dj logout', { nickname: myNickname });
+  djPanelStatus.textContent = 'Giriş yapılmadı';
+};
+
+window.startBroadcast = function() {
+  document.getElementById('broadcastBtn').disabled = true;
+  document.getElementById('stopBtn').disabled = false;
+  djPanelStatus.textContent = '🟢 Yayın aktif';
+};
+
+window.stopBroadcast = function() {
+  document.getElementById('broadcastBtn').disabled = false;
+  document.getElementById('stopBtn').disabled = true;
+  socket.emit('dj stop');
+  djPanelStatus.textContent = '🔴 Yayın kapalı';
+};
+
+window.updateSong = function() {
+  const name = document.getElementById('songName').value.trim();
+  if (!name) return;
+  socket.emit('dj play', { song: name });
+};
+
+window.sendAnnouncement = function() {
+  const text = document.getElementById('announcementText').value.trim();
+  if (!text) return;
+  socket.emit('dj announcement', { text });
+  document.getElementById('announcementText').value = '';
+};
+
+window.goToFullDJPanel = function() {
+  window.location.href = '/dj';
+};
+
+// Socket events
+socket.on('userJoined', (user) => {
+  addSystem(`👋 ${user.nickname} sohbete katıldı`);
+});
+
+socket.on('userLeft', (user) => {
+  addSystem(`👋 ${user.nickname} sohbetten ayrıldı`);
+});
+
+socket.on('userList', (users) => {
+  onlineCount.textContent = users.length;
+  userCount.textContent = users.length;
+  renderUsers(users);
+});
+
+socket.on('chat message', (data) => {
+  addMessage(data);
+});
+
+socket.on('now playing', (data) => {
+  currentSongEl.textContent = data.song;
+  currentDJEl.textContent = data.dj;
+});
+
+socket.on('stop playing', (data) => {
+  currentSongEl.textContent = 'Müzik yükleniyor...';
+  currentDJEl.textContent = 'DJ bekleniyor';
+});
+
+socket.on('announcement', (data) => {
+  addAnnouncement(data.dj, data.text);
+});
+
+// Rendering helpers
+function addMessage(data) {
+  const isOwn = data.nickname === myNickname;
+  const wrap = document.createElement('div');
+  wrap.className = `message ${isOwn ? 'own' : ''} ${data.isDJ ? 'dj' : ''}`;
+  const time = new Date(data.timestamp).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+  wrap.innerHTML = `
+    <div class="message-info">
+      <strong>${escapeHtml(data.nickname)}</strong> • ${time}
+      ${data.isDJ ? '<span class="dj-badge">🎙️ DJ</span>' : ''}
+      ${data.warnings > 0 ? `<span class="warning-badge">⚠️ ${data.warnings}</span>` : ''}
     </div>
-    <div class="header-center">
-      <div class="now-playing">
-        <div class="now-playing-label">🎵 Şu anda çalan:</div>
-        <div id="currentSong" class="current-song">Müzik yükleniyor...</div>
-        <div id="currentDJ" class="current-dj">DJ bekleniyor</div>
-      </div>
+    <div class="message-content">
+      <div class="message-text">${escapeHtml(data.text)}</div>
     </div>
-    <div class="header-right">
-      <div class="online-count">
-        <span id="onlineCount">0</span> çevrimiçi
-      </div>
-      <div class="dj-status">
-        <span id="djStatus">🔴 Yayın kapalı</span>
-      </div>
+  `;
+  chatMessages.appendChild(wrap);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function addSystem(text) {
+  const wrap = document.createElement('div');
+  wrap.className = 'message system';
+  wrap.innerHTML = `
+    <div class="message-content">
+      <div class="message-text">${escapeHtml(text)}</div>
     </div>
-  </div>
+  `;
+  chatMessages.appendChild(wrap);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
 
-  <!-- Main Container -->
-  <div class="main-container">
-    <!-- Chat Area (Sol taraf - %70) -->
-    <div class="chat-area">
-      <!-- Chat Messages -->
-      <div class="chat-messages" id="chatMessages">
-        <div class="welcome-message">
-          <div class="welcome-content">
-            <h3>🎧 RitimON FM Sohbet Odasına Hoş Geldiniz!</h3>
-            <p>Müzik dinlerken diğer kullanıcılarla sohbet edin</p>
-            <p class="rules">📋 <strong>Kurallar:</strong> Saygılı olun, spam yapmayın, eğlenceli vakit geçirin!</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Chat Input -->
-      <div class="chat-input-container">
-        <div class="input-section">
-          <div class="input-group">
-            <input type="text" id="messageInput" placeholder="Mesajınızı yazın..." maxlength="200" />
-            <button id="sendBtn" class="send-btn">
-              <span>📤</span>
-            </button>
-          </div>
-          <div class="emoji-bar">
-            <button class="emoji-btn" onclick="addEmoji('😊')">😊</button>
-            <button class="emoji-btn" onclick="addEmoji('🎵')">🎵</button>
-            <button class="emoji-btn" onclick="addEmoji('❤️')">❤️</button>
-            <button class="emoji-btn" onclick="addEmoji('🔥')">🔥</button>
-            <button class="emoji-btn" onclick="addEmoji('👍')">👍</button>
-            <button class="emoji-btn" onclick="addEmoji('👏')">👏</button>
-            <button class="emoji-btn" onclick="addEmoji('🎉')">🎉</button>
-            <button class="emoji-btn" onclick="addEmoji('⚡')">⚡</button>
-          </div>
-        </div>
-        <div class="char-counter">
-          <span id="charCount">0</span>/200
-        </div>
-      </div>
+function addAnnouncement(dj, text) {
+  const wrap = document.createElement('div');
+  wrap.className = 'message announcement';
+  wrap.innerHTML = `
+    <div class="message-content">
+      <div class="message-text">📢 ${escapeHtml(dj)}: ${escapeHtml(text)}</div>
     </div>
+  `;
+  chatMessages.appendChild(wrap);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
 
-    <!-- Right Panel (Sağ taraf - %30) -->
-    <div class="right-panel">
-      <!-- User List -->
-      <div class="user-list-section">
-        <div class="section-header">
-          <h3>👥 Çevrimiçi Kullanıcılar</h3>
-          <span id="userCount" class="user-count-badge">0</span>
-        </div>
-        <div id="userList" class="user-list">
-          <!-- Users will be added here -->
-        </div>
-      </div>
+function renderUsers(users) {
+  userList.innerHTML = '';
+  users.forEach(u => {
+    const item = document.createElement('div');
+    item.className = 'user-item';
+    item.innerHTML = `
+      <div class="user-avatar">${escapeHtml(u.nickname.charAt(0).toUpperCase())}</div>
+      <div class="user-name">${escapeHtml(u.nickname)}</div>
+      <div class="user-status">${u.isOnline ? '🟢' : '🟡'}</div>
+    `;
+    userList.appendChild(item);
+  });
+}
 
-      <!-- DJ Panel -->
-      <div class="dj-panel-section">
-        <div class="section-header">
-          <h3>🎙️ DJ Paneli</h3>
-          <span id="djPanelStatus" class="status-indicator">Giriş yapılmadı</span>
-        </div>
-        
-        <!-- DJ Login -->
-        <div id="djLogin" class="dj-login">
-          <div class="form-group">
-            <input type="text" id="djNickname" placeholder="DJ adınız" />
-          </div>
-          <div class="form-group">
-            <input type="password" id="djPassword" placeholder="DJ şifresi" />
-          </div>
-          <button onclick="djLogin()" class="btn btn-primary">🎙️ DJ Giriş</button>
-        </div>
+function sendMessage() {
+  const text = messageInput.value.trim();
+  if (!text) return;
+  const payload = {
+    text,
+    timestamp: new Date().toISOString()
+  };
+  socket.emit('chat message', payload);
+  // Optimistic UI
+  addMessage({ nickname: myNickname || 'Ben', text, timestamp: payload.timestamp, isDJ: false, warnings: 0 });
+  messageInput.value = '';
+}
 
-        <!-- DJ Controls -->
-        <div id="djControls" class="dj-controls" style="display:none;">
-          <!-- Quick Song Update -->
-          <div class="control-group">
-            <label>🎵 Şarkı Güncelle</label>
-            <div class="input-group">
-              <input type="text" id="songName" placeholder="Şarkı adı" />
-              <button onclick="updateSong()" class="btn btn-sm">Güncelle</button>
-            </div>
-          </div>
-
-          <!-- Quick Actions -->
-          <div class="control-group">
-            <label>⚡ Hızlı İşlemler</label>
-            <div class="quick-actions">
-              <button onclick="startBroadcast()" id="broadcastBtn" class="btn btn-success btn-sm">📡 Yayın Başlat</button>
-              <button onclick="stopBroadcast()" id="stopBtn" class="btn btn-danger btn-sm" disabled>⏹️ Durdur</button>
-            </div>
-          </div>
-
-          <!-- Announcements -->
-          <div class="control-group">
-            <label>📢 Duyuru</label>
-            <div class="input-group">
-              <input type="text" id="announcementText" placeholder="Duyuru yazın" />
-              <button onclick="sendAnnouncement()" class="btn btn-sm">Gönder</button>
-            </div>
-          </div>
-
-          <!-- Sound Effects -->
-          <div class="control-group">
-            <label>🔊 Ses Efektleri</label>
-            <div class="sound-effects">
-              <button onclick="playSoundEffect('applause')" class="effect-btn">👏</button>
-              <button onclick="playSoundEffect('cheer')" class="effect-btn">🎉</button>
-              <button onclick="playSoundEffect('drumroll')" class="effect-btn">🥁</button>
-              <button onclick="playSoundEffect('bell')" class="effect-btn">🔔</button>
-            </div>
-          </div>
-
-          <!-- DJ Actions -->
-          <div class="dj-actions">
-            <button onclick="goToFullDJPanel()" class="btn btn-secondary btn-sm">🎛️ Tam DJ Panel</button>
-            <button onclick="djLogout()" class="btn btn-warning btn-sm">🚪 Çıkış</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Stats -->
-      <div class="stats-section">
-        <div class="section-header">
-          <h3>📊 İstatistikler</h3>
-        </div>
-        <div class="stats-grid">
-          <div class="stat-item">
-            <span class="stat-number" id="totalUsers">0</span>
-            <span class="stat-label">Toplam Kullanıcı</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-number" id="activeDJs">0</span>
-            <span class="stat-label">Aktif DJ</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-number" id="uptime">0</span>
-            <span class="stat-label">Çalışma Saati</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- User Join Modal -->
-  <div id="joinModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>🎧 RitimON FM'e Hoş Geldiniz!</h2>
-      </div>
-      <div class="modal-body">
-        <div class="form-group">
-          <label for="userNickname">Takma adınızı girin:</label>
-          <input type="text" id="userNickname" placeholder="Takma adınız" maxlength="20" />
-        </div>
-        <button onclick="joinChat()" class="btn btn-primary btn-large">💬 Sohbete Katıl</button>
-      </div>
-      <div class="modal-footer">
-        <p>Kurallara uygun davranmayı unutmayın! 😊</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- Context Menu -->
-  <div id="contextMenu" class="context-menu" style="display: none;">
-    <div class="context-menu-item" onclick="warnUser()">
-      <span class="context-icon">⚠️</span>
-      <span>Uyarı Ver</span>
-    </div>
-    <div class="context-menu-item" onclick="muteUser()">
-      <span class="context-icon">🔇</span>
-      <span>Sustur</span>
-    </div>
-    <div class="context-menu-item" onclick="viewProfile()">
-      <span class="context-icon">👤</span>
-      <span>Profil</span>
-    </div>
-  </div>
-
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="main-chat.js"></script>
-</body>
-</html>
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = String(text);
+  return div.innerHTML;
+}
