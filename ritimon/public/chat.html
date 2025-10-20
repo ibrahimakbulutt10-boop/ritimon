@@ -3,26 +3,201 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Yönlendiriliyor...</title>
-  <meta http-equiv="refresh" content="0; url=main-chat.html" />
-  <style>body{font-family:system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial;display:flex;align-items:center;justify-content:center;height:100vh;background:#0f1021;color:#fff}</style>
+  <title>RitimON FM - Sohbet</title>
+  <meta name="theme-color" content="#ff4081" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="main-chat.css" />
 </head>
 <body>
-  <div>
-    <p>RitimON FM chat yeni sayfaya taşındı. Yönlendiriliyor...</p>
-    <p><a href="main-chat.html" style="color:#4ecdc4">main-chat.html</a></p>
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">
+        <span class="logo-text">RitimON FM</span>
+        <span class="logo-subtitle">🎧 Canlı Radyo & Chat</span>
+      </div>
+    </div>
+    <div class="header-center">
+      <div class="now-playing">
+        <div class="now-playing-label">🎵 Şu anda çalan:</div>
+        <div id="currentSong" class="current-song">Müzik yükleniyor...</div>
+        <div id="currentDJ" class="current-dj">DJ bekleniyor</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="online-count">
+        <span id="onlineCount">0</span> çevrimiçi
+      </div>
+      <div class="dj-status">
+        <span id="djStatus">🔴 Yayın kapalı</span>
+      </div>
+    </div>
   </div>
-  <script>
-    // Eski depolanan takma ad varsa, yeni ana sayfa için kullanalım
-    try {
-      const oldNick = localStorage.getItem('nickname');
-      if (oldNick && !localStorage.getItem('chatNickname')) {
-        localStorage.setItem('chatNickname', oldNick);
-      }
-    } catch (e) {}
-    // JS ile de yönlendir (meta kaçırılırsa)
-    try { window.location.replace('main-chat.html'); } catch (e) {}
-  </script>
+
+  <!-- Main Container -->
+  <div class="main-container">
+    <!-- Chat Area (Sol taraf - %70) -->
+    <div class="chat-area">
+      <!-- Chat Messages -->
+      <div class="chat-messages" id="chatMessages">
+        <div class="welcome-message">
+          <div class="welcome-content">
+            <h3>🎧 RitimON FM Sohbet Odasına Hoş Geldiniz!</h3>
+            <p>Müzik dinlerken diğer kullanıcılarla sohbet edin</p>
+            <p class="rules">📋 <strong>Kurallar:</strong> Saygılı olun, spam yapmayın, eğlenceli vakit geçirin!</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chat Input -->
+      <div class="chat-input-container">
+        <div class="input-section">
+          <div class="input-group">
+            <input type="text" id="messageInput" placeholder="Mesajınızı yazın..." maxlength="200" />
+            <button id="sendBtn" class="send-btn">
+              <span>📤</span>
+            </button>
+          </div>
+          <div class="emoji-bar">
+            <button class="emoji-btn" onclick="addEmoji('😊')">😊</button>
+            <button class="emoji-btn" onclick="addEmoji('🎵')">🎵</button>
+            <button class="emoji-btn" onclick="addEmoji('❤️')">❤️</button>
+            <button class="emoji-btn" onclick="addEmoji('🔥')">🔥</button>
+            <button class="emoji-btn" onclick="addEmoji('👍')">👍</button>
+            <button class="emoji-btn" onclick="addEmoji('👏')">👏</button>
+            <button class="emoji-btn" onclick="addEmoji('🎉')">🎉</button>
+            <button class="emoji-btn" onclick="addEmoji('⚡')">⚡</button>
+          </div>
+        </div>
+        <div class="char-counter">
+          <span id="charCount">0</span>/200
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Panel (Sağ taraf - %30) -->
+    <div class="right-panel">
+      <!-- User List -->
+      <div class="user-list-section">
+        <div class="section-header">
+          <h3>👥 Çevrimiçi Kullanıcılar</h3>
+          <span id="userCount" class="user-count-badge">0</span>
+        </div>
+        <div id="userList" class="user-list">
+          <!-- Users will be added here -->
+        </div>
+      </div>
+
+      <!-- DJ Panel -->
+      <div class="dj-panel-section">
+        <div class="section-header">
+          <h3>🎙️ DJ Paneli</h3>
+          <span id="djPanelStatus" class="status-indicator">Giriş yapılmadı</span>
+        </div>
+        
+        <!-- DJ Login -->
+        <div id="djLogin" class="dj-login">
+          <div class="form-group">
+            <input type="text" id="djNickname" placeholder="DJ adınız" />
+          </div>
+          <div class="form-group">
+            <input type="password" id="djPassword" placeholder="DJ şifresi" />
+          </div>
+          <button onclick="djLogin()" class="btn btn-primary">🎙️ DJ Giriş</button>
+        </div>
+
+        <!-- DJ Controls -->
+        <div id="djControls" class="dj-controls" style="display:none;">
+          <!-- Quick Song Update -->
+          <div class="control-group">
+            <label>🎵 Şarkı Güncelle</label>
+            <div class="input-group">
+              <input type="text" id="songName" placeholder="Şarkı adı" />
+              <button onclick="updateSong()" class="btn btn-sm">Güncelle</button>
+            </div>
+          </div>
+
+          <!-- Quick Actions -->
+          <div class="control-group">
+            <label>⚡ Hızlı İşlemler</label>
+            <div class="quick-actions">
+              <button onclick="startBroadcast()" id="broadcastBtn" class="btn btn-success btn-sm">📡 Yayın Başlat</button>
+              <button onclick="stopBroadcast()" id="stopBtn" class="btn btn-danger btn-sm" disabled>⏹️ Durdur</button>
+            </div>
+          </div>
+
+          <!-- Announcements -->
+          <div class="control-group">
+            <label>📢 Duyuru</label>
+            <div class="input-group">
+              <input type="text" id="announcementText" placeholder="Duyuru yazın" />
+              <button onclick="sendAnnouncement()" class="btn btn-sm">Gönder</button>
+            </div>
+          </div>
+
+          <!-- Sound Effects -->
+          <div class="control-group">
+            <label>🔊 Ses Efektleri</label>
+            <div class="sound-effects">
+              <button onclick="playSoundEffect('applause')" class="effect-btn">👏</button>
+              <button onclick="playSoundEffect('cheer')" class="effect-btn">🎉</button>
+              <button onclick="playSoundEffect('drumroll')" class="effect-btn">🥁</button>
+              <button onclick="playSoundEffect('bell')" class="effect-btn">🔔</button>
+            </div>
+          </div>
+
+          <!-- DJ Actions -->
+          <div class="dj-actions">
+            <button onclick="goToFullDJPanel()" class="btn btn-secondary btn-sm">🎛️ Tam DJ Panel</button>
+            <button onclick="djLogout()" class="btn btn-warning btn-sm">🚪 Çıkış</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-section">
+        <div class="section-header">
+          <h3>📊 İstatistikler</h3>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <span class="stat-number" id="totalUsers">0</span>
+            <span class="stat-label">Toplam Kullanıcı</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number" id="activeDJs">0</span>
+            <span class="stat-label">Aktif DJ</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number" id="uptime">0</span>
+            <span class="stat-label">Çalışma Saati</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- User Join Modal -->
+  <div id="joinModal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>🎧 RitimON FM'e Hoş Geldiniz!</h2>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="userNickname">Takma adınızı girin:</label>
+          <input type="text" id="userNickname" placeholder="Takma adınız" maxlength="20" />
+        </div>
+        <button onclick="joinChat()" class="btn btn-primary btn-large">💬 Sohbete Katıl</button>
+      </div>
+      <div class="modal-footer">
+        <p>Kurallara uygun davranmayı unutmayın! 😊</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="main-chat.js"></script>
 </body>
 </html>
 
