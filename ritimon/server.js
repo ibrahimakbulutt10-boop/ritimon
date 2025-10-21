@@ -711,7 +711,9 @@ function streamToShoutcast(filePath, song) {
     '-ar', SHOUTCAST_CONFIG.sampleRate.toString(), // Sample rate
     '-ac', SHOUTCAST_CONFIG.channels.toString(), // Channels
     '-content_type', 'audio/mpeg', // Content type for Shoutcast
-    '-f', 'mp3', // Output format
+    '-f', 'mp3',
+'-content_type', 'audio/mpeg',
+`http://source:${PASSWORD}@${HOST}:${PORT}/`  // ✅ HTTP ile direkt bağlantı
     '-ice_genre', SHOUTCAST_CONFIG.genre, // Stream genre
     '-ice_name', SHOUTCAST_CONFIG.name, // Stream name
     '-ice_description', SHOUTCAST_CONFIG.description, // Stream description
@@ -786,3 +788,4 @@ server.listen(PORT, () => {
   console.log(`📊 API Status: http://localhost:${PORT}/api/status`);
   console.log(`📡 Broadcast Ready: ${SHOUTCAST_CONFIG.host}:${SHOUTCAST_CONFIG.port}`);
 });
+
