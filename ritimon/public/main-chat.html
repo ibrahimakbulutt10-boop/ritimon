@@ -1,618 +1,123 @@
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RitimON FM - Ana Sohbet Odası</title>
-    <meta name="description" content="RitimON FM Modern Chat Platformu" />
-    <meta name="theme-color" content="#ff4081" />
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
-            min-height: 100vh;
-            color: white;
-            overflow-x: hidden;
-            position: relative;
-        }
-
-        .bg-animation {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            background: 
-                radial-gradient(circle at 20% 80%, rgba(255, 64, 129, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 80% 20%, rgba(78, 205, 196, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 40% 40%, rgba(255, 193, 7, 0.05) 0%, transparent 50%);
-        }
-
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            backdrop-filter: blur(10px);
-        }
-
-        .modal-content {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            border-radius: 20px;
-            padding: 40px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            text-align: center;
-            max-width: 450px;
-            width: 90%;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        }
-
-        .modal h2 {
-            font-family: 'Orbitron', monospace;
-            color: #ff4081;
-            margin-bottom: 10px;
-            font-size: 2rem;
-            background: linear-gradient(45deg, #ff4081, #ff6ec7);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .modal-subtitle {
-            color: #4ecdc4;
-            margin-bottom: 30px;
-            font-size: 1.1rem;
-            opacity: 0.9;
-        }
-
-        .form-group {
-            margin-bottom: 25px;
-            text-align: left;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: rgba(255, 255, 255, 0.8);
-            font-weight: 500;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 15px 20px;
-            border: none;
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            font-size: 1.1rem;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            transition: all 0.3s ease;
-        }
-
-        .form-group input::placeholder {
-            color: rgba(255, 255, 255, 0.5);
-        }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: #ff4081;
-            box-shadow: 0 0 20px rgba(255, 64, 129, 0.3);
-            background: rgba(255, 255, 255, 0.15);
-        }
-
-        .btn-join {
-            width: 100%;
-            padding: 15px 20px;
-            border: none;
-            border-radius: 12px;
-            background: linear-gradient(45deg, #ff4081, #ff6ec7);
-            color: white;
-            font-size: 1.2rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-bottom: 15px;
-        }
-
-        .btn-join:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(255, 64, 129, 0.4);
-        }
-
-        .back-link {
-            color: #4ecdc4;
-            text-decoration: none;
-            font-size: 0.9rem;
-            opacity: 0.8;
-            transition: opacity 0.3s ease;
-        }
-
-        .back-link:hover {
-            opacity: 1;
-        }
-
-        /* Chat Container */
-        .chat-container {
-            display: none;
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
-            height: 100vh;
-            position: relative;
-        }
-
-        .chat-header {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            border-radius: 15px 15px 0 0;
-            padding: 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .chat-info h1 {
-            font-family: 'Orbitron', monospace;
-            color: #ff4081;
-            font-size: 1.8rem;
-            margin: 0;
-        }
-
-        .chat-info .subtitle {
-            color: #4ecdc4;
-            font-size: 0.9rem;
-            margin-top: 5px;
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .user-avatar {
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            background: linear-gradient(45deg, #ff4081, #4ecdc4);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 1.2rem;
-        }
-
-        .user-name {
-            color: white;
-            font-weight: 600;
-        }
-
-        .chat-main {
-            display: flex;
-            height: calc(100vh - 140px);
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-        }
-
-        .chat-messages {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .message {
-            padding: 12px 18px;
-            border-radius: 18px;
-            max-width: 70%;
-            word-wrap: break-word;
-            animation: fadeInUp 0.3s ease;
-        }
-
-        .message.own {
-            align-self: flex-end;
-            background: linear-gradient(45deg, #ff4081, #ff6ec7);
-            color: white;
-        }
-
-        .message.other {
-            align-self: flex-start;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
-        }
-
-        .message-header {
-            font-size: 0.8rem;
-            opacity: 0.7;
-            margin-bottom: 5px;
-        }
-
-        .users-panel {
-            width: 300px;
-            background: rgba(255, 255, 255, 0.05);
-            border-left: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 20px;
-        }
-
-        .users-title {
-            color: #4ecdc4;
-            font-weight: 600;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .user-list {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .user-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 10px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
-            transition: all 0.3s ease;
-        }
-
-        .user-item:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .user-item .avatar {
-            width: 35px;
-            height: 35px;
-            border-radius: 50%;
-            background: linear-gradient(45deg, #4ecdc4, #44a08d);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.9rem;
-            font-weight: bold;
-        }
-
-        .chat-input-container {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            padding: 20px;
-            border-radius: 0 0 15px 15px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .chat-input-wrapper {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-        }
-
-        .chat-input {
-            flex: 1;
-            padding: 15px 20px;
-            border: none;
-            border-radius: 25px;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            font-size: 1rem;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            transition: all 0.3s ease;
-        }
-
-        .chat-input::placeholder {
-            color: rgba(255, 255, 255, 0.5);
-        }
-
-        .chat-input:focus {
-            outline: none;
-            border-color: #ff4081;
-            box-shadow: 0 0 20px rgba(255, 64, 129, 0.3);
-            background: rgba(255, 255, 255, 0.15);
-        }
-
-        .send-btn {
-            padding: 15px 25px;
-            border: none;
-            border-radius: 25px;
-            background: linear-gradient(45deg, #ff4081, #ff6ec7);
-            color: white;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .send-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(255, 64, 129, 0.4);
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .chat-main {
-                flex-direction: column;
-            }
-            
-            .users-panel {
-                width: 100%;
-                max-height: 200px;
-                order: -1;
-            }
-            
-            .message {
-                max-width: 85%;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="bg-animation"></div>
-
-    <!-- Nickname Modal -->
-    <div class="modal" id="nicknameModal">
-        <div class="modal-content">
-            <h2>RitimON FM</h2>
-            <p class="modal-subtitle">Ana Sohbet Odasına Hoş Geldiniz</p>
-            
-            <div class="form-group">
-                <label for="nicknameInput">Takma Adınız:</label>
-                <input type="text" id="nicknameInput" placeholder="Takma adınızı girin..." maxlength="20">
-            </div>
-            
-            <button class="btn-join" onclick="joinChat()">Sohbete Katıl</button>
-            <a href="index.html" class="back-link">← Ana Sayfaya Dön</a>
-        </div>
-    </div>
-
-    <!-- Chat Container -->
-    <div class="chat-container" id="chatContainer">
-        <div class="chat-header">
-            <div class="chat-info">
-                <h1>RitimON FM</h1>
-                <div class="subtitle">Ana Sohbet Odası</div>
-            </div>
-            <div class="user-info">
-                <div class="user-avatar" id="userAvatar">?</div>
-                <div class="user-name" id="userName">Misafir</div>
-            </div>
-        </div>
-        
-        <div class="chat-main">
-            <div class="chat-messages" id="chatMessages">
-                <!-- Mesajlar buraya eklenecek -->
-            </div>
-            
-            <div class="users-panel">
-                <div class="users-title">Aktif Kullanıcılar</div>
-                <div class="user-list" id="userList">
-                    <!-- Kullanıcılar buraya eklenecek -->
-                </div>
-            </div>
-        </div>
-        
-        <div class="chat-input-container">
-            <div class="chat-input-wrapper">
-                <input type="text" class="chat-input" id="messageInput" placeholder="Mesajınızı yazın..." maxlength="500">
-                <button class="send-btn" id="sendBtn">Gönder</button>
-            </div>
-        </div>
-    </div>
-
-    <script type="module">
-        // Firebase Configuration
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
-        import { getDatabase, ref, push, onValue, serverTimestamp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js';
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyDScnST7m9TrW67Fz-UYljEfUr9YZxBHF8",
-            authDomain: "radyoapp-81787.firebaseapp.com",
-            databaseURL: "https://radyoapp-81787-default-rtdb.firebaseio.com",
-            projectId: "radyoapp-81787",
-            storageBucket: "radyoapp-81787.firebasestorage.app",
-            messagingSenderId: "788981302037",
-            appId: "1:788981302037:web:778f82c0cfb6492c1a1f1c",
-            measurementId: "G-3NLHLL0DGL"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const database = getDatabase(app);
-
-        let currentUser = null;
-
-        // URL'den nickname al
-        const urlParams = new URLSearchParams(window.location.search);
-        const urlNickname = urlParams.get('nickname');
-
-        // DOM Elements
-        const nicknameModal = document.getElementById('nicknameModal');
-        const chatContainer = document.getElementById('chatContainer');
-        const nicknameInput = document.getElementById('nicknameInput');
-        const messageInput = document.getElementById('messageInput');
-        const sendBtn = document.getElementById('sendBtn');
-        const chatMessages = document.getElementById('chatMessages');
-        const userList = document.getElementById('userList');
-        const userName = document.getElementById('userName');
-        const userAvatar = document.getElementById('userAvatar');
-
-        // URL'den nickname varsa otomatik doldur
-        if (urlNickname) {
-            nicknameInput.value = urlNickname;
-        }
-
-        // Join Chat Function
-        window.joinChat = function() {
-            const nickname = nicknameInput.value.trim();
-            if (!nickname) {
-                alert('Lütfen takma ad girin!');
-                return;
-            }
-
-            currentUser = {
-                nickname: nickname,
-                joinTime: Date.now(),
-                avatar: nickname.charAt(0).toUpperCase()
-            };
-
-            // UI'yi güncelle
-            userName.textContent = nickname;
-            userAvatar.textContent = currentUser.avatar;
-
-            // Modal'ı gizle, chat'i göster
-            nicknameModal.style.display = 'none';
-            chatContainer.style.display = 'block';
-
-            // Kullanıcıyı Firebase'e ekle
-            addUserToFirebase();
-            
-            // Mesajları dinlemeye başla
-            listenToMessages();
-            listenToUsers();
-
-            // Hoş geldin mesajı
-            addSystemMessage(`${nickname} sohbete katıldı! 🎉`);
-        };
-
-        // Firebase'e kullanıcı ekle
-        function addUserToFirebase() {
-            const usersRef = ref(database, 'users');
-            push(usersRef, currentUser);
-        }
-
-        // Mesaj gönder
-        function sendMessage() {
-            const message = messageInput.value.trim();
-            if (!message || !currentUser) return;
-
-            const messagesRef = ref(database, 'messages');
-            const newMessage = {
-                text: message,
-                sender: currentUser.nickname,
-                timestamp: serverTimestamp(),
-                time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
-            };
-
-            push(messagesRef, newMessage);
-            messageInput.value = '';
-        }
-
-        // Mesajları dinle
-        function listenToMessages() {
-            const messagesRef = ref(database, 'messages');
-            onValue(messagesRef, (snapshot) => {
-                chatMessages.innerHTML = '';
-                const messages = snapshot.val();
-                
-                if (messages) {
-                    Object.values(messages).forEach(message => {
-                        addMessageToChat(message);
-                    });
-                    scrollToBottom();
-                }
-            });
-        }
-
-        // Kullanıcıları dinle
-        function listenToUsers() {
-            const usersRef = ref(database, 'users');
-            onValue(usersRef, (snapshot) => {
-                userList.innerHTML = '';
-                const users = snapshot.val();
-                
-                if (users) {
-                    Object.values(users).forEach(user => {
-                        addUserToList(user);
-                    });
-                }
-            });
-        }
-
-        // Chat'e mesaj ekle
-        function addMessageToChat(message) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${message.sender === currentUser?.nickname ? 'own' : 'other'}`;
-            
-            messageDiv.innerHTML = `
-                <div class="message-header">${message.sender} • ${message.time}</div>
-                <div>${message.text}</div>
-            `;
-            
-            chatMessages.appendChild(messageDiv);
-        }
-
-        // Sistem mesajı ekle
-        function addSystemMessage(text) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'message other';
-            messageDiv.style.background = 'rgba(78, 205, 196, 0.2)';
-            messageDiv.style.border = '1px solid rgba(78, 205, 196, 0.3)';
-            messageDiv.style.textAlign = 'center';
-            messageDiv.style.fontStyle = 'italic';
-            
-            messageDiv.innerHTML = `<div>${text}</div>`;
-            chatMessages.appendChild(messageDiv);
-            scrollToBottom();
-        }
-
-        // Kullanıcı listesine ekle
-        function addUserToList(user) {
-            const userDiv = document.createElement('div');
-            userDiv.className = 'user-item';
-            
-            userDiv.innerHTML = `
-                <div class="avatar">${user.avatar}</div>
-                <div>${user.nickname}</div>
-            `;
-            
-            userList.appendChild(userDiv);
-        }
-
-        // Scroll to bottom
-        function scrollToBottom() {
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-
-        // Event Listeners
-        sendBtn.addEventListener('click', sendMessage);
-        messageInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                sendMessage();
-            }
-        });
-
-        nicknameInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                joinChat();
-            }
-        });
-    </script>
-</body>
-</html>
+/* Main Chat CSS - RitimON FM */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+    min-height: 100vh;
+    color: white;
+    overflow-x: hidden;
+}
+
+.bg-animation {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    background: 
+        radial-gradient(circle at 20% 80%, rgba(255, 64, 129, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(78, 205, 196, 0.1) 0%, transparent 50%);
+}
+
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(10px);
+}
+
+.modal-content {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+    border-radius: 20px;
+    padding: 40px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    text-align: center;
+    max-width: 450px;
+    width: 90%;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.chat-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+    height: 100vh;
+}
+
+.chat-header {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 10px;
+}
+
+.chat-messages {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    height: calc(100vh - 200px);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+}
+
+.message {
+    padding: 12px 18px;
+    border-radius: 18px;
+    margin-bottom: 15px;
+    max-width: 70%;
+    word-wrap: break-word;
+}
+
+.message.own {
+    margin-left: auto;
+    background: linear-gradient(45deg, #ff4081, #ff6ec7);
+    color: white;
+}
+
+.message.other {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.chat-input-container {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+    padding: 20px;
+    border-radius: 15px;
+    margin-top: 10px;
+}
+
+.btn {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background: linear-gradient(45deg, #ff4081, #ff6ec7);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(255, 64, 129, 0.4);
+}
