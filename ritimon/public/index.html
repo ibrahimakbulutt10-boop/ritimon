@@ -633,17 +633,27 @@
             document.getElementById('onlineUsers').textContent = users.length;
         });
 
+        // Radio Stream URL
+        const RADIO_STREAM_URL = 'https://ritimon.radiostream321.com';
+        const radioAudio = new Audio(RADIO_STREAM_URL);
+        radioAudio.volume = 0.5;
+
         // Player controls
         function togglePlay() {
             isPlaying = !isPlaying;
             updatePlayButton();
             
             if (isPlaying) {
-                // Start playing logic
-                console.log('Müzik çalmaya başladı');
+                radioAudio.play().catch(error => {
+                    console.error('Radyo çalınamadı:', error);
+                    alert('Radyo yayını başlatılamadı. Lütfen tekrar deneyin.');
+                    isPlaying = false;
+                    updatePlayButton();
+                });
+                console.log('Radyo çalmaya başladı');
             } else {
-                // Stop playing logic
-                console.log('Müzik durdu');
+                radioAudio.pause();
+                console.log('Radyo durdu');
             }
         }
 
@@ -657,6 +667,7 @@
 
         function changeVolume(value) {
             currentVolume = value;
+            radioAudio.volume = value / 100;
             console.log('Ses seviyesi:', value);
         }
 
