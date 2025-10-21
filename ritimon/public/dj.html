@@ -59,6 +59,9 @@
           <div class="panel-header">
             <h3>📋 Playlist Yönetimi</h3>
             <div class="playlist-actions">
+              <label style="font-size: 0.9rem; margin-right: 10px;">
+                <input type="checkbox" id="autoDeleteCheckbox" checked /> Otomatik Sil
+              </label>
               <button onclick="clearPlaylist()" class="btn btn-sm btn-warning">🗑️ Temizle</button>
             </div>
           </div>
@@ -283,6 +286,7 @@
     let isItalic = false;
     let soundEnabled = true;
     let bannedUsers = [];
+    let autoDeleteEnabled = true; // Otomatik silme varsayılan açık
     let chatSound = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIGGS56+OZSgwOUKXh7bllHAU2jdXyy3krBSh+zPLaizsKGGS56+OZSw==');
     
     const notificationSound = chatSound;
@@ -354,6 +358,52 @@
         userCount.textContent = users.length;
         updateUsersList(users);
     });
+    
+    // Broadcast events
+    socket.on('broadcast started', (data) => {
+        isStreaming = true;
+        streamStatus.textContent = 'CANLI YAYIN';
+        streamStatus.className = 'status-badge status-online';
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+        
+        if (data.success) {
+            addSystemMessage('✅ ' + data.message);
+        } else {
+            addSystemMessage(`🎙️ Yayın başladı - ${data.songCount} şarkı`);
+        }
+    });
+    
+    socket.on('broadcast stopped', (data) => {
+        isStreaming = false;
+        streamStatus.textContent = 'Kapalı';
+        streamStatus.className = 'status-badge status-offline';
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+        
+        if (data.success) {
+            addSystemMessage('✅ ' + data.message);
+        } else {
+            addSystemMessage('🛑 Yayın durduruldu');
+        }
+    });
+    
+    socket.on('broadcast error', (data) => {
+        alert('❌ Hata: ' + data.message);
+        addSystemMessage('❌ Yayın hatası: ' + data.message);
+    });
+    
+    socket.on('now playing', (data) => {
+        // Update UI with current song
+        if (data.song && data.artist) {
+            currentTrack.textContent = data.song;
+            currentArtist.textContent = data.artist;
+            
+            if (data.index !== undefined && data.total !== undefined) {
+                addSystemMessage(`🎵 Çalıyor: ${data.song} (${data.index + 1}/${data.total})`);
+            }
+        }
+    });
 
     // DJ Login
     function checkPassword() {
@@ -383,8 +433,14 @@
             currentDJName.textContent = nickname;
             djStartTime.textContent = new Date().toLocaleTimeString('tr-TR');
             
-            socket.emit('activeDJ', { nickname, password });
+            // Join chat
+            socket.emit('join', { nickname });
+            
+            // Set as active DJ
+            socket.emit('dj login', { nickname });
+            
             addSystemMessage(`✅ DJ ${nickname} olarak giriş yaptınız!`);
+            addSystemMessage(`💬 RitimON sohbetine katıldınız!`);
         } else {
             loginError.textContent = '❌ Hatalı şifre!';
         }
@@ -392,32 +448,46 @@
 
     // Stream Controls
     function startStream() {
-        isStreaming = true;
-        streamStatus.textContent = 'Açık';
-        streamStatus.className = 'status-badge status-online';
-        startBtn.disabled = true;
-        stopBtn.disabled = false;
+        if (playlist.length === 0) {
+            alert('❌ Playlist boş! Lütfen önce müzik ekleyin.');
+            return;
+        }
         
-        socket.emit('activeDJ', djNickname);
-        addSystemMessage('🎙️ Yayın başlatıldı!');
+        if (isStreaming) {
+            alert('⚠️ Yayın zaten aktif!');
+            return;
+        }
+        
+        // Prepare playlist for broadcast
+        const autoDelete = document.getElementById('autoDeleteCheckbox').checked;
+        const broadcastPlaylist = playlist.map(song => ({
+            title: song.title,
+            artist: song.artist || djNickname,
+            filename: song.filename,
+            autoDelete: autoDelete
+        }));
+        
+        // Send broadcast start request to server
+        socket.emit('start broadcast', {
+            playlist: broadcastPlaylist
+        });
+        
+        addSystemMessage('📡 Yayın başlatılıyor...');
     }
 
     function stopStream() {
-        isStreaming = false;
-        streamStatus.textContent = 'Kapalı';
-        streamStatus.className = 'status-badge status-offline';
-        startBtn.disabled = false;
-        stopBtn.disabled = true;
-        
-        if (isPlaying) {
-            togglePlay();
+        if (!isStreaming) {
+            alert('⚠️ Yayın zaten kapalı!');
+            return;
         }
         
-        socket.emit('stop playing', djNickname);
-        addSystemMessage('🎙️ Yayın durduruldu!');
+        if (confirm('🛑 Yayını durdurmak istediğinizden emin misiniz?')) {
+            socket.emit('stop broadcast');
+            addSystemMessage('🛑 Yayın durduruluyor...');
+        }
     }
 
-    // Player Controls
+    // Player Controls (Local Preview)
     function togglePlay() {
         if (playlist.length === 0) {
             alert('Playlist boş! Lütfen önce müzik ekleyin.');
@@ -445,12 +515,23 @@
     function playNext() {
         if (playlist.length === 0) return;
         
-        currentPlaylistIndex = (currentPlaylistIndex + 1) % playlist.length;
-        playSong(playlist[currentPlaylistIndex]);
+        if (isStreaming) {
+            // Skip song on server
+            socket.emit('skip song');
+        } else {
+            // Local preview
+            currentPlaylistIndex = (currentPlaylistIndex + 1) % playlist.length;
+            playSong(playlist[currentPlaylistIndex]);
+        }
     }
 
     function playPrevious() {
         if (playlist.length === 0) return;
+        
+        if (isStreaming) {
+            alert('⚠️ Canlı yayında geriye gidemezsiniz');
+            return;
+        }
         
         currentPlaylistIndex = currentPlaylistIndex <= 0 ? playlist.length - 1 : currentPlaylistIndex - 1;
         playSong(playlist[currentPlaylistIndex]);
@@ -466,9 +547,18 @@
         playPauseBtn.textContent = '⏸️';
         vinyl.classList.add('spinning');
         
+        // Şarkı bilgisini gönder
         socket.emit('now playing', {
             song: `${song.title}${song.artist ? ' - ' + song.artist : ''}`,
             dj: djNickname
+        });
+        
+        // Şarkının çaldığını bildir (çalma geçmişi için)
+        socket.emit('song played', {
+            song: song.title,
+            artist: song.artist || djNickname,
+            filename: song.filename,
+            autoDelete: false // Şarkı bitiminde silinecek
         });
     }
 
@@ -560,22 +650,48 @@
     }
 
     function handleFiles(files) {
+        let uploadCount = 0;
+        let totalFiles = files.length;
+        
         Array.from(files).forEach((file) => {
             if (file.type.startsWith('audio/')) {
-                const url = URL.createObjectURL(file);
-                const song = {
-                    title: file.name.replace(/\.[^/.]+$/, ''),
-                    artist: djNickname,
-                    url: url,
-                    file: file
-                };
+                // Upload to server
+                const formData = new FormData();
+                formData.append('musicFile', file);
                 
-                playlist.push(song);
-                addToPlaylistUI(song);
+                fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const song = {
+                            title: file.name.replace(/\.[^/.]+$/, ''),
+                            artist: djNickname,
+                            url: `/uploads/${data.filename}`,
+                            file: file,
+                            filename: data.filename // Server tarafındaki dosya adı
+                        };
+                        
+                        playlist.push(song);
+                        addToPlaylistUI(song);
+                        
+                        uploadCount++;
+                        if (uploadCount === totalFiles) {
+                            addSystemMessage(`✅ ${totalFiles} dosya yüklendi ve eklendi`);
+                        }
+                    } else {
+                        console.error('Upload failed:', data.error);
+                        addSystemMessage(`❌ ${file.name} yüklenemedi`);
+                    }
+                })
+                .catch(error => {
+                    console.error('Upload error:', error);
+                    addSystemMessage(`❌ ${file.name} yükleme hatası`);
+                });
             }
         });
-        
-        addSystemMessage(`✅ ${files.length} dosya eklendi`);
     }
 
     function addToPlaylistUI(song) {
@@ -586,13 +702,15 @@
         const item = document.createElement('div');
         item.className = 'playlist-item';
         item.draggable = true;
+        item.dataset.filename = song.filename; // Dosya adını data attribute'a ekle
         item.innerHTML = `
             <div class="song-icon">🎵</div>
             <div class="song-details">
                 <div class="song-title">${song.title}</div>
                 <div class="song-artist">${song.artist}</div>
             </div>
-            <button onclick="removeFromPlaylist(this)" class="btn-remove">❌</button>
+            <button onclick="deleteSongFromPlaylist(this)" class="btn-remove" title="Şarkıyı Sil" style="margin-left: 5px;">🗑️</button>
+            <button onclick="removeFromPlaylist(this)" class="btn-remove" title="Playlist'ten Çıkar">❌</button>
         `;
         
         item.addEventListener('click', function(e) {
@@ -983,9 +1101,78 @@
         }
     });
 
+    // Delete song from playlist (permanently)
+    function deleteSongFromPlaylist(btn) {
+        const item = btn.closest('.playlist-item');
+        const index = [...playlistList.children].indexOf(item);
+        const song = playlist[index];
+        
+        if (confirm(`"${song.title}" şarkısını kalıcı olarak silmek istediğinizden emin misiniz?`)) {
+            // Server'dan dosyayı sil
+            socket.emit('delete song', { filename: song.filename });
+            
+            // Playlist'ten kaldır
+            playlist.splice(index, 1);
+            item.remove();
+            
+            if (playlist.length === 0) {
+                playlistList.innerHTML = '<p class="playlist-empty">Playlist boş</p>';
+            }
+            
+            addSystemMessage(`🗑️ "${song.title}" kalıcı olarak silindi`);
+        }
+    }
+    
     // Auto-next song
     radioPlayer.addEventListener('ended', function() {
-        playNext();
+        // Otomatik silme aktifse şarkıyı sil
+        const autoDelete = document.getElementById('autoDeleteCheckbox').checked;
+        
+        if (autoDelete && currentPlaylistIndex >= 0) {
+            const song = playlist[currentPlaylistIndex];
+            
+            // Server'a silme bildirimi gönder
+            socket.emit('song played', {
+                song: song.title,
+                artist: song.artist || djNickname,
+                filename: song.filename,
+                autoDelete: true // Otomatik sil
+            });
+            
+            // Playlist'ten kaldır
+            const item = playlistList.children[currentPlaylistIndex];
+            playlist.splice(currentPlaylistIndex, 1);
+            if (item) item.remove();
+            
+            // Index'i ayarla
+            if (currentPlaylistIndex >= playlist.length) {
+                currentPlaylistIndex = 0;
+            }
+            
+            addSystemMessage(`🗑️ "${song.title}" çalındı ve silindi`);
+        }
+        
+        // Sonraki şarkıyı çal
+        if (playlist.length > 0) {
+            playNext();
+        } else {
+            playlistList.innerHTML = '<p class="playlist-empty">Playlist boş</p>';
+            addSystemMessage('📋 Tüm şarkılar çalındı');
+        }
+    });
+    
+    // Otomatik silme checkbox listener
+    document.addEventListener('DOMContentLoaded', function() {
+        const autoDeleteCheckbox = document.getElementById('autoDeleteCheckbox');
+        if (autoDeleteCheckbox) {
+            autoDeleteCheckbox.addEventListener('change', function() {
+                autoDeleteEnabled = this.checked;
+                addSystemMessage(autoDeleteEnabled ? 
+                    '✅ Otomatik silme aktif' : 
+                    '⏸️ Otomatik silme devre dışı'
+                );
+            });
+        }
     });
   </script>
 </body>
