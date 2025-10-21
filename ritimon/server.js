@@ -701,28 +701,22 @@ function streamToShoutcast(filePath, song) {
     ffmpegProcess.kill('SIGKILL');
   }
   
-  // FFmpeg command to encode and stream to SHOUTCAST server
-  // Shoutcast format: icecast://username:password@host:port/
+  // FFmpeg command for Shoutcast v2 (Listen2MyRadio compatible)
+  // Using direct HTTP streaming with authentication
   const ffmpegArgs = [
     '-re', // Read input at native frame rate
     '-i', filePath, // Input file
     '-acodec', 'libmp3lame', // MP3 encoder
-    '-ab', `${SHOUTCAST_CONFIG.bitrate}k`, // Bitrate
+    '-b:a', `${SHOUTCAST_CONFIG.bitrate}k`, // Bitrate
     '-ar', SHOUTCAST_CONFIG.sampleRate.toString(), // Sample rate
     '-ac', SHOUTCAST_CONFIG.channels.toString(), // Channels
-    '-content_type', 'audio/mpeg', // Content type for Shoutcast
-    '-f', 'mp3',
-'-content_type', 'audio/mpeg',
-`http://source:${PASSWORD}@${HOST}:${PORT}/`  // ✅ HTTP ile direkt bağlantı
-    '-ice_genre', SHOUTCAST_CONFIG.genre, // Stream genre
-    '-ice_name', SHOUTCAST_CONFIG.name, // Stream name
-    '-ice_description', SHOUTCAST_CONFIG.description, // Stream description
-    '-ice_url', SHOUTCAST_CONFIG.url, // Stream URL
-    // Shoutcast connection string (NOT Icecast format)
-    `icecast://${SHOUTCAST_CONFIG.username}:${SHOUTCAST_CONFIG.password}@${SHOUTCAST_CONFIG.host}:${SHOUTCAST_CONFIG.port}/`
+    '-f', 'mp3', // Output format
+    '-content_type', 'audio/mpeg', // Content type
+    // Shoutcast v2 için HTTP ile direkt bağlantı
+    `http://source:${SHOUTCAST_CONFIG.password}@${SHOUTCAST_CONFIG.host}:${SHOUTCAST_CONFIG.port}/`
   ];
   
-  console.log('🎧 FFmpeg başlatılıyor (Shoutcast):', ffmpegArgs.join(' '));
+  console.log('🎧 FFmpeg başlatılıyor (Shoutcast v2):', ffmpegArgs.join(' '));
   
   ffmpegProcess = spawn('ffmpeg', ffmpegArgs);
   
@@ -736,6 +730,16 @@ function streamToShoutcast(filePath, song) {
   
   ffmpegProcess.on('close', (code) => {
     console.log(`✅ Şarkı bitti: ${song.title} (exit code: ${code})`);
+    
+    // Eğer hata varsa (exit code != 0), yayını durdur
+    if (code !== 0) {
+      console.error(`❌ FFmpeg başarısız oldu (exit code: ${code}). Yayın durduruluyor...`);
+      stopBroadcast();
+      io.emit('broadcast error', { 
+        message: 'Yayın sunucusuna bağlanılamadı. Lütfen tekrar deneyin.' 
+      });
+      return;
+    }
     
     // Add to history
     const historyEntry = {
@@ -753,7 +757,7 @@ function streamToShoutcast(filePath, song) {
     
     io.emit('song played', historyEntry);
     
-    // Auto-delete if enabled
+    // Auto-delete if enabled (sadece başarılı çalmadan sonra)
     if (song.autoDelete) {
       try {
         fs.unlinkSync(filePath);
@@ -788,4 +792,3 @@ server.listen(PORT, () => {
   console.log(`📊 API Status: http://localhost:${PORT}/api/status`);
   console.log(`📡 Broadcast Ready: ${SHOUTCAST_CONFIG.host}:${SHOUTCAST_CONFIG.port}`);
 });
-
