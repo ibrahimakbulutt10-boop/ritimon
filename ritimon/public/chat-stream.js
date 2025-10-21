@@ -3,6 +3,43 @@ const socket = io();
 const nickname = localStorage.getItem('nickname') || 'Anonim';
 let onlineUsers = new Set();
 
+// Radio Stream Configuration
+const RADIO_STREAM_URL = 'https://ritimon.radiostream321.com';
+const radioAudio = new Audio(RADIO_STREAM_URL);
+radioAudio.volume = 0.5;
+let isRadioPlaying = false;
+
+// Radio Player Functions
+function toggleRadio() {
+    const playBtn = document.getElementById('radioPlayBtn');
+    
+    if (!isRadioPlaying) {
+        radioAudio.play().then(() => {
+            isRadioPlaying = true;
+            playBtn.textContent = '⏸️ Radyoyu Kapat';
+            playBtn.style.background = 'linear-gradient(45deg, #ff6b6b, #ee5a52)';
+            addSystemMessage('📡 Radyo yayını başlatıldı');
+        }).catch(error => {
+            console.error('Radyo çalma hatası:', error);
+            alert('Radyo başlatılamadı. Lütfen tarayıcınızı kontrol edin.');
+        });
+    } else {
+        radioAudio.pause();
+        isRadioPlaying = false;
+        playBtn.textContent = '▶️ Radyoyu Aç';
+        playBtn.style.background = 'linear-gradient(45deg, #ff4081, #ff6ec7)';
+        addSystemMessage('📡 Radyo yayını durduruldu');
+    }
+}
+
+function setRadioVolume(value) {
+    radioAudio.volume = value / 100;
+}
+
+// Make functions globally available
+window.toggleRadio = toggleRadio;
+window.setRadioVolume = setRadioVolume;
+
 // DOM Elements
 const messagesContainer = document.getElementById('messages');
 const messageInput = document.getElementById('messageInput');
