@@ -75,22 +75,20 @@ let broadcastPlaylist = [];
 let currentSongIndex = -1;
 let ffmpegProcess = null;
 let shoutcastConnection = null;
-
-// Listen2MyRadio Server Configuration (Shoutcast)
+// MyRadioStream.com Server Configuration (Shoutcast)
 const SHOUTCAST_CONFIG = {
-  host: 'uk4freenew.listen2myradio.com',
-  port: 26713,
-  password: 'Ma104545',
-  username: 'source', // Shoutcast için kullanıcı adı
+  host: 's48.myradiostream.com',
+  port: 14340,
+  password: 's6DV7g2Tx',
+  username: 'source',
   genre: 'Various',
   name: 'RitimON FM',
   description: 'RitimON FM - Your Music Station',
-  url: 'http://ritimon.radiostream321.com',
+  url: 'http://ritimon.on-air.fm',
   bitrate: 128,
   sampleRate: 44100,
   channels: 2
 };
-
 // Routes
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
@@ -790,3 +788,4 @@ server.listen(PORT, () => {
   console.log(`📊 API Status: http://localhost:${PORT}/api/status`);
   console.log(`📡 Broadcast Ready: ${SHOUTCAST_CONFIG.host}:${SHOUTCAST_CONFIG.port}`);
 });
+
