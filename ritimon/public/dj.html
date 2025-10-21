@@ -85,7 +85,7 @@
     /* Main Layout */
     .main-layout {
       display: grid;
-      grid-template-rows: auto auto 1fr;
+      grid-template-rows: 350px auto 1fr;
       gap: 15px;
       height: calc(100vh - 120px);
     }
@@ -99,7 +99,6 @@
       display: grid;
       grid-template-columns: 2fr 1fr;
       gap: 15px;
-      height: 300px;
     }
     
     .chat-box { display: flex; flex-direction: column; }
@@ -125,14 +124,15 @@
     .message.system { background: rgba(78,205,196,0.15); text-align: center; font-style: italic; }
     .message.dj { background: rgba(255,64,129,0.2); }
     
-    .chat-input-area { display: flex; gap: 8px; }
+    .chat-input-area { display: flex; gap: 8px; align-items: center; }
     .chat-input {
       flex: 1;
-      padding: 8px 12px;
+      padding: 12px 15px;
       border: 1px solid rgba(255,255,255,0.2);
-      border-radius: 20px;
+      border-radius: 25px;
       background: rgba(255,255,255,0.1);
       color: white;
+      font-size: 0.95rem;
     }
     
     .users-box {
@@ -155,7 +155,7 @@
       background: rgba(255,255,255,0.05);
       backdrop-filter: blur(15px);
       border-radius: 12px;
-      padding: 15px;
+      padding: 12px 15px;
       display: grid;
       grid-template-columns: auto 1fr auto;
       gap: 15px;
@@ -172,13 +172,13 @@
     }
     
     .now-playing h3 {
-      font-size: 1.1rem;
+      font-size: 1rem;
       color: #ff4081;
-      margin-bottom: 5px;
+      margin-bottom: 3px;
     }
     
     .now-playing p {
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       opacity: 0.8;
     }
     
@@ -209,7 +209,7 @@
       padding: 15px;
       display: flex;
       flex-direction: column;
-      overflow: hidden;
+      min-height: 0;
     }
     
     .playlist-header {
@@ -224,7 +224,7 @@
     .upload-zone {
       border: 2px dashed rgba(255,255,255,0.3);
       border-radius: 10px;
-      padding: 20px;
+      padding: 15px;
       text-align: center;
       margin-bottom: 10px;
       cursor: pointer;
@@ -237,9 +237,12 @@
     .playlist-list {
       flex: 1;
       overflow-y: auto;
+      overflow-x: hidden;
       display: flex;
       flex-direction: column;
       gap: 8px;
+      min-height: 200px;
+      max-height: 100%;
     }
     
     .playlist-item {
@@ -330,14 +333,14 @@
           </div>
           <div class="chat-input-area">
             <input type="text" id="djChatInput" class="chat-input" placeholder="Mesajınızı yazın..." maxlength="200" />
-            <button onclick="sendDJMessage()" class="btn btn-primary btn-sm">📤 Gönder</button>
+            <button onclick="sendDJMessage()" class="btn btn-primary" style="padding: 12px 20px; white-space: nowrap;">📤</button>
           </div>
         </div>
         
         <div>
-          <div class="chat-header">👥 Çevrimiçi Kullanıcılar (<span id="userCount">0</span>)</div>
+          <div class="chat-header">🎧 RitimON Dinleyicileri (<span id="userCount">0</span>)</div>
           <div class="users-box" id="usersList">
-            <div style="text-align: center; opacity: 0.6; padding: 20px;">Henüz kimse çevrimiçi değil</div>
+            <div style="text-align: center; opacity: 0.6; padding: 20px;">Henüz dinleyici yok</div>
           </div>
         </div>
       </div>
@@ -379,9 +382,9 @@
         </div>
         
         <div class="upload-zone" id="uploadZone" onclick="document.getElementById('musicFileInput').click()">
-          <div style="font-size: 2rem;">🎵</div>
-          <div style="margin: 8px 0; font-weight: 600;">Müzik Dosyalarını Sürükle & Bırak</div>
-          <div style="font-size: 0.85rem; opacity: 0.7;">veya buraya tıklayın (Çoklu seçim yapabilirsiniz)</div>
+          <div style="font-size: 1.5rem;">🎵</div>
+          <div style="margin: 5px 0; font-weight: 600; font-size: 0.9rem;">Müzik Dosyalarını Sürükle & Bırak</div>
+          <div style="font-size: 0.75rem; opacity: 0.7;">veya buraya tıklayın (çoklu seçim)</div>
           <input type="file" id="musicFileInput" accept="audio/*" multiple style="display: none;" />
         </div>
         
@@ -750,7 +753,7 @@
 
     function updateUsersList(users = []) {
       if (users.length === 0) {
-        usersList.innerHTML = '<div style="text-align: center; opacity: 0.6; padding: 20px;">Henüz kimse çevrimiçi değil</div>';
+        usersList.innerHTML = '<div style="text-align: center; opacity: 0.6; padding: 20px;">Henüz dinleyici yok</div>';
         return;
       }
 
