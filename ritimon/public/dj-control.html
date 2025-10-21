@@ -336,7 +336,7 @@
           </div>
           <div class="chat-input-area">
             <input type="text" id="djChatInput" class="chat-input" placeholder="Mesajınızı yazın..." maxlength="200" />
-            <button onclick="sendDJMessage()" class="btn btn-primary" style="padding: 12px 20px; white-space: nowrap;">📤</button>
+            <button onclick="sendDJMessage()" class="btn btn-primary" style="padding: 10px 15px; white-space: nowrap; font-size: 1.1rem;">📤</button>
           </div>
         </div>
         
@@ -634,7 +634,7 @@
       let uploadCount = 0;
       let totalFiles = files.length;
       
-      addSystemMessage(`📤 ${totalFiles} dosya yükleniyor...`);
+      console.log(`📤 ${totalFiles} dosya yükleniyor...`);
       
       Array.from(files).forEach((file, index) => {
         if (file.type.startsWith('audio/')) {
@@ -660,19 +660,19 @@
               
               uploadCount++;
               if (uploadCount === totalFiles) {
-                addSystemMessage(`✅ ${totalFiles} dosya başarıyla yüklendi!`);
+                console.log(`✅ ${totalFiles} dosya başarıyla yüklendi!`);
               }
             } else {
               console.error('Upload failed:', data.error);
-              addSystemMessage(`❌ ${file.name} yüklenemedi`);
+              console.log(`❌ ${file.name} yüklenemedi`);
             }
           })
           .catch(error => {
             console.error('Upload error:', error);
-            addSystemMessage(`❌ ${file.name} yükleme hatası`);
+            console.log(`❌ ${file.name} yükleme hatası`);
           });
         } else {
-          addSystemMessage(`❌ ${file.name} ses dosyası değil`);
+          console.log(`❌ ${file.name} ses dosyası değil`);
         }
       });
     }
