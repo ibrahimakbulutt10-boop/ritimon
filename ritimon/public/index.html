@@ -398,6 +398,27 @@
             box-shadow: 0 8px 25px rgba(78, 205, 196, 0.4);
         }
 
+        .btn-dj {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            border: none;
+            padding: 12px 20px;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            text-decoration: none;
+            text-align: center;
+            margin-top: 10px;
+            display: block;
+        }
+
+        .btn-dj:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
+        }
+
         /* Stats */
         .stats {
             display: grid;
@@ -563,6 +584,7 @@
                 <div class="chat-form">
                     <input type="text" class="nickname-input" id="nicknameInput" placeholder="Takma adınızı girin" maxlength="20">
                     <a href="#" class="btn-chat" onclick="joinChat()">💬 Sohbete Katıl</a>
+                    <a href="#" class="btn-dj" onclick="joinDJ()">🎙️ DJ Girişi</a>
                 </div>
             </div>
         </div>
@@ -675,12 +697,40 @@
             }
             
             // Store nickname and redirect
-            localStorage.setItem('chatNickname', nickname);
+            localStorage.setItem('nickname', nickname);
             window.location.href = 'chat-room.html';
         }
 
+        // DJ Login Function
+        function joinDJ() {
+            const nickname = document.getElementById('nicknameInput').value.trim();
+            
+            if (!nickname) {
+                alert('Lütfen DJ adınızı girin!');
+                return;
+            }
+            
+            // DJ şifre kontrolü
+            const password = prompt('DJ Şifresini girin:');
+            
+            if (password === '4545') {
+                // DJ girişi başarılı
+                localStorage.setItem('nickname', nickname);
+                localStorage.setItem('djPassword', '4545');
+                window.location.href = 'dj.html';
+            } else if (password === '4561') {
+                // Admin girişi başarılı
+                localStorage.setItem('nickname', nickname);
+                localStorage.setItem('djPassword', '4561');
+                localStorage.setItem('isAdmin', 'true');
+                window.location.href = 'dj.html';
+            } else if (password) {
+                alert('❌ Hatalı şifre! Lütfen tekrar deneyin.');
+            }
+        }
+
         // Load saved nickname
-        const savedNickname = localStorage.getItem('chatNickname');
+        const savedNickname = localStorage.getItem('nickname');
         if (savedNickname) {
             document.getElementById('nicknameInput').value = savedNickname;
         }
