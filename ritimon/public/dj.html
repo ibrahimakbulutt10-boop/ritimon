@@ -6,14 +6,30 @@
   <title>DJ Paneli - RitimON FM</title>
   <link rel="stylesheet" href="dj.css" />
   <link rel="icon" href="favicon.ico" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
+  <div class="bg-animation"></div>
+  
   <div class="dj-container">
     <!-- Header -->
     <div class="dj-header">
-      <h1>🎙️ RitimON FM DJ Paneli</h1>
-      <div class="status-indicator">
-        <span id="connectionStatus">Bağlantı durumu: Bekleniyor</span>
+      <div class="header-left">
+        <h1>🎙️ RitimON FM DJ Paneli</h1>
+        <div class="dj-info-badge">
+          <span>DJ: <strong id="currentDJName">Giriş Bekleniyor</strong></span>
+          <span class="separator">•</span>
+          <span>Başlangıç: <strong id="djStartTime">--:--</strong></span>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="status-indicator" id="connectionStatus">
+          <span class="status-dot"></span>
+          <span>Bağlanıyor...</span>
+        </div>
+        <div class="online-count">
+          👥 <strong id="onlineUsers">0</strong> dinleyici
+        </div>
       </div>
     </div>
 
@@ -27,249 +43,950 @@
         </div>
         <div class="form-group">
           <label for="djpass">Şifre:</label>
-          <input type="password" id="djpass" placeholder="DJ şifresi" />
+          <input type="password" id="djpass" placeholder="DJ şifresi (4545 veya 4561)" />
         </div>
         <button onclick="checkPassword()" class="btn btn-primary">Giriş Yap</button>
         <div id="loginError" class="error-message"></div>
+        <a href="index.html" class="back-link">← Ana Sayfaya Dön</a>
       </div>
     </div>
 
-    <!-- DJ Controls -->
+    <!-- Main DJ Controls -->
     <div id="djControls" class="dj-controls" style="display:none;">
-      <div class="controls-grid">
-        <!-- Stream Controls -->
-        <div class="control-card">
-          <h3>📡 Yayın Kontrolü</h3>
-          <div class="control-buttons">
-            <button onclick="startStream()" class="btn btn-success" id="startBtn">
-              ▶️ Yayını Başlat
-            </button>
-            <button onclick="stopStream()" class="btn btn-danger" id="stopBtn" disabled>
-              ⏹️ Yayını Durdur
-            </button>
-          </div>
-          <div class="stream-status">
-            <span id="streamStatus">Yayın kapalı</span>
-          </div>
-        </div>
-
-        <!-- Music Controls -->
-        <div class="control-card">
-          <h3>🎵 Müzik Kontrolü</h3>
-          <div class="music-controls">
-            <div class="form-group">
-              <label for="songName">Şarkı Adı:</label>
-              <input type="text" id="songName" placeholder="Şu anda çalan şarkı" />
-            </div>
-            <div class="form-group">
-              <label for="artistName">Sanatçı:</label>
-              <input type="text" id="artistName" placeholder="Sanatçı adı" />
-            </div>
-            <button onclick="updateNowPlaying()" class="btn btn-info">
-              🎶 Şarkı Bilgisini Güncelle
-            </button>
-          </div>
-        </div>
-
-        <!-- Announcements -->
-        <div class="control-card">
-          <h3>📢 Duyurular</h3>
-          <div class="announcement-controls">
-            <div class="form-group">
-              <label for="announcementText">Duyuru Metni:</label>
-              <textarea id="announcementText" placeholder="Duyuru yazısını buraya girin..." rows="3"></textarea>
-            </div>
-            <button onclick="sendAnnouncement()" class="btn btn-warning">
-              📢 Duyuru Gönder
-            </button>
-          </div>
-        </div>
-
-        <!-- Sound Effects -->
-        <div class="control-card">
-          <h3>🔊 Ses Efektleri</h3>
-          <div class="sound-effects">
-            <div class="effect-buttons">
-              <button onclick="playSoundEffect('applause')" class="btn btn-effect">
-                👏 Alkış
-              </button>
-              <button onclick="playSoundEffect('cheer')" class="btn btn-effect">
-                🎉 Kutlama
-              </button>
-              <button onclick="playSoundEffect('drumroll')" class="btn btn-effect">
-                🥁 Davul
-              </button>
-              <button onclick="playSoundEffect('bell')" class="btn btn-effect">
-                🔔 Zil
-              </button>
-              <button onclick="playSoundEffect('whistle')" class="btn btn-effect">
-                📯 Düdük
-              </button>
-              <button onclick="playSoundEffect('airhorn')" class="btn btn-effect">
-                📢 Hava Korna
-              </button>
-            </div>
-            <div class="custom-sound">
-              <div class="form-group">
-                <label for="customSoundText">Özel Ses Efekti:</label>
-                <input type="text" id="customSoundText" placeholder="Ses efekti açıklaması..." />
-              </div>
-              <button onclick="playCustomEffect()" class="btn btn-secondary">
-                🔊 Özel Efekt
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Music Upload -->
-        <div class="control-card">
-          <h3>🎵 Geçici Müzik Yükleme</h3>
-          <div class="temp-warning">
-            <span class="warning-icon">⚠️</span>
-            <span>Yüklenen dosyalar geçicidir ve çalındıktan sonra otomatik silinir!</span>
-          </div>
-          <div class="upload-section">
-            <div class="upload-area" id="uploadArea">
-              <div class="upload-content">
-                <div class="upload-icon">🎵</div>
-                <h4>Ses Dosyası Yükle</h4>
-                <p>MP3, WAV, OGG dosyalarını sürükleyip bırakın</p>
-                <p class="temp-info">📝 Geçici dosya - çalındıktan sonra silinir</p>
-                <input type="file" id="musicFileInput" accept="audio/*" multiple style="display: none;" />
-                <button onclick="document.getElementById('musicFileInput').click()" class="btn btn-primary">
-                  📁 Dosya Seç
-                </button>
-              </div>
-            </div>
-            <div class="upload-progress" id="uploadProgress" style="display: none;">
-              <div class="progress-bar">
-                <div class="progress-fill" id="uploadProgressFill"></div>
-              </div>
-              <span id="uploadStatus">Yükleniyor...</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Playlist Management -->
-        <div class="control-card">
-          <h3>📋 Playlist Yönetimi</h3>
-          <div class="playlist-controls">
-            <div class="form-group">
-              <label for="songTitle">Şarkı Adı:</label>
-              <input type="text" id="songTitle" placeholder="Şarkı adını girin" />
-            </div>
-            <div class="form-group">
-              <label for="artistName">Sanatçı:</label>
-              <input type="text" id="artistName" placeholder="Sanatçı adını girin" />
-            </div>
+      <div class="main-grid">
+        <!-- Left Panel - Playlist Manager -->
+        <div class="playlist-panel">
+          <div class="panel-header">
+            <h3>📋 Playlist Yönetimi</h3>
             <div class="playlist-actions">
-              <button onclick="addToPlaylist()" class="btn btn-success">
-                ➕ Manuel Ekle
-              </button>
-              <button onclick="addUploadedToPlaylist()" class="btn btn-info">
-                🎵 Yüklenen Ekle
-              </button>
-              <button onclick="clearPlaylist()" class="btn btn-warning">
-                🗑️ Temizle
+              <button onclick="clearPlaylist()" class="btn btn-sm btn-warning">🗑️ Temizle</button>
+            </div>
+          </div>
+
+          <!-- Upload Zone -->
+          <div class="upload-zone" id="uploadZone">
+            <div class="upload-content">
+              <div class="upload-icon">🎵</div>
+              <h4>Müzik Dosyalarını Sürükle & Bırak</h4>
+              <p>veya dosya seçmek için tıklayın</p>
+              <input type="file" id="musicFileInput" accept="audio/*" multiple style="display: none;" />
+              <button onclick="document.getElementById('musicFileInput').click()" class="btn btn-primary btn-sm">
+                📁 Dosya Seç
               </button>
             </div>
           </div>
-          <div class="playlist-display">
-            <h4>📝 Gelecek Şarkılar</h4>
-            <div id="playlistItems" class="playlist-items">
-              <!-- Playlist items will appear here -->
-            </div>
+
+          <!-- Playlist Items -->
+          <div class="playlist-list" id="playlistList">
+            <p class="playlist-empty">Playlist boş - Müzik dosyalarını buraya sürükleyin</p>
           </div>
         </div>
 
-        <!-- Music Library -->
-        <div class="control-card">
-          <h3>📚 Müzik Kütüphanesi</h3>
-          <div class="music-library">
-            <div class="library-controls">
-              <input type="text" id="searchLibrary" placeholder="Müzik ara..." />
-              <button onclick="refreshLibrary()" class="btn btn-secondary">
-                🔄 Yenile
+        <!-- Center Panel - Radio Player -->
+        <div class="player-panel">
+          <!-- Stream Controls -->
+          <div class="stream-controls">
+            <div class="stream-status">
+              <span class="status-label">Yayın Durumu:</span>
+              <span id="streamStatus" class="status-badge status-offline">Kapalı</span>
+            </div>
+            <div class="stream-buttons">
+              <button onclick="startStream()" class="btn btn-success" id="startBtn">
+                ▶️ Yayını Başlat
+              </button>
+              <button onclick="stopStream()" class="btn btn-danger" id="stopBtn" disabled>
+                ⏹️ Yayını Durdur
               </button>
             </div>
-            <div id="musicLibrary" class="library-items">
-              <!-- Music library items will appear here -->
+          </div>
+
+          <!-- Now Playing -->
+          <div class="now-playing-card">
+            <div class="vinyl-container">
+              <div class="vinyl" id="vinyl">
+                <div class="vinyl-center"></div>
+                <div class="vinyl-label">DJ</div>
+              </div>
+            </div>
+            <div class="track-info">
+              <div class="now-playing-label">🎵 Şu anda çalıyor</div>
+              <h2 id="currentTrack">Henüz yayın başlamadı</h2>
+              <p id="currentArtist">Bir şarkı seçin veya yükleyin</p>
             </div>
           </div>
-        </div>
 
-        <!-- Quick Actions -->
-        <div class="control-card">
-          <h3>⚡ Hızlı İşlemler</h3>
+          <!-- Player Controls -->
+          <div class="player-controls">
+            <button class="control-btn" onclick="playPrevious()" title="Önceki">
+              ⏮️
+            </button>
+            <button class="control-btn control-btn-play" id="playPauseBtn" onclick="togglePlay()">
+              ▶️
+            </button>
+            <button class="control-btn" onclick="playNext()" title="Sonraki">
+              ⏭️
+            </button>
+          </div>
+
+          <!-- Music Info Update -->
+          <div class="music-info-update">
+            <h4>🎶 Şarkı Bilgisini Güncelle</h4>
+            <div class="form-row">
+              <div class="form-group">
+                <input type="text" id="songName" placeholder="Şarkı adı" />
+              </div>
+              <div class="form-group">
+                <input type="text" id="artistName" placeholder="Sanatçı" />
+              </div>
+              <button onclick="updateNowPlaying()" class="btn btn-info">✏️ Güncelle</button>
+            </div>
+          </div>
+
+          <!-- Quick Actions -->
           <div class="quick-actions">
-            <button onclick="requestSong()" class="btn btn-secondary">
-              🎤 Şarkı İsteği
+            <button onclick="sendAnnouncement()" class="btn btn-secondary btn-sm">
+              📢 Duyuru
             </button>
-            <button onclick="showStats()" class="btn btn-secondary">
-              📊 İstatistikler
+            <button onclick="showStats()" class="btn btn-secondary btn-sm">
+              📊 İstatistik
             </button>
-            <button onclick="playNextSong()" class="btn btn-info">
-              ⏭️ Sonraki Şarkı
-            </button>
-            <button onclick="emergencyStop()" class="btn btn-danger">
-              🚨 Acil Durdur
+            <button onclick="emergencyStop()" class="btn btn-danger btn-sm">
+              🚨 Acil Dur
             </button>
           </div>
         </div>
-      </div>
 
-      <!-- Live Chat Feed -->
-      <div class="chat-feed">
-        <div class="chat-header">
-          <h3>💬 Canlı Chat</h3>
-          <div class="chat-controls">
-            <button onclick="toggleAutoScroll()" class="btn btn-secondary" id="autoScrollBtn">
-              📌 Otomatik Kaydır
+        <!-- Right Panel - Chat & Users -->
+        <div class="chat-users-panel">
+          <!-- Tabs -->
+          <div class="panel-tabs">
+            <button class="tab-btn active" onclick="switchTab('chat')" id="chatTab">
+              💬 Chat
             </button>
-            <button onclick="clearChat()" class="btn btn-warning">
-              🗑️ Chat Temizle
+            <button class="tab-btn" onclick="switchTab('users')" id="usersTab">
+              👥 Kullanıcılar (<span id="userCount">0</span>)
             </button>
-          </div>
-        </div>
-        <div id="liveChat" class="chat-messages">
-          <!-- Live chat messages will appear here -->
-        </div>
-        <div class="chat-input-section">
-          <div class="input-group">
-            <input type="text" id="djChatInput" placeholder="Mesajınızı yazın..." maxlength="200" />
-            <button onclick="sendDJMessage()" class="btn btn-primary">
-              📤 Gönder
+            <button class="tab-btn" onclick="switchTab('moderation')" id="moderationTab">
+              🛡️ Moderasyon
             </button>
           </div>
-          <div class="quick-responses">
-            <button onclick="sendQuickResponse('Merhaba dinleyiciler! 🎧')" class="quick-btn">👋 Selam</button>
-            <button onclick="sendQuickResponse('Teşekkürler dinlediğiniz için! ❤️')" class="quick-btn">❤️ Teşekkür</button>
-            <button onclick="sendQuickResponse('Şarkı isteklerinizi bekliyorum! 🎵')" class="quick-btn">🎵 İstek</button>
-            <button onclick="sendQuickResponse('Güzel bir akşam geçiriyoruz! 🌟')" class="quick-btn">🌟 Akşam</button>
-          </div>
-        </div>
-      </div>
 
-      <!-- DJ Info -->
-      <div class="dj-info">
-        <div class="info-item">
-          <span class="label">DJ:</span>
-          <span id="currentDJName">-</span>
-        </div>
-        <div class="info-item">
-          <span class="label">Başlangıç:</span>
-          <span id="djStartTime">-</span>
-        </div>
-        <div class="info-item">
-          <span class="label">Çevrimiçi:</span>
-          <span id="onlineUsers">0</span> kullanıcı
+          <!-- Chat Tab -->
+          <div class="tab-content" id="chatContent">
+            <div class="chat-messages" id="chatMessages">
+              <div class="welcome-message">
+                <p>💬 Canlı chat'e hoş geldiniz!</p>
+                <p>Dinleyicilerle burada sohbet edebilirsiniz.</p>
+              </div>
+            </div>
+            <div class="chat-input-section">
+              <!-- Text Formatting Controls -->
+              <div class="text-controls">
+                <div class="control-group">
+                  <label>Nick Rengi:</label>
+                  <input type="color" id="nickColor" value="#ff4081" class="color-picker" />
+                </div>
+                <div class="control-group">
+                  <label>Yazı Rengi:</label>
+                  <input type="color" id="textColor" value="#ffffff" class="color-picker" />
+                </div>
+                <div class="control-group">
+                  <label>Boyut:</label>
+                  <select id="fontSize" class="size-select">
+                    <option value="0.9">Küçük</option>
+                    <option value="1" selected>Normal</option>
+                    <option value="1.2">Büyük</option>
+                    <option value="1.4">Daha Büyük</option>
+                  </select>
+                </div>
+                <div class="control-group">
+                  <label>Stil:</label>
+                  <button onclick="toggleBold()" class="style-btn" id="boldBtn" title="Kalın"><b>B</b></button>
+                  <button onclick="toggleItalic()" class="style-btn" id="italicBtn" title="İtalik"><i>I</i></button>
+                  <button onclick="toggleSound()" class="style-btn" id="soundBtn" title="Ses">🔊</button>
+                </div>
+              </div>
+              <div class="emoji-bar">
+                <button onclick="addEmoji('😊')" class="emoji-btn">😊</button>
+                <button onclick="addEmoji('❤️')" class="emoji-btn">❤️</button>
+                <button onclick="addEmoji('🎵')" class="emoji-btn">🎵</button>
+                <button onclick="addEmoji('🔥')" class="emoji-btn">🔥</button>
+                <button onclick="addEmoji('👏')" class="emoji-btn">👏</button>
+                <button onclick="addEmoji('✨')" class="emoji-btn">✨</button>
+                <button onclick="addEmoji('💯')" class="emoji-btn">💯</button>
+                <button onclick="addEmoji('🎧')" class="emoji-btn">🎧</button>
+              </div>
+              <div class="chat-input-wrapper">
+                <input type="text" id="djChatInput" class="chat-input" placeholder="Mesajınızı yazın..." maxlength="200" />
+                <button onclick="sendDJMessage()" class="btn btn-primary btn-sm">📤</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Users Tab -->
+          <div class="tab-content" id="usersContent" style="display:none;">
+            <div class="users-list" id="usersList">
+              <div class="no-users">
+                <p>👤 Henüz kimse çevrimiçi değil</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Moderation Tab -->
+          <div class="tab-content" id="moderationContent" style="display:none;">
+            <div class="moderation-panel">
+              <h4>🛡️ Moderasyon Paneli</h4>
+              <div class="mod-actions">
+                <div class="mod-section">
+                  <label>Kullanıcı Seç:</label>
+                  <select id="userSelect" class="mod-select">
+                    <option value="">Kullanıcı seçin...</option>
+                  </select>
+                </div>
+                <div class="mod-buttons">
+                  <button onclick="warnUser()" class="btn btn-warning btn-sm">⚠️ Uyar</button>
+                  <button onclick="kickUser()" class="btn btn-danger btn-sm">👢 At</button>
+                  <button onclick="banUser()" class="btn btn-danger btn-sm">🚫 Banla</button>
+                </div>
+                <div class="mod-section">
+                  <label>Uyarı/Ban Mesajı:</label>
+                  <textarea id="modMessage" class="mod-textarea" placeholder="Sebep yazın..."></textarea>
+                </div>
+                <div class="mod-section">
+                  <h5>📋 Banlı Kullanıcılar</h5>
+                  <div id="bannedList" class="banned-list">
+                    <p class="empty-list">Henüz banlı kullanıcı yok</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- Audio Element -->
+  <audio id="radioPlayer" style="display: none;"></audio>
+
   <script src="/socket.io/socket.io.js"></script>
-  <script src="dj-stream.js"></script>
+  <script>
+    const socket = io();
+    let isDJLoggedIn = false;
+    let djNickname = '';
+    let isStreaming = false;
+    let isPlaying = false;
+    let currentPlaylistIndex = -1;
+    let playlist = [];
+    let currentTab = 'chat';
+    let isBold = false;
+    let isItalic = false;
+    let soundEnabled = true;
+    let bannedUsers = [];
+    let chatSound = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIGGS56+OZSgwOUKXh7bllHAU2jdXyy3krBSh+zPLaizsKGGS56+OZSw==');
+    
+    const notificationSound = chatSound;
+
+    // DOM Elements
+    const loginPanel = document.getElementById('loginPanel');
+    const djControls = document.getElementById('djControls');
+    const connectionStatus = document.getElementById('connectionStatus');
+    const statusDot = connectionStatus.querySelector('.status-dot');
+    const currentDJName = document.getElementById('currentDJName');
+    const djStartTime = document.getElementById('djStartTime');
+    const onlineUsers = document.getElementById('onlineUsers');
+    const streamStatus = document.getElementById('streamStatus');
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const playPauseBtn = document.getElementById('playPauseBtn');
+    const vinyl = document.getElementById('vinyl');
+    const currentTrack = document.getElementById('currentTrack');
+    const currentArtist = document.getElementById('currentArtist');
+    const chatMessages = document.getElementById('chatMessages');
+    const djChatInput = document.getElementById('djChatInput');
+    const usersList = document.getElementById('usersList');
+    const userCount = document.getElementById('userCount');
+    const playlistList = document.getElementById('playlistList');
+    const uploadZone = document.getElementById('uploadZone');
+    const musicFileInput = document.getElementById('musicFileInput');
+    const radioPlayer = document.getElementById('radioPlayer');
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+        const savedNickname = localStorage.getItem('nickname');
+        const savedPassword = localStorage.getItem('djPassword');
+        
+        if (savedNickname && savedPassword) {
+            document.getElementById('djNickname').value = savedNickname;
+        }
+
+        // Setup drag and drop
+        setupDragAndDrop();
+    });
+
+    // Socket Events
+    socket.on('connect', () => {
+        statusDot.classList.add('connected');
+        connectionStatus.querySelector('span:last-child').textContent = 'Bağlandı';
+    });
+
+    socket.on('disconnect', () => {
+        statusDot.classList.remove('connected');
+        connectionStatus.querySelector('span:last-child').textContent = 'Bağlantı kesildi';
+    });
+
+    socket.on('chat message', (data) => {
+        addChatMessage(data);
+    });
+
+    socket.on('userJoined', (data) => {
+        addSystemMessage(`👋 ${data.nickname} katıldı`);
+        updateUsersList();
+    });
+
+    socket.on('userLeft', (data) => {
+        addSystemMessage(`👋 ${data.nickname} ayrıldı`);
+        updateUsersList();
+    });
+
+    socket.on('userList', (users) => {
+        onlineUsers.textContent = users.length;
+        userCount.textContent = users.length;
+        updateUsersList(users);
+    });
+
+    // DJ Login
+    function checkPassword() {
+        const nickname = document.getElementById('djNickname').value.trim();
+        const password = document.getElementById('djpass').value.trim();
+        const loginError = document.getElementById('loginError');
+        
+        if (!nickname || !password) {
+            loginError.textContent = '❌ Lütfen tüm alanları doldurun!';
+            return;
+        }
+        
+        if (password === '4545' || password === '4561') {
+            djNickname = nickname;
+            isDJLoggedIn = true;
+            
+            localStorage.setItem('nickname', nickname);
+            localStorage.setItem('djPassword', password);
+            
+            if (password === '4561') {
+                localStorage.setItem('isAdmin', 'true');
+            }
+            
+            loginPanel.style.display = 'none';
+            djControls.style.display = 'block';
+            
+            currentDJName.textContent = nickname;
+            djStartTime.textContent = new Date().toLocaleTimeString('tr-TR');
+            
+            socket.emit('activeDJ', { nickname, password });
+            addSystemMessage(`✅ DJ ${nickname} olarak giriş yaptınız!`);
+        } else {
+            loginError.textContent = '❌ Hatalı şifre!';
+        }
+    }
+
+    // Stream Controls
+    function startStream() {
+        isStreaming = true;
+        streamStatus.textContent = 'Açık';
+        streamStatus.className = 'status-badge status-online';
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+        
+        socket.emit('activeDJ', djNickname);
+        addSystemMessage('🎙️ Yayın başlatıldı!');
+    }
+
+    function stopStream() {
+        isStreaming = false;
+        streamStatus.textContent = 'Kapalı';
+        streamStatus.className = 'status-badge status-offline';
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+        
+        if (isPlaying) {
+            togglePlay();
+        }
+        
+        socket.emit('stop playing', djNickname);
+        addSystemMessage('🎙️ Yayın durduruldu!');
+    }
+
+    // Player Controls
+    function togglePlay() {
+        if (playlist.length === 0) {
+            alert('Playlist boş! Lütfen önce müzik ekleyin.');
+            return;
+        }
+
+        isPlaying = !isPlaying;
+        
+        if (isPlaying) {
+            playPauseBtn.textContent = '⏸️';
+            vinyl.classList.add('spinning');
+            
+            if (currentPlaylistIndex === -1) {
+                playNext();
+            } else {
+                radioPlayer.play();
+            }
+        } else {
+            playPauseBtn.textContent = '▶️';
+            vinyl.classList.remove('spinning');
+            radioPlayer.pause();
+        }
+    }
+
+    function playNext() {
+        if (playlist.length === 0) return;
+        
+        currentPlaylistIndex = (currentPlaylistIndex + 1) % playlist.length;
+        playSong(playlist[currentPlaylistIndex]);
+    }
+
+    function playPrevious() {
+        if (playlist.length === 0) return;
+        
+        currentPlaylistIndex = currentPlaylistIndex <= 0 ? playlist.length - 1 : currentPlaylistIndex - 1;
+        playSong(playlist[currentPlaylistIndex]);
+    }
+
+    function playSong(song) {
+        currentTrack.textContent = song.title;
+        currentArtist.textContent = song.artist || djNickname;
+        
+        radioPlayer.src = song.url;
+        radioPlayer.play();
+        isPlaying = true;
+        playPauseBtn.textContent = '⏸️';
+        vinyl.classList.add('spinning');
+        
+        socket.emit('now playing', {
+            song: `${song.title}${song.artist ? ' - ' + song.artist : ''}`,
+            dj: djNickname
+        });
+    }
+
+    // Music Info Update
+    function updateNowPlaying() {
+        const songName = document.getElementById('songName').value.trim();
+        const artistName = document.getElementById('artistName').value.trim();
+        
+        if (!songName) {
+            alert('Lütfen şarkı adını girin!');
+            return;
+        }
+        
+        const fullSong = artistName ? `${songName} - ${artistName}` : songName;
+        currentTrack.textContent = songName;
+        currentArtist.textContent = artistName || djNickname;
+        
+        socket.emit('now playing', {
+            song: fullSong,
+            dj: djNickname
+        });
+        
+        addSystemMessage(`🎵 Şu anda çalan güncellendi: ${fullSong}`);
+    }
+
+    // Drag and Drop
+    function setupDragAndDrop() {
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('drag-over');
+        });
+        
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('drag-over');
+        });
+        
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('drag-over');
+            
+            const files = e.dataTransfer.files;
+            handleFiles(files);
+        });
+
+        musicFileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        // Playlist reordering
+        playlistList.addEventListener('dragstart', (e) => {
+            if (e.target.classList.contains('playlist-item')) {
+                e.target.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/html', e.target.innerHTML);
+            }
+        });
+
+        playlistList.addEventListener('dragend', (e) => {
+            if (e.target.classList.contains('playlist-item')) {
+                e.target.classList.remove('dragging');
+            }
+        });
+
+        playlistList.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            const dragging = document.querySelector('.dragging');
+            const afterElement = getDragAfterElement(playlistList, e.clientY);
+            if (afterElement == null) {
+                playlistList.appendChild(dragging);
+            } else {
+                playlistList.insertBefore(dragging, afterElement);
+            }
+        });
+    }
+
+    function getDragAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll('.playlist-item:not(.dragging)')];
+        
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    function handleFiles(files) {
+        Array.from(files).forEach((file) => {
+            if (file.type.startsWith('audio/')) {
+                const url = URL.createObjectURL(file);
+                const song = {
+                    title: file.name.replace(/\.[^/.]+$/, ''),
+                    artist: djNickname,
+                    url: url,
+                    file: file
+                };
+                
+                playlist.push(song);
+                addToPlaylistUI(song);
+            }
+        });
+        
+        addSystemMessage(`✅ ${files.length} dosya eklendi`);
+    }
+
+    function addToPlaylistUI(song) {
+        if (playlistList.querySelector('.playlist-empty')) {
+            playlistList.innerHTML = '';
+        }
+
+        const item = document.createElement('div');
+        item.className = 'playlist-item';
+        item.draggable = true;
+        item.innerHTML = `
+            <div class="song-icon">🎵</div>
+            <div class="song-details">
+                <div class="song-title">${song.title}</div>
+                <div class="song-artist">${song.artist}</div>
+            </div>
+            <button onclick="removeFromPlaylist(this)" class="btn-remove">❌</button>
+        `;
+        
+        item.addEventListener('click', function(e) {
+            if (!e.target.classList.contains('btn-remove')) {
+                const index = [...playlistList.children].indexOf(item);
+                currentPlaylistIndex = index;
+                playSong(playlist[index]);
+            }
+        });
+        
+        playlistList.appendChild(item);
+    }
+
+    function removeFromPlaylist(btn) {
+        const item = btn.closest('.playlist-item');
+        const index = [...playlistList.children].indexOf(item);
+        
+        playlist.splice(index, 1);
+        item.remove();
+        
+        if (playlist.length === 0) {
+            playlistList.innerHTML = '<p class="playlist-empty">Playlist boş</p>';
+        }
+    }
+
+    function clearPlaylist() {
+        if (confirm('Playlist\'i temizlemek istediğinizden emin misiniz?')) {
+            playlist = [];
+            currentPlaylistIndex = -1;
+            playlistList.innerHTML = '<p class="playlist-empty">Playlist boş</p>';
+            addSystemMessage('🗑️ Playlist temizlendi');
+        }
+    }
+
+    // Chat Functions
+    function switchTab(tab) {
+        currentTab = tab;
+        
+        // Hide all tabs
+        document.getElementById('chatContent').style.display = 'none';
+        document.getElementById('usersContent').style.display = 'none';
+        document.getElementById('moderationContent').style.display = 'none';
+        
+        // Remove active class from all tabs
+        document.getElementById('chatTab').classList.remove('active');
+        document.getElementById('usersTab').classList.remove('active');
+        document.getElementById('moderationTab').classList.remove('active');
+        
+        // Show selected tab
+        if (tab === 'chat') {
+            document.getElementById('chatContent').style.display = 'block';
+            document.getElementById('chatTab').classList.add('active');
+        } else if (tab === 'users') {
+            document.getElementById('usersContent').style.display = 'block';
+            document.getElementById('usersTab').classList.add('active');
+        } else if (tab === 'moderation') {
+            document.getElementById('moderationContent').style.display = 'block';
+            document.getElementById('moderationTab').classList.add('active');
+            updateModerationPanel();
+        }
+    }
+
+    function sendDJMessage() {
+        const message = djChatInput.value.trim();
+        if (!message) return;
+        
+        const nickColor = document.getElementById('nickColor').value;
+        const textColor = document.getElementById('textColor').value;
+        const fontSize = document.getElementById('fontSize').value;
+        
+        const messageData = {
+            nickname: djNickname,
+            text: message,
+            isDJ: true,
+            timestamp: new Date().toISOString(),
+            style: {
+                nickColor: nickColor,
+                textColor: textColor,
+                fontSize: fontSize,
+                isBold: isBold,
+                isItalic: isItalic
+            }
+        };
+        
+        socket.emit('chat message', messageData);
+        djChatInput.value = '';
+    }
+
+    function addChatMessage(data) {
+        if (chatMessages.querySelector('.welcome-message')) {
+            chatMessages.innerHTML = '';
+        }
+
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${data.isDJ ? 'dj-message' : ''} ${data.nickname === djNickname ? 'own' : ''}`;
+        
+        const time = new Date(data.timestamp).toLocaleTimeString('tr-TR', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        
+        // Apply styles if provided
+        let nickStyle = '';
+        let textStyle = '';
+        
+        if (data.style) {
+            nickStyle = `color: ${data.style.nickColor || '#ff4081'};`;
+            textStyle = `color: ${data.style.textColor || '#ffffff'}; font-size: ${data.style.fontSize || 1}rem;`;
+            if (data.style.isBold) textStyle += ' font-weight: bold;';
+            if (data.style.isItalic) textStyle += ' font-style: italic;';
+        }
+        
+        messageDiv.innerHTML = `
+            <div class="message-header">
+                <strong style="${nickStyle}">${data.nickname}</strong> ${data.isDJ ? '🎙️' : ''}
+                <span class="message-time">${time}</span>
+            </div>
+            <div class="message-text" style="${textStyle}">${data.text}</div>
+        `;
+        
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        
+        // Play sound notification
+        if (soundEnabled && data.nickname !== djNickname) {
+            playNotificationSound();
+        }
+    }
+
+    function addSystemMessage(text) {
+        if (chatMessages.querySelector('.welcome-message')) {
+            chatMessages.innerHTML = '';
+        }
+
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message system-message';
+        messageDiv.textContent = text;
+        
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function addEmoji(emoji) {
+        djChatInput.value += emoji;
+        djChatInput.focus();
+    }
+
+    function updateUsersList(users = []) {
+        if (users.length === 0) {
+            usersList.innerHTML = '<div class="no-users"><p>👤 Henüz kimse çevrimiçi değil</p></div>';
+            return;
+        }
+
+        usersList.innerHTML = '';
+        users.forEach(user => {
+            if (!bannedUsers.includes(user.id)) {
+                const userDiv = document.createElement('div');
+                userDiv.className = 'user-item';
+                userDiv.innerHTML = `
+                    <div class="user-avatar">${user.nickname ? user.nickname.charAt(0).toUpperCase() : '?'}</div>
+                    <div class="user-name">${user.nickname || 'Anonim'}</div>
+                `;
+                usersList.appendChild(userDiv);
+            }
+        });
+    }
+
+    // Text Formatting Functions
+    function toggleBold() {
+        isBold = !isBold;
+        const btn = document.getElementById('boldBtn');
+        if (isBold) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    }
+
+    function toggleItalic() {
+        isItalic = !isItalic;
+        const btn = document.getElementById('italicBtn');
+        if (isItalic) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    }
+
+    function toggleSound() {
+        soundEnabled = !soundEnabled;
+        const btn = document.getElementById('soundBtn');
+        if (soundEnabled) {
+            btn.textContent = '🔊';
+            btn.classList.remove('muted');
+        } else {
+            btn.textContent = '🔇';
+            btn.classList.add('muted');
+        }
+    }
+
+    function playNotificationSound() {
+        if (soundEnabled) {
+            try {
+                notificationSound.currentTime = 0;
+                notificationSound.play().catch(e => console.log('Sound play failed:', e));
+            } catch (e) {
+                console.log('Sound error:', e);
+            }
+        }
+    }
+
+    // Moderation Functions
+    function updateModerationPanel() {
+        const userSelect = document.getElementById('userSelect');
+        socket.emit('request userList');
+        
+        socket.once('userList', (users) => {
+            userSelect.innerHTML = '<option value="">Kullanıcı seçin...</option>';
+            users.forEach(user => {
+                if (!bannedUsers.includes(user.id) && user.nickname !== djNickname) {
+                    const option = document.createElement('option');
+                    option.value = user.id;
+                    option.textContent = user.nickname || 'Anonim';
+                    userSelect.appendChild(option);
+                }
+            });
+        });
+        
+        updateBannedList();
+    }
+
+    function warnUser() {
+        const userSelect = document.getElementById('userSelect');
+        const modMessage = document.getElementById('modMessage');
+        const userId = userSelect.value;
+        const message = modMessage.value.trim();
+        
+        if (!userId) {
+            alert('Lütfen bir kullanıcı seçin!');
+            return;
+        }
+        
+        const userName = userSelect.options[userSelect.selectedIndex].text;
+        const warnText = message || 'Lütfen kurallara uyun!';
+        
+        socket.emit('warn user', {
+            userId: userId,
+            userName: userName,
+            message: warnText,
+            dj: djNickname
+        });
+        
+        addSystemMessage(`⚠️ ${userName} kullanıcısına uyarı gönderildi: ${warnText}`);
+        modMessage.value = '';
+    }
+
+    function kickUser() {
+        const userSelect = document.getElementById('userSelect');
+        const modMessage = document.getElementById('modMessage');
+        const userId = userSelect.value;
+        const message = modMessage.value.trim();
+        
+        if (!userId) {
+            alert('Lütfen bir kullanıcı seçin!');
+            return;
+        }
+        
+        const userName = userSelect.options[userSelect.selectedIndex].text;
+        const kickReason = message || 'Kural ihlali';
+        
+        if (confirm(`${userName} kullanıcısını atmak istediğinizden emin misiniz?`)) {
+            socket.emit('kick user', {
+                userId: userId,
+                userName: userName,
+                reason: kickReason,
+                dj: djNickname
+            });
+            
+            addSystemMessage(`👢 ${userName} sohbetten atıldı: ${kickReason}`);
+            modMessage.value = '';
+            updateModerationPanel();
+        }
+    }
+
+    function banUser() {
+        const userSelect = document.getElementById('userSelect');
+        const modMessage = document.getElementById('modMessage');
+        const userId = userSelect.value;
+        const message = modMessage.value.trim();
+        
+        if (!userId) {
+            alert('Lütfen bir kullanıcı seçin!');
+            return;
+        }
+        
+        const userName = userSelect.options[userSelect.selectedIndex].text;
+        const banReason = message || 'Kural ihlali';
+        
+        if (confirm(`${userName} kullanıcısını banlamak istediğinizden emin misiniz?`)) {
+            bannedUsers.push(userId);
+            
+            socket.emit('ban user', {
+                userId: userId,
+                userName: userName,
+                reason: banReason,
+                dj: djNickname
+            });
+            
+            addSystemMessage(`🚫 ${userName} banlandı: ${banReason}`);
+            modMessage.value = '';
+            updateModerationPanel();
+            updateBannedList();
+        }
+    }
+
+    function unbanUser(userId, userName) {
+        if (confirm(`${userName} kullanıcısının banını kaldırmak istediğinizden emin misiniz?`)) {
+            bannedUsers = bannedUsers.filter(id => id !== userId);
+            
+            socket.emit('unban user', {
+                userId: userId,
+                userName: userName,
+                dj: djNickname
+            });
+            
+            addSystemMessage(`✅ ${userName} kullanıcısının banı kaldırıldı`);
+            updateBannedList();
+            updateModerationPanel();
+        }
+    }
+
+    function updateBannedList() {
+        const bannedList = document.getElementById('bannedList');
+        
+        if (bannedUsers.length === 0) {
+            bannedList.innerHTML = '<p class="empty-list">Henüz banlı kullanıcı yok</p>';
+            return;
+        }
+        
+        bannedList.innerHTML = '';
+        bannedUsers.forEach((userId, index) => {
+            const userName = `Kullanıcı ${index + 1}`;
+            const banItem = document.createElement('div');
+            banItem.className = 'banned-item';
+            banItem.innerHTML = `
+                <span>🚫 ${userName}</span>
+                <button onclick="unbanUser('${userId}', '${userName}')" class="btn btn-sm btn-success">✅ Kaldır</button>
+            `;
+            bannedList.appendChild(banItem);
+        });
+    }
+
+    // Quick Actions
+    function sendAnnouncement() {
+        const text = prompt('Duyuru metninizi girin:');
+        if (text) {
+            socket.emit('announcement', {
+                dj: djNickname,
+                text: text
+            });
+            addSystemMessage(`📢 Duyuru gönderildi: ${text}`);
+        }
+    }
+
+    function showStats() {
+        const stats = `
+📊 İstatistikler:
+- Playlist: ${playlist.length} şarkı
+- Çevrimiçi: ${onlineUsers.textContent} dinleyici
+- Yayın: ${isStreaming ? 'Açık' : 'Kapalı'}
+- Oynatma: ${isPlaying ? 'Çalıyor' : 'Durdu'}
+        `;
+        alert(stats);
+    }
+
+    function emergencyStop() {
+        if (confirm('🚨 ACIL DURDUR! Yayını durdurmak istediğinizden emin misiniz?')) {
+            stopStream();
+            if (isPlaying) togglePlay();
+            addSystemMessage('🚨 Acil durdurma yapıldı!');
+        }
+    }
+
+    // Enter key for chat
+    djChatInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            sendDJMessage();
+        }
+    });
+
+    // Auto-next song
+    radioPlayer.addEventListener('ended', function() {
+        playNext();
+    });
+  </script>
 </body>
 </html>
-
