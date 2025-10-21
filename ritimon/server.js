@@ -76,12 +76,12 @@ let currentSongIndex = -1;
 let ffmpegProcess = null;
 let shoutcastConnection = null;
 
-// Listen2MyRadio Server Configuration
+// Listen2MyRadio Server Configuration (Shoutcast)
 const SHOUTCAST_CONFIG = {
   host: 'uk4freenew.listen2myradio.com',
   port: 26713,
   password: 'Ma104545',
-  mount: '/stream',
+  username: 'source', // Shoutcast için kullanıcı adı
   genre: 'Various',
   name: 'RitimON FM',
   description: 'RitimON FM - Your Music Station',
@@ -701,7 +701,8 @@ function streamToShoutcast(filePath, song) {
     ffmpegProcess.kill('SIGKILL');
   }
   
-  // FFmpeg command to encode and stream to Icecast/Shoutcast
+  // FFmpeg command to encode and stream to SHOUTCAST server
+  // Shoutcast format: icecast://username:password@host:port/
   const ffmpegArgs = [
     '-re', // Read input at native frame rate
     '-i', filePath, // Input file
@@ -709,12 +710,17 @@ function streamToShoutcast(filePath, song) {
     '-ab', `${SHOUTCAST_CONFIG.bitrate}k`, // Bitrate
     '-ar', SHOUTCAST_CONFIG.sampleRate.toString(), // Sample rate
     '-ac', SHOUTCAST_CONFIG.channels.toString(), // Channels
-    '-content_type', 'audio/mpeg', // Content type
+    '-content_type', 'audio/mpeg', // Content type for Shoutcast
     '-f', 'mp3', // Output format
-    `icecast://${SHOUTCAST_CONFIG.password}@${SHOUTCAST_CONFIG.host}:${SHOUTCAST_CONFIG.port}${SHOUTCAST_CONFIG.mount}`
+    '-ice_genre', SHOUTCAST_CONFIG.genre, // Stream genre
+    '-ice_name', SHOUTCAST_CONFIG.name, // Stream name
+    '-ice_description', SHOUTCAST_CONFIG.description, // Stream description
+    '-ice_url', SHOUTCAST_CONFIG.url, // Stream URL
+    // Shoutcast connection string (NOT Icecast format)
+    `icecast://${SHOUTCAST_CONFIG.username}:${SHOUTCAST_CONFIG.password}@${SHOUTCAST_CONFIG.host}:${SHOUTCAST_CONFIG.port}/`
   ];
   
-  console.log('🎧 FFmpeg başlatılıyor:', ffmpegArgs.join(' '));
+  console.log('🎧 FFmpeg başlatılıyor (Shoutcast):', ffmpegArgs.join(' '));
   
   ffmpegProcess = spawn('ffmpeg', ffmpegArgs);
   
