@@ -721,11 +721,9 @@ function streamToShoutcast(filePath, song) {
   ffmpegProcess = spawn('ffmpeg', ffmpegArgs);
   
   ffmpegProcess.stderr.on('data', (data) => {
-    // FFmpeg outputs to stderr by default
+    // FFmpeg outputs to stderr by default - log EVERYTHING for debugging
     const output = data.toString();
-    if (output.includes('error') || output.includes('Error')) {
-      console.error('❌ FFmpeg error:', output);
-    }
+    console.log('📡 FFmpeg:', output.trim());
   });
   
   ffmpegProcess.on('close', (code) => {
