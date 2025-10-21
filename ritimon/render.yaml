@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: ritimon-fm
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+    # FFmpeg will be installed via Aptfile
