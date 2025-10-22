@@ -346,7 +346,12 @@ io.on('connection', (socket) => {
       text: data.text,
       timestamp: data.timestamp,
       isDJ: activeDJs.has(socket.id),
-      warnings: user.warnings
+      warnings: user.warnings,
+      // Optional styling from client for colored text/nicks
+      textColor: data.textColor,
+      nickColor: data.nickColor,
+      bold: data.bold,
+      italic: data.italic
     };
 
     io.emit('chat message', messageData);
