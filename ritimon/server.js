@@ -700,31 +700,29 @@ function streamToShoutcast(filePath, song) {
   if (ffmpegProcess) {
     ffmpegProcess.kill('SIGKILL');
   }
+function streamToShoutcast(filePath, song) {
+  // Kill previous process if exists
+  if (ffmpegProcess) {
+    ffmpegProcess.kill('SIGKILL');
+  }
   
-  // FFmpeg command for Shoutcast V1 (MyRadioStream compatible)
-  // Using Icecast protocol which works with Shoutcast V1
+  // Minimal FFmpeg command for Shoutcast V1 (MyRadioStream)
+  // Using legacy Icecast protocol without metadata flags
   const ffmpegArgs = [
     '-re', // Read input at native frame rate
     '-i', filePath, // Input file
     '-acodec', 'libmp3lame', // MP3 encoder
-    '-b:a', `${SHOUTCAST_CONFIG.bitrate}k`, // Bitrate
-    '-ar', SHOUTCAST_CONFIG.sampleRate.toString(), // Sample rate
-    '-ac', SHOUTCAST_CONFIG.channels.toString(), // Channels
+    '-b:a', '128k', // Fixed bitrate for compatibility
     '-f', 'mp3', // Output format
-    '-ice_name', SHOUTCAST_CONFIG.name, // Station name
-    '-ice_description', SHOUTCAST_CONFIG.description, // Station description
-    '-ice_genre', SHOUTCAST_CONFIG.genre, // Genre
-    '-content_type', 'audio/mpeg', // Content type
-    // Shoutcast V1 için Icecast protokolü kullanıyoruz
-    `icecast://source:${SHOUTCAST_CONFIG.password}@${SHOUTCAST_CONFIG.host}:${SHOUTCAST_CONFIG.port}/stream`
+    '-legacy_icecast', '1', // Use legacy Icecast protocol
+    `icecast://source:${SHOUTCAST_CONFIG.password}@${SHOUTCAST_CONFIG.host}:${SHOUTCAST_CONFIG.port}/`
   ];
   
-  console.log('🎧 FFmpeg başlatılıyor (Shoutcast V1 - Icecast Protocol):', ffmpegArgs.join(' '));
+  console.log('🎧 FFmpeg başlatılıyor (Shoutcast V1 - Legacy Mode):', ffmpegArgs.join(' '));
   
   ffmpegProcess = spawn('ffmpeg', ffmpegArgs);
   
   ffmpegProcess.stderr.on('data', (data) => {
-    // FFmpeg outputs to stderr by default - log EVERYTHING for debugging
     const output = data.toString();
     console.log('📡 FFmpeg:', output.trim());
   });
@@ -732,7 +730,6 @@ function streamToShoutcast(filePath, song) {
   ffmpegProcess.on('close', (code) => {
     console.log(`✅ Şarkı bitti: ${song.title} (exit code: ${code})`);
     
-    // Eğer hata varsa (exit code != 0), yayını durdur
     if (code !== 0) {
       console.error(`❌ FFmpeg başarısız oldu (exit code: ${code}). Yayın durduruluyor...`);
       stopBroadcast();
@@ -758,7 +755,6 @@ function streamToShoutcast(filePath, song) {
     
     io.emit('song played', historyEntry);
     
-    // Auto-delete if enabled (sadece başarılı çalmadan sonra)
     if (song.autoDelete) {
       try {
         fs.unlinkSync(filePath);
@@ -768,16 +764,21 @@ function streamToShoutcast(filePath, song) {
       }
     }
     
-    // Play next song
     currentSongIndex++;
     
     if (isBroadcasting) {
-      setTimeout(() => playNextSong(), 1000); // 1 second gap
+      setTimeout(() => playNextSong(), 1000);
     }
   });
   
   ffmpegProcess.on('error', (error) => {
     console.error('❌ FFmpeg process error:', error);
+    currentSongIndex++;
+    if (isBroadcasting) {
+      setTimeout(() => playNextSong(), 2000);
+    }
+  });
+}
     currentSongIndex++;
     if (isBroadcasting) {
       setTimeout(() => playNextSong(), 2000);
@@ -793,3 +794,4 @@ server.listen(PORT, () => {
   console.log(`📊 API Status: http://localhost:${PORT}/api/status`);
   console.log(`📡 Broadcast Ready: ${SHOUTCAST_CONFIG.host}:${SHOUTCAST_CONFIG.port}`);
 });
+
