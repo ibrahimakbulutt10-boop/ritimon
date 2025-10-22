@@ -700,11 +700,6 @@ function streamToShoutcast(filePath, song) {
   if (ffmpegProcess) {
     ffmpegProcess.kill('SIGKILL');
   }
-function streamToShoutcast(filePath, song) {
-  // Kill previous process if exists
-  if (ffmpegProcess) {
-    ffmpegProcess.kill('SIGKILL');
-  }
   
   // Minimal FFmpeg command for Shoutcast V1 (MyRadioStream)
   // Using legacy Icecast protocol without metadata flags
@@ -779,12 +774,6 @@ function streamToShoutcast(filePath, song) {
     }
   });
 }
-    currentSongIndex++;
-    if (isBroadcasting) {
-      setTimeout(() => playNextSong(), 2000);
-    }
-  });
-}
 
 // Start server
 server.listen(PORT, () => {
@@ -794,4 +783,3 @@ server.listen(PORT, () => {
   console.log(`📊 API Status: http://localhost:${PORT}/api/status`);
   console.log(`📡 Broadcast Ready: ${SHOUTCAST_CONFIG.host}:${SHOUTCAST_CONFIG.port}`);
 });
-
