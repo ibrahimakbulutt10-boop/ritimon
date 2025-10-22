@@ -78,16 +78,18 @@ let currentSongIndex = -1;
 let ffmpegProcess = null;
 let shoutcastConnection = null;
 
-// MyRadioStream.com Server Configuration (Shoutcast)
+// Shoutcast Server Configuration (Listen2MyRadio - Shoutcast v2)
 const SHOUTCAST_CONFIG = {
-  host: 's48.myradiostream.com',
-  port: 14340,
-  password: 's6DV7g2Tx',
-  username: 'source', // Shoutcast için kullanıcı adı
+  version: 'v2', // 'v1' or 'v2'
+  host: 'uk4freenew.listen2myradio.com',
+  port: 26713,
+  username: 'source',
+  password: 'Ma104545', // Streaming password (not admin)
+  streamId: 1,
   genre: 'Various',
   name: 'RitimON FM',
   description: 'RitimON FM - Your Music Station',
-  url: 'http://ritimon.on-air.fm',
+  url: 'http://ritimon.radio12345.com',
   bitrate: 128,
   sampleRate: 44100,
   channels: 2
@@ -248,10 +250,14 @@ app.get('/radio', (req, res) => {
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
 
+    const listenerPath = SHOUTCAST_CONFIG.version === 'v2'
+      ? `/stream/${SHOUTCAST_CONFIG.streamId}`
+      : '/;';
+
     const upstream = http.get({
       host: SHOUTCAST_CONFIG.host,
       port: SHOUTCAST_CONFIG.port,
-      path: '/;',
+      path: listenerPath,
       headers: {
         'Icy-MetaData': '1',
         'User-Agent': 'RitimON-FM-Proxy'
@@ -832,58 +838,81 @@ function streamToShoutcast(filePath, song) {
 
   ffmpegProcess = spawn('ffmpeg', ffmpegArgs);
 
-  // Create TCP connection to Shoutcast server (v1 protocol)
-  let isAuthenticated = false;
-  let headersSent = false;
+  if (SHOUTCAST_CONFIG.version === 'v2') {
+    // Shoutcast v2: HTTP-like SOURCE request with Basic auth
+    shoutcastConnection = net.connect(SHOUTCAST_CONFIG.port, SHOUTCAST_CONFIG.host, () => {
+      console.log(`📡 Shoutcast v2'ye bağlandı: ${SHOUTCAST_CONFIG.host}:${SHOUTCAST_CONFIG.port}`);
+      const auth = Buffer.from(`${SHOUTCAST_CONFIG.username}:${SHOUTCAST_CONFIG.password}`).toString('base64');
+      const headers = [
+        `SOURCE /stream/${SHOUTCAST_CONFIG.streamId} HTTP/1.0`,
+        `Host: ${SHOUTCAST_CONFIG.host}:${SHOUTCAST_CONFIG.port}`,
+        `Authorization: Basic ${auth}`,
+        'User-Agent: RitimON-FM-Encoder',
+        'Content-Type: audio/mpeg',
+        `icy-name: ${SHOUTCAST_CONFIG.name}`,
+        `icy-genre: ${SHOUTCAST_CONFIG.genre}`,
+        `icy-url: ${SHOUTCAST_CONFIG.url}`,
+        'icy-pub: 1',
+        `icy-br: ${SHOUTCAST_CONFIG.bitrate}`,
+        '',
+        ''
+      ].join('\r\n');
+      shoutcastConnection.write(headers);
+      // Start piping encoder output
+      ffmpegProcess.stdout.pipe(shoutcastConnection);
+    });
 
-  shoutcastConnection = net.connect(SHOUTCAST_CONFIG.port, SHOUTCAST_CONFIG.host, () => {
-    console.log(`📡 Shoutcast sunucusuna bağlanıldı: ${SHOUTCAST_CONFIG.host}:${SHOUTCAST_CONFIG.port}`);
-
-    // Send Shoutcast V1 authentication (PASSWORD\r\n)
-    const authData = `${SHOUTCAST_CONFIG.password}\r\n`;
-    shoutcastConnection.write(authData);
-    console.log('🔐 Authentication gönderildi');
-  });
-
-  // Handle Shoutcast connection events
-  shoutcastConnection.on('data', (data) => {
-    const response = data.toString();
-    console.log('📡 Shoutcast yanıtı:', response.trim());
-
-    if (!isAuthenticated) {
-      // Typical responses: 'OK2' or 'OK' (success), 'Invalid password' (failure)
-      if (/^OK/.test(response)) {
-        isAuthenticated = true;
-        // Send required ICY headers before streaming
-        if (!headersSent) {
-          const icyHeaders = [
-            `icy-name:${SHOUTCAST_CONFIG.name}`,
-            `icy-genre:${SHOUTCAST_CONFIG.genre}`,
-            `icy-url:${SHOUTCAST_CONFIG.url}`,
-            'icy-pub:1',
-            `icy-br:${SHOUTCAST_CONFIG.bitrate}`,
-            'content-type:audio/mpeg',
-            '',
-            ''
-          ].join('\r\n');
-          shoutcastConnection.write(icyHeaders);
-          headersSent = true;
-        }
-
-        console.log('✅ Authentication başarılı, stream başlıyor...');
-        // Pipe FFmpeg output to Shoutcast
-        try {
-          ffmpegProcess.stdout.pipe(shoutcastConnection);
-        } catch (err) {
-          console.error('Pipe error:', err.message);
-        }
-      } else if (/Invalid password|ERROR/i.test(response)) {
-        console.error('❌ Shoutcast kimlik doğrulama başarısız');
-        stopBroadcast();
-        io.emit('broadcast error', { message: 'Shoutcast kimlik doğrulama başarısız' });
+    shoutcastConnection.on('data', (data) => {
+      const txt = data.toString();
+      if (/200 OK|OK2/i.test(txt)) {
+        console.log('✅ Shoutcast v2 kabul etti');
+      } else if (/401|403|Invalid|ERROR/i.test(txt)) {
+        console.error('❌ Shoutcast v2 hata:', txt.trim());
       }
-    }
-  });
+    });
+  } else {
+    // Shoutcast v1 legacy: password then ICY headers
+    let isAuthenticated = false;
+    let headersSent = false;
+
+    shoutcastConnection = net.connect(SHOUTCAST_CONFIG.port, SHOUTCAST_CONFIG.host, () => {
+      console.log(`📡 Shoutcast v1'e bağlanıldı: ${SHOUTCAST_CONFIG.host}:${SHOUTCAST_CONFIG.port}`);
+      const authData = `${SHOUTCAST_CONFIG.password}\r\n`;
+      shoutcastConnection.write(authData);
+      console.log('🔐 Authentication gönderildi');
+    });
+
+    shoutcastConnection.on('data', (data) => {
+      const response = data.toString();
+      console.log('📡 Shoutcast yanıtı:', response.trim());
+
+      if (!isAuthenticated) {
+        if (/^OK/.test(response)) {
+          isAuthenticated = true;
+          if (!headersSent) {
+            const icyHeaders = [
+              `icy-name:${SHOUTCAST_CONFIG.name}`,
+              `icy-genre:${SHOUTCAST_CONFIG.genre}`,
+              `icy-url:${SHOUTCAST_CONFIG.url}`,
+              'icy-pub:1',
+              `icy-br:${SHOUTCAST_CONFIG.bitrate}`,
+              'content-type:audio/mpeg',
+              '',
+              ''
+            ].join('\r\n');
+            shoutcastConnection.write(icyHeaders);
+            headersSent = true;
+          }
+          console.log('✅ Authentication başarılı, stream başlıyor...');
+          ffmpegProcess.stdout.pipe(shoutcastConnection);
+        } else if (/Invalid password|ERROR/i.test(response)) {
+          console.error('❌ Shoutcast v1 kimlik doğrulama başarısız');
+          stopBroadcast();
+          io.emit('broadcast error', { message: 'Shoutcast kimlik doğrulama başarısız' });
+        }
+      }
+    });
+  }
 
   shoutcastConnection.on('error', (error) => {
     console.error('❌ Shoutcast bağlantı hatası:', error.message);
