@@ -110,8 +110,8 @@ app.get('/chat-room', (req, res) => {
 });
 
 app.get('/dj', (req, res) => {
-  // Route DJ to the unified chat page with integrated DJ controls
-  res.sendFile(path.join(__dirname, 'public', 'chat-room.html'));
+  // Route DJ to the dedicated DJ control panel
+  res.sendFile(path.join(__dirname, 'public', 'dj-control.html'));
 });
 
 app.get('/dj-control', (req, res) => {
