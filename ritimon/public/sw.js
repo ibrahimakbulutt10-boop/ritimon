@@ -5,7 +5,7 @@ const urlsToCache = [
   '/index.html',
   '/chat.html',
   '/chat-room.html',
-  '/dj.html',
+
   '/listener.html',
   '/style.css',
   '/chat.css',
@@ -119,3 +119,4 @@ self.addEventListener('notificationclick', event => {
     );
   }
 });
+
