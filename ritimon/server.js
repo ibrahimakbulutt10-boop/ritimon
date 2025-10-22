@@ -605,6 +605,39 @@ io.on('connection', (socket) => {
     });
   });
 
+  // Toggle Ban (Ban ↔ Unban) for convenience
+  socket.on('toggleBan', (data) => {
+    const dj = activeDJs.get(socket.id);
+    if (!dj) return;
+
+    const target = data?.targetNickname;
+    if (!target) return;
+
+    if (bannedUsers.has(target)) {
+      // Unban
+      bannedUsers.delete(target);
+      io.emit('userUnbanned', {
+        targetNickname: target,
+        djNickname: dj.nickname
+      });
+      console.log(`${dj.nickname} yasağı kaldırdı: ${target}`);
+    } else {
+      // Ban
+      bannedUsers.add(target);
+      const targetUser = Array.from(onlineUsers.values()).find(u => u.nickname === target);
+      if (targetUser) {
+        io.to(targetUser.id).emit('banned', { reason: data.reason });
+        io.sockets.sockets.get(targetUser.id)?.disconnect(true);
+      }
+      io.emit('userBanned', {
+        targetNickname: target,
+        djNickname: dj.nickname,
+        reason: data.reason
+      });
+      console.log(`${dj.nickname} kullanıcıyı yasakladı: ${target}`);
+    }
+  });
+
   // Typing indicators
   socket.on('typing', (data) => {
     socket.broadcast.emit('typing', data);
