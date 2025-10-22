@@ -321,7 +321,7 @@
         <div class="chat-header">
             <div class="chat-info">
                 <h1>🎧 RitimON FM Sohbet</h1>
-                <div class="subtitle">Canlı Sohbet Odası</div>
+                <div class="subtitle">RitimON'da sohbet • Yayındaki DJ: <strong id="headerDJ">-</strong></div>
                 <!-- Radio Player -->
                 <div style="margin-top: 10px; display: flex; align-items: center; gap: 10px;">
                     <button id="radioPlayBtn" onclick="toggleRadio()" style="
@@ -362,6 +362,20 @@
         </div>
         
         <div class="chat-input-container">
+            <!-- Styling bar -->
+            <div style="display:flex; gap:10px; align-items:center; margin-bottom:8px; flex-wrap:wrap;">
+                <span style="font-size:0.85rem; opacity:0.8;">🎨 Nick:</span>
+                <input type="color" id="nickColorPicker" value="#4ecdc4" />
+                <span style="font-size:0.85rem; opacity:0.8;">Yazı:</span>
+                <input type="color" id="textColorPicker" value="#ffffff" />
+                <label style="display:flex; align-items:center; gap:6px; font-size:0.85rem;">
+                    <input type="checkbox" id="boldToggle" /> Kalın
+                </label>
+                <label style="display:flex; align-items:center; gap:6px; font-size:0.85rem;">
+                    <input type="checkbox" id="italicToggle" /> İtalik
+                </label>
+                <button id="toggleDJPanelBtn" style="margin-left:auto; padding:6px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.05); color:#fff; cursor:pointer;">🎛️ DJ Paneli</button>
+            </div>
             <div class="emoji-picker">
                 <button class="emoji-btn" onclick="addEmoji('😊')">😊</button>
                 <button class="emoji-btn" onclick="addEmoji('😂')">😂</button>
@@ -376,6 +390,26 @@
                 <input type="text" class="chat-input" id="messageInput" placeholder="Mesajınızı yazın..." maxlength="200">
                 <button class="send-btn" onclick="sendMessage()">📤 Gönder</button>
             </div>
+        </div>
+
+        <!-- Integrated DJ Panel (collapsed by default) -->
+        <div id="djPanel" style="display:none; margin-top:12px; padding:12px; border:1px solid rgba(255,255,255,0.1); border-radius:12px; background:rgba(255,255,255,0.05);">
+            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
+                <input type="text" id="djNickname" placeholder="DJ adınız" style="padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.2); background:rgba(0,0,0,0.2); color:white;" />
+                <input type="password" id="djpass" placeholder="Şifre (4545/4561)" style="padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.2); background:rgba(0,0,0,0.2); color:white;" />
+                <button id="djLoginBtn" style="padding:8px 12px; border:none; border-radius:8px; background:linear-gradient(45deg,#ff4081,#ff6ec7); color:white; cursor:pointer;">Giriş</button>
+                <button id="djLogoutBtn" style="padding:8px 12px; border:none; border-radius:8px; background:rgba(255,64,129,0.2); color:#ff4081; cursor:pointer; display:none;">Çıkış</button>
+                <span id="djStatusText" style="font-size:0.85rem; opacity:0.8;">Giriş yapılmadı</span>
+            </div>
+            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:8px;">
+                <input type="file" id="djFiles" accept="audio/*" multiple style="display:none;" />
+                <button id="chooseFilesBtn" style="padding:8px 12px; border:none; border-radius:8px; background:rgba(78,205,196,0.2); color:#4ecdc4; cursor:pointer;">📁 Şarkı Seç</button>
+                <label style="font-size:0.85rem;"><input type="checkbox" id="autoDeleteCheckbox" checked /> Otomatik Sil</label>
+                <button id="startBroadcastBtn" style="padding:8px 12px; border:none; border-radius:8px; background:linear-gradient(45deg,#4ecdc4,#44a08d); color:white; cursor:pointer;">▶️ Yayını Başlat</button>
+                <button id="stopBroadcastBtn" style="padding:8px 12px; border:none; border-radius:8px; background:linear-gradient(45deg,#ff6b6b,#ee5a52); color:white; cursor:pointer;" disabled>⏹️ Durdur</button>
+                <span style="font-size:0.85rem; opacity:0.8;">Şu an: <strong id="djNowPlaying">-</strong></span>
+            </div>
+            <div id="playlistList" style="display:flex; flex-direction:column; gap:6px; max-height:200px; overflow:auto; border:1px dashed rgba(255,255,255,0.2); padding:8px; border-radius:8px;"></div>
         </div>
     </div>
 

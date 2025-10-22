@@ -1,6 +1,10 @@
 // Chat Stream JavaScript - Enhanced with Socket.io
 const socket = io();
 const nickname = localStorage.getItem('nickname') || 'Anonim';
+let selectedTextColor = '#ffffff';
+let selectedNickColor = '#4ecdc4';
+let isBold = false;
+let isItalic = false;
 let onlineUsers = new Set();
 
 // Radio Stream Configuration
@@ -58,6 +62,21 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Load online users
     updateUserList();
+
+    // Styling controls if present
+    const nickPicker = document.getElementById('nickColorPicker');
+    const textPicker = document.getElementById('textColorPicker');
+    const boldToggle = document.getElementById('boldToggle');
+    const italicToggle = document.getElementById('italicToggle');
+    const djToggleBtn = document.getElementById('toggleDJPanelBtn');
+    const djPanel = document.getElementById('djPanel');
+    if (nickPicker) nickPicker.addEventListener('input', e => selectedNickColor = e.target.value);
+    if (textPicker) textPicker.addEventListener('input', e => selectedTextColor = e.target.value);
+    if (boldToggle) boldToggle.addEventListener('change', e => isBold = e.target.checked);
+    if (italicToggle) italicToggle.addEventListener('change', e => isItalic = e.target.checked);
+    if (djToggleBtn && djPanel) djToggleBtn.addEventListener('click', () => {
+        djPanel.style.display = djPanel.style.display === 'none' ? 'block' : 'none';
+    });
 });
 
 // Socket Events
@@ -124,7 +143,11 @@ function sendMessage() {
     const messageData = {
         nickname: nickname,
         text: message,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        textColor: selectedTextColor,
+        nickColor: selectedNickColor,
+        bold: isBold,
+        italic: isItalic
     };
     
     socket.emit('chat message', messageData);
@@ -147,14 +170,16 @@ function addMessage(data) {
     // Add right-click context menu for non-own messages
     const rightClickHandler = data.isOwn ? '' : `oncontextmenu="showContextMenu(event, '${data.id}', '${data.nickname}')"`;
     
+    const nickStyle = `color:${data.nickColor || '#4ecdc4'};${data.bold ? 'font-weight:700;' : ''}${data.italic ? 'font-style:italic;' : ''}`;
+    const textStyle = `color:${data.textColor || '#ffffff'};${data.bold ? 'font-weight:700;' : ''}${data.italic ? 'font-style:italic;' : ''}`;
     messageDiv.innerHTML = `
         <div class="message-info" ${rightClickHandler}>
-            <strong>${data.nickname}</strong> • ${time}
+            <strong style="${nickStyle}">${escapeHtml(data.nickname)}</strong> • ${time}
             ${data.isDJ ? '<span class="dj-badge">🎙️ DJ</span>' : ''}
             ${data.warnings > 0 ? `<span class="warning-badge">⚠️ ${data.warnings}</span>` : ''}
         </div>
         <div class="message-content">
-            <div class="message-text">${escapeHtml(data.text)}</div>
+            <div class="message-text" style="${textStyle}">${escapeHtml(data.text)}</div>
         </div>
     `;
     
