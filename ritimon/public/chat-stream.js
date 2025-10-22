@@ -338,6 +338,13 @@ function hideContextMenu() {
     document.removeEventListener('click', hideContextMenu);
 }
 
+function toggleBanUser() {
+    if (!selectedUser) return;
+    const reason = prompt('Ban/Unban için neden (isteğe bağlı):', '');
+    socket.emit('toggleBan', { targetNickname: selectedUser.nickname, reason });
+    hideContextMenu();
+}
+
 function warnUser() {
     if (!selectedUser) return;
     
