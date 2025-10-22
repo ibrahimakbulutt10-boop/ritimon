@@ -240,6 +240,54 @@ app.get('/api/broadcast/status', (req, res) => {
   });
 });
 
+// HTTPS-friendly radio proxy to avoid mixed-content issues on browsers
+app.get('/radio', (req, res) => {
+  try {
+    res.setHeader('Content-Type', 'audio/mpeg');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
+    const upstream = http.get({
+      host: SHOUTCAST_CONFIG.host,
+      port: SHOUTCAST_CONFIG.port,
+      path: '/;',
+      headers: {
+        'Icy-MetaData': '1',
+        'User-Agent': 'RitimON-FM-Proxy'
+      }
+    }, (upRes) => {
+      // Pass through audio data
+      upRes.on('error', (err) => {
+        console.error('Upstream stream error:', err.message);
+        if (!res.headersSent) {
+          res.statusCode = 502;
+        }
+        res.end();
+      });
+      upRes.pipe(res);
+    });
+
+    upstream.on('error', (err) => {
+      console.error('Radio proxy error:', err.message);
+      if (!res.headersSent) {
+        res.statusCode = 502;
+        res.end('Stream proxy error');
+      } else {
+        res.end();
+      }
+    });
+
+    // Abort upstream if client disconnects
+    req.on('close', () => {
+      upstream.destroy();
+    });
+  } catch (e) {
+    console.error('Radio proxy exception:', e.message);
+    res.status(500).end();
+  }
+});
+
 // Socket.io connection handling
 io.on('connection', (socket) => {
   console.log('Yeni bağlantı:', socket.id);
