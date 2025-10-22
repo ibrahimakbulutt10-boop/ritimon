@@ -78,18 +78,19 @@ let currentSongIndex = -1;
 let ffmpegProcess = null;
 let shoutcastConnection = null;
 
-// Shoutcast Server Configuration
+// Icecast Server Configuration (server-side push)
 const SHOUTCAST_CONFIG = {
-  version: 'v1', // 'v1' or 'v2'
-  host: 'uk4freenew.listen2myradio.com',
-  port: 26713,
+  version: 'v2', // using Icecast-compatible output
+  host: '88.150.230.110',
+  port: 37836,
   username: 'source',
-  password: 'Ma104545', // Streaming password (not admin)
+  password: 'Ma104545',
+  mount: '/stream',
   streamId: 1,
   genre: 'Various',
   name: 'RitimON FM',
   description: 'RitimON FM - Your Music Station',
-  url: 'http://ritimon.radio12345.com',
+  url: 'https://www.ritimon.com.tr',
   bitrate: 128,
   sampleRate: 44100,
   channels: 2
@@ -820,97 +821,25 @@ function streamToShoutcast(filePath, song) {
     shoutcastConnection.end();
   }
 
-  // FFmpeg pipe mode - output MP3 to stdout
+  // FFmpeg native icecast output (stable)
+  const mount = SHOUTCAST_CONFIG.mount || `/stream/${SHOUTCAST_CONFIG.streamId || 1}`;
+  const outputUrl = `icecast://${encodeURIComponent(SHOUTCAST_CONFIG.username)}:${encodeURIComponent(SHOUTCAST_CONFIG.password)}@${SHOUTCAST_CONFIG.host}:${SHOUTCAST_CONFIG.port}${mount}`;
+
   const ffmpegArgs = [
-    '-re', // Read input at native frame rate
-    '-i', filePath, // Input file
-    '-acodec', 'libmp3lame', // MP3 encoder
-    '-ab', `${SHOUTCAST_CONFIG.bitrate}k`, // Audio bitrate
-    '-ar', SHOUTCAST_CONFIG.sampleRate.toString(), // Sample rate
-    '-ac', SHOUTCAST_CONFIG.channels.toString(), // Channels
-    '-f', 'mp3', // Output format MP3
-    '-' // Output to stdout (pipe)
+    '-re',
+    '-i', filePath,
+    '-vn',
+    '-c:a', 'libmp3lame',
+    '-b:a', `${SHOUTCAST_CONFIG.bitrate}k`,
+    '-ar', SHOUTCAST_CONFIG.sampleRate.toString(),
+    '-ac', SHOUTCAST_CONFIG.channels.toString(),
+    '-content_type', 'audio/mpeg',
+    '-f', 'mp3',
+    outputUrl
   ];
 
-  console.log('🎧 FFmpeg başlatılıyor (TCP Pipe Mode):', ffmpegArgs.join(' '));
-
+  console.log('🎧 FFmpeg başlatılıyor (icecast output):', ffmpegArgs.join(' '));
   ffmpegProcess = spawn('ffmpeg', ffmpegArgs);
-
-  if (SHOUTCAST_CONFIG.version === 'v2') {
-    // Shoutcast v2: HTTP-like SOURCE request with Basic auth
-    shoutcastConnection = net.connect(SHOUTCAST_CONFIG.port, SHOUTCAST_CONFIG.host, () => {
-      console.log(`📡 Shoutcast v2'ye bağlandı: ${SHOUTCAST_CONFIG.host}:${SHOUTCAST_CONFIG.port}`);
-      const auth = Buffer.from(`${SHOUTCAST_CONFIG.username}:${SHOUTCAST_CONFIG.password}`).toString('base64');
-      const headers = [
-        `SOURCE /stream/${SHOUTCAST_CONFIG.streamId} HTTP/1.0`,
-        `Host: ${SHOUTCAST_CONFIG.host}:${SHOUTCAST_CONFIG.port}`,
-        `Authorization: Basic ${auth}`,
-        'User-Agent: RitimON-FM-Encoder',
-        'Content-Type: audio/mpeg',
-        `icy-name: ${SHOUTCAST_CONFIG.name}`,
-        `icy-genre: ${SHOUTCAST_CONFIG.genre}`,
-        `icy-url: ${SHOUTCAST_CONFIG.url}`,
-        'icy-pub: 1',
-        `icy-br: ${SHOUTCAST_CONFIG.bitrate}`,
-        '',
-        ''
-      ].join('\r\n');
-      shoutcastConnection.write(headers);
-      // Start piping encoder output
-      ffmpegProcess.stdout.pipe(shoutcastConnection);
-    });
-
-    shoutcastConnection.on('data', (data) => {
-      const txt = data.toString();
-      if (/200 OK|OK2/i.test(txt)) {
-        console.log('✅ Shoutcast v2 kabul etti');
-      } else if (/401|403|Invalid|ERROR/i.test(txt)) {
-        console.error('❌ Shoutcast v2 hata:', txt.trim());
-      }
-    });
-  } else {
-    // Shoutcast v1 legacy: password then ICY headers
-    let isAuthenticated = false;
-    let headersSent = false;
-
-    shoutcastConnection = net.connect(SHOUTCAST_CONFIG.port, SHOUTCAST_CONFIG.host, () => {
-      console.log(`📡 Shoutcast v1'e bağlanıldı: ${SHOUTCAST_CONFIG.host}:${SHOUTCAST_CONFIG.port}`);
-      const authData = `${SHOUTCAST_CONFIG.password}\r\n`;
-      shoutcastConnection.write(authData);
-      console.log('🔐 Authentication gönderildi');
-    });
-
-    shoutcastConnection.on('data', (data) => {
-      const response = data.toString();
-      console.log('📡 Shoutcast yanıtı:', response.trim());
-
-      if (!isAuthenticated) {
-        if (/^OK/.test(response)) {
-          isAuthenticated = true;
-          if (!headersSent) {
-            const icyHeaders = [
-              `icy-name:${SHOUTCAST_CONFIG.name}`,
-              `icy-genre:${SHOUTCAST_CONFIG.genre}`,
-              `icy-url:${SHOUTCAST_CONFIG.url}`,
-              'icy-pub:1',
-              `icy-br:${SHOUTCAST_CONFIG.bitrate}`,
-              'content-type:audio/mpeg',
-              '',
-              ''
-            ].join('\r\n');
-            shoutcastConnection.write(icyHeaders);
-            headersSent = true;
-          }
-          console.log('✅ Authentication başarılı, stream başlıyor...');
-          ffmpegProcess.stdout.pipe(shoutcastConnection);
-        } else if (/Invalid|ERROR|BADPASS|ERR/i.test(response)) {
-          console.error('❌ Shoutcast v1 kimlik doğrulama başarısız veya hata:', response.trim());
-          stopBroadcast();
-          io.emit('broadcast error', { message: 'Shoutcast v1 kimlik doğrulama başarısız' });
-        }
-      }
-    });
-  }
 
   shoutcastConnection.on('error', (error) => {
     console.error('❌ Shoutcast bağlantı hatası:', error.message);
