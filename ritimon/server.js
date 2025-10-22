@@ -75,12 +75,13 @@ let broadcastPlaylist = [];
 let currentSongIndex = -1;
 let ffmpegProcess = null;
 let shoutcastConnection = null;
+
 // MyRadioStream.com Server Configuration (Shoutcast)
 const SHOUTCAST_CONFIG = {
   host: 's48.myradiostream.com',
   port: 14340,
   password: 's6DV7g2Tx',
-  username: 'source',
+  username: 'source', // Shoutcast için kullanıcı adı
   genre: 'Various',
   name: 'RitimON FM',
   description: 'RitimON FM - Your Music Station',
@@ -89,6 +90,7 @@ const SHOUTCAST_CONFIG = {
   sampleRate: 44100,
   channels: 2
 };
+
 // Routes
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
@@ -549,25 +551,26 @@ io.on('connection', (socket) => {
       socket.emit('broadcast error', { message: 'DJ girişi gerekli' });
       return;
     }
- // FFmpeg command for Shoutcast V1 (MyRadioStream compatible)
-  // Using Icecast protocol which works with Shoutcast V1
-  const ffmpegArgs = [
-    '-re', // Read input at native frame rate
-    '-i', filePath, // Input file
-    '-acodec', 'libmp3lame', // MP3 encoder
-    '-b:a', `${SHOUTCAST_CONFIG.bitrate}k`, // Bitrate
-    '-ar', SHOUTCAST_CONFIG.sampleRate.toString(), // Sample rate
-    '-ac', SHOUTCAST_CONFIG.channels.toString(), // Channels
-    '-f', 'mp3', // Output format
-    '-ice_name', SHOUTCAST_CONFIG.name, // Station name
-    '-ice_description', SHOUTCAST_CONFIG.description, // Station description
-    '-ice_genre', SHOUTCAST_CONFIG.genre, // Genre
-    '-content_type', 'audio/mpeg', // Content type
-    // Shoutcast V1 için Icecast protokolü kullanıyoruz
-    `icecast://source:${SHOUTCAST_CONFIG.password}@${SHOUTCAST_CONFIG.host}:${SHOUTCAST_CONFIG.port}/stream`
-  ];
+    
+    if (!isBroadcasting) {
+      socket.emit('broadcast error', { message: 'Yayın zaten kapalı' });
+      return;
+    }
+    
+    stopBroadcast();
+    
+    socket.emit('broadcast stopped', {
+      success: true,
+      message: 'Yayın durduruldu'
+    });
+    
+    console.log(`🛑 ${dj.nickname} yayını durdurdu`);
+  });
   
-  console.log('🎧 FFmpeg başlatılıyor (Shoutcast V1 - Icecast Protocol):', ffmpegArgs.join(' '));
+  socket.on('skip song', () => {
+    const dj = activeDJs.get(socket.id);
+    if (!dj || !isBroadcasting) return;
+    
     console.log(`⏭️ ${dj.nickname} şarkıyı geçti`);
     
     // Kill current FFmpeg process
@@ -698,8 +701,8 @@ function streamToShoutcast(filePath, song) {
     ffmpegProcess.kill('SIGKILL');
   }
   
-  // FFmpeg command for Shoutcast v2 (Listen2MyRadio compatible)
-  // Using direct HTTP streaming with authentication
+  // FFmpeg command for Shoutcast V1 (MyRadioStream compatible)
+  // Using Icecast protocol which works with Shoutcast V1
   const ffmpegArgs = [
     '-re', // Read input at native frame rate
     '-i', filePath, // Input file
@@ -708,12 +711,15 @@ function streamToShoutcast(filePath, song) {
     '-ar', SHOUTCAST_CONFIG.sampleRate.toString(), // Sample rate
     '-ac', SHOUTCAST_CONFIG.channels.toString(), // Channels
     '-f', 'mp3', // Output format
+    '-ice_name', SHOUTCAST_CONFIG.name, // Station name
+    '-ice_description', SHOUTCAST_CONFIG.description, // Station description
+    '-ice_genre', SHOUTCAST_CONFIG.genre, // Genre
     '-content_type', 'audio/mpeg', // Content type
-    // Shoutcast v2 için HTTP ile direkt bağlantı
-    `http://source:${SHOUTCAST_CONFIG.password}@${SHOUTCAST_CONFIG.host}:${SHOUTCAST_CONFIG.port}/`
+    // Shoutcast V1 için Icecast protokolü kullanıyoruz
+    `icecast://source:${SHOUTCAST_CONFIG.password}@${SHOUTCAST_CONFIG.host}:${SHOUTCAST_CONFIG.port}/stream`
   ];
   
-  console.log('🎧 FFmpeg başlatılıyor (Shoutcast v2):', ffmpegArgs.join(' '));
+  console.log('🎧 FFmpeg başlatılıyor (Shoutcast V1 - Icecast Protocol):', ffmpegArgs.join(' '));
   
   ffmpegProcess = spawn('ffmpeg', ffmpegArgs);
   
@@ -787,5 +793,3 @@ server.listen(PORT, () => {
   console.log(`📊 API Status: http://localhost:${PORT}/api/status`);
   console.log(`📡 Broadcast Ready: ${SHOUTCAST_CONFIG.host}:${SHOUTCAST_CONFIG.port}`);
 });
-
-
