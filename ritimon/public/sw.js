@@ -1,5 +1,5 @@
 // Service Worker for RitimON FM PWA
-const CACHE_NAME = 'ritimon-fm-v1';
+const CACHE_NAME = 'ritimon-fm-v2';
 const urlsToCache = [
   '/',
   '/index.html',
