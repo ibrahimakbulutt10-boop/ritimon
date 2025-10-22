@@ -358,10 +358,17 @@ io.on('connection', (socket) => {
     console.log(`[${user.nickname}]: ${data.text}`);
   });
 
-  // DJ login
+  // DJ login (server-side password check)
   socket.on('dj login', (data) => {
     const user = onlineUsers.get(socket.id);
     if (!user) return;
+
+    const pwd = (data?.password || '').trim();
+    const isValid = pwd === '4545' || pwd === '4561';
+    if (!isValid) {
+      socket.emit('login error', { message: 'Geçersiz şifre' });
+      return;
+    }
 
     activeDJs.set(socket.id, {
       nickname: data.nickname,
@@ -380,7 +387,11 @@ io.on('connection', (socket) => {
   // Compatibility: some older clients emit 'activeDJ' instead of 'dj login'
   socket.on('activeDJ', (payload) => {
     const nickname = typeof payload === 'string' ? payload : payload?.nickname;
-    if (!nickname) return;
+    const pwd = typeof payload === 'string' ? '' : (payload?.password || '').trim();
+    if (!nickname || !(pwd === '4545' || pwd === '4561')) {
+      socket.emit('login error', { message: 'Geçersiz şifre' });
+      return;
+    }
 
     let user = onlineUsers.get(socket.id);
     if (!user) {
