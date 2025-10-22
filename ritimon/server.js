@@ -96,6 +96,37 @@ const SHOUTCAST_CONFIG = {
   channels: 2
 };
 
+// DJ Profiles persistence (for homepage DJ list)
+const dataDir = path.join(__dirname, 'data');
+const djDataFile = path.join(dataDir, 'djs.json');
+let djProfiles = [];
+
+function loadDjProfiles() {
+  try {
+    if (fs.existsSync(djDataFile)) {
+      const raw = fs.readFileSync(djDataFile, 'utf-8');
+      djProfiles = JSON.parse(raw);
+    } else {
+      djProfiles = [];
+    }
+  } catch (e) {
+    console.error('DJ profilleri yüklenemedi:', e.message);
+    djProfiles = [];
+  }
+}
+
+function saveDjProfiles() {
+  try {
+    if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+    fs.writeFileSync(djDataFile, JSON.stringify(djProfiles, null, 2));
+  } catch (e) {
+    console.error('DJ profilleri kaydedilemedi:', e.message);
+  }
+}
+
+// Load DJ list at startup
+loadDjProfiles();
+
 // Routes
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
@@ -244,6 +275,57 @@ app.get('/api/broadcast/status', (req, res) => {
   });
 });
 
+// Persistent DJ list APIs
+app.get('/api/djs', (req, res) => {
+  try {
+    const liveNicknames = new Set(Array.from(activeDJs.values()).map(d => d.nickname));
+    const withStatus = djProfiles.map(d => ({
+      id: d.id,
+      nickname: d.nickname,
+      addedAt: d.addedAt,
+      lastActiveAt: d.lastActiveAt || null,
+      isLive: liveNicknames.has(d.nickname)
+    }));
+    res.json(withStatus);
+  } catch (e) {
+    res.status(500).json({ error: 'DJ listesi alınamadı' });
+  }
+});
+
+app.post('/api/djs', (req, res) => {
+  try {
+    const nickname = (req.body?.nickname || '').trim();
+    if (!nickname) return res.status(400).json({ error: 'DJ adı gerekli' });
+    const exists = djProfiles.find(d => d.nickname.toLowerCase() === nickname.toLowerCase());
+    if (exists) return res.json(exists);
+
+    const dj = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      nickname,
+      addedAt: new Date().toISOString(),
+      lastActiveAt: null
+    };
+    djProfiles.push(dj);
+    saveDjProfiles();
+    res.status(201).json(dj);
+  } catch (e) {
+    res.status(500).json({ error: 'DJ eklenemedi' });
+  }
+});
+
+app.delete('/api/djs/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    const before = djProfiles.length;
+    djProfiles = djProfiles.filter(d => d.id !== id);
+    if (djProfiles.length === before) return res.status(404).json({ error: 'DJ bulunamadı' });
+    saveDjProfiles();
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: 'DJ silinemedi' });
+  }
+});
+
 // HTTPS-friendly radio proxy to avoid mixed-content issues on browsers
 app.get('/radio', (req, res) => {
   try {
@@ -383,6 +465,20 @@ io.on('connection', (socket) => {
     io.emit('userList', Array.from(onlineUsers.values()));
     
     console.log(`${data.nickname} DJ olarak giriş yaptı`);
+
+    // Ensure DJ exists in persistent list and update last active
+    const existing = djProfiles.find(d => d.nickname.toLowerCase() === data.nickname.toLowerCase());
+    if (!existing) {
+      djProfiles.push({
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        nickname: data.nickname,
+        addedAt: new Date().toISOString(),
+        lastActiveAt: new Date().toISOString()
+      });
+    } else {
+      existing.lastActiveAt = new Date().toISOString();
+    }
+    saveDjProfiles();
   });
 
   // Compatibility: some older clients emit 'activeDJ' instead of 'dj login'
@@ -433,6 +529,12 @@ io.on('connection', (socket) => {
     io.emit('userList', Array.from(onlineUsers.values()));
     
     console.log(`${data.nickname} DJ panelinden çıktı`);
+
+    const existing = djProfiles.find(d => d.nickname.toLowerCase() === data.nickname.toLowerCase());
+    if (existing) {
+      existing.lastActiveAt = new Date().toISOString();
+      saveDjProfiles();
+    }
   });
 
   // DJ play song
