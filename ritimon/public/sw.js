@@ -1,11 +1,11 @@
 // Service Worker for RitimON FM PWA
-const CACHE_NAME = 'ritimon-fm-v1';
+const CACHE_NAME = 'ritimon-fm-v2';
 const urlsToCache = [
   '/',
   '/index.html',
   '/chat.html',
   '/chat-room.html',
-  '/dj.html',
+  '/dj-control.html',
   '/listener.html',
   '/style.css',
   '/chat.css',

@@ -22,6 +22,8 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
+// Serve uploaded audio files for preview/playback
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -76,16 +78,19 @@ let currentSongIndex = -1;
 let ffmpegProcess = null;
 let shoutcastConnection = null;
 
-// MyRadioStream.com Server Configuration (Shoutcast)
+// Icecast Server Configuration (server-side push)
 const SHOUTCAST_CONFIG = {
-  host: 's48.myradiostream.com',
-  port: 14340,
-  password: 's6DV7g2Tx',
-  username: 'source', // Shoutcast için kullanıcı adı
+  version: 'v2', // using Icecast-compatible output
+  host: '88.150.230.110',
+  port: 37836,
+  username: 'source',
+  password: 'Ma104545',
+  mount: '/stream',
+  streamId: 1,
   genre: 'Various',
   name: 'RitimON FM',
   description: 'RitimON FM - Your Music Station',
-  url: 'http://ritimon.on-air.fm',
+  url: 'https://www.ritimon.com.tr',
   bitrate: 128,
   sampleRate: 44100,
   channels: 2
@@ -105,7 +110,8 @@ app.get('/chat-room', (req, res) => {
 });
 
 app.get('/dj', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'dj.html'));
+  // Route DJ to the dedicated DJ control panel
+  res.sendFile(path.join(__dirname, 'public', 'dj-control.html'));
 });
 
 app.get('/dj-control', (req, res) => {
@@ -126,6 +132,15 @@ app.get('/api/status', (req, res) => {
     isLive: isLive,
     uptime: Math.floor((Date.now() - serverStartTime) / 1000)
   });
+});
+
+// Online users (used by some clients)
+app.get('/api/users', (req, res) => {
+  try {
+    return res.json(Array.from(onlineUsers.values()));
+  } catch (err) {
+    return res.status(500).json({ error: 'Kullanıcı listesi alınamadı' });
+  }
 });
 
 // File upload endpoint
@@ -229,6 +244,56 @@ app.get('/api/broadcast/status', (req, res) => {
   });
 });
 
+// HTTPS-friendly radio proxy to avoid mixed-content issues on browsers
+app.get('/radio', (req, res) => {
+  try {
+    res.setHeader('Content-Type', 'audio/mpeg');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
+    const upstream = http.get({
+      host: '88.150.230.110',
+      port: 37836,
+      path: '/stream',
+      headers: {
+        'Icy-MetaData': '1',
+        'User-Agent': 'RitimON-FM-Proxy'
+      }
+    }, (upRes) => {
+      if (upRes.statusCode && upRes.statusCode >= 400) {
+        res.statusCode = upRes.statusCode;
+      }
+      upRes.on('error', (err) => {
+        console.error('Upstream stream error:', err.message);
+        if (!res.headersSent) {
+          res.statusCode = 502;
+        }
+        res.end();
+      });
+      upRes.pipe(res);
+    });
+
+    upstream.on('error', (err) => {
+      console.error('Radio proxy error:', err.message);
+      if (!res.headersSent) {
+        res.statusCode = 502;
+        res.end('Stream proxy error');
+      } else {
+        res.end();
+      }
+    });
+
+    // Abort upstream if client disconnects
+    req.on('close', () => {
+      upstream.destroy();
+    });
+  } catch (e) {
+    console.error('Radio proxy exception:', e.message);
+    res.status(500).end();
+  }
+});
+
 // Socket.io connection handling
 io.on('connection', (socket) => {
   console.log('Yeni bağlantı:', socket.id);
@@ -282,17 +347,29 @@ io.on('connection', (socket) => {
       text: data.text,
       timestamp: data.timestamp,
       isDJ: activeDJs.has(socket.id),
-      warnings: user.warnings
+      warnings: user.warnings,
+      // Optional styling from client for colored text/nicks
+      textColor: data.textColor,
+      nickColor: data.nickColor,
+      bold: data.bold,
+      italic: data.italic
     };
 
     io.emit('chat message', messageData);
     console.log(`[${user.nickname}]: ${data.text}`);
   });
 
-  // DJ login
+  // DJ login (server-side password check)
   socket.on('dj login', (data) => {
     const user = onlineUsers.get(socket.id);
     if (!user) return;
+
+    const pwd = (data?.password || '').trim();
+    const isValid = pwd === '4545' || pwd === '4561';
+    if (!isValid) {
+      socket.emit('login error', { message: 'Geçersiz şifre' });
+      return;
+    }
 
     activeDJs.set(socket.id, {
       nickname: data.nickname,
@@ -306,6 +383,41 @@ io.on('connection', (socket) => {
     io.emit('userList', Array.from(onlineUsers.values()));
     
     console.log(`${data.nickname} DJ olarak giriş yaptı`);
+  });
+
+  // Compatibility: some older clients emit 'activeDJ' instead of 'dj login'
+  socket.on('activeDJ', (payload) => {
+    const nickname = typeof payload === 'string' ? payload : payload?.nickname;
+    const pwd = typeof payload === 'string' ? '' : (payload?.password || '').trim();
+    if (!nickname || !(pwd === '4545' || pwd === '4561')) {
+      socket.emit('login error', { message: 'Geçersiz şifre' });
+      return;
+    }
+
+    let user = onlineUsers.get(socket.id);
+    if (!user) {
+      user = {
+        id: socket.id,
+        nickname,
+        joinTime: new Date().toISOString(),
+        isOnline: true,
+        isDJ: false,
+        warnings: 0
+      };
+      onlineUsers.set(socket.id, user);
+      io.emit('userJoined', user);
+    }
+
+    activeDJs.set(socket.id, {
+      nickname,
+      loginTime: new Date().toISOString()
+    });
+    user.isDJ = true;
+    onlineUsers.set(socket.id, user);
+
+    io.emit('dj login', { nickname });
+    io.emit('userList', Array.from(onlineUsers.values()));
+    console.log(`${nickname} (compat) DJ olarak giriş yaptı`);
   });
 
   // DJ logout
@@ -338,6 +450,25 @@ io.on('connection', (socket) => {
     });
 
     console.log(`${dj.nickname} şarkı değiştirdi: ${data.song}`);
+  });
+
+  // Compatibility: accept 'now playing' from some clients as a play command
+  socket.on('now playing', (data) => {
+    const dj = activeDJs.get(socket.id);
+    if (!dj) return;
+
+    const song = typeof data === 'string' ? data : data?.song;
+    if (!song) return;
+
+    currentSong = song;
+    currentDJ = dj.nickname;
+    isLive = true;
+
+    io.emit('now playing', {
+      song,
+      dj: dj.nickname
+    });
+    console.log(`${dj.nickname} (compat) şarkı değiştirdi: ${song}`);
   });
 
   // Song played (for history and deletion)
@@ -408,7 +539,8 @@ io.on('connection', (socket) => {
     currentDJ = 'DJ bekleniyor';
     isLive = false;
 
-    io.emit('stop playing', { dj: dj.nickname });
+    // Include both dj and nickname keys for client compatibility
+    io.emit('stop playing', { dj: dj.nickname, nickname: dj.nickname });
     console.log(`${dj.nickname} müzik çalmayı durdurdu`);
   });
 
@@ -483,6 +615,39 @@ io.on('connection', (socket) => {
       djNickname: dj.nickname,
       reason: data.reason
     });
+  });
+
+  // Toggle Ban (Ban ↔ Unban) for convenience
+  socket.on('toggleBan', (data) => {
+    const dj = activeDJs.get(socket.id);
+    if (!dj) return;
+
+    const target = data?.targetNickname;
+    if (!target) return;
+
+    if (bannedUsers.has(target)) {
+      // Unban
+      bannedUsers.delete(target);
+      io.emit('userUnbanned', {
+        targetNickname: target,
+        djNickname: dj.nickname
+      });
+      console.log(`${dj.nickname} yasağı kaldırdı: ${target}`);
+    } else {
+      // Ban
+      bannedUsers.add(target);
+      const targetUser = Array.from(onlineUsers.values()).find(u => u.nickname === target);
+      if (targetUser) {
+        io.to(targetUser.id).emit('banned', { reason: data.reason });
+        io.sockets.sockets.get(targetUser.id)?.disconnect(true);
+      }
+      io.emit('userBanned', {
+        targetNickname: target,
+        djNickname: dj.nickname,
+        reason: data.reason
+      });
+      console.log(`${dj.nickname} kullanıcıyı yasakladı: ${target}`);
+    }
   });
 
   // Typing indicators
@@ -700,83 +865,62 @@ function streamToShoutcast(filePath, song) {
   if (ffmpegProcess) {
     ffmpegProcess.kill('SIGKILL');
   }
-  
+
   // Close previous Shoutcast connection if exists
   if (shoutcastConnection) {
     shoutcastConnection.end();
   }
-  
-  // FFmpeg pipe mode - output MP3 to stdout
+
+  // FFmpeg native icecast output (stable)
+  const mount = SHOUTCAST_CONFIG.mount || `/stream/${SHOUTCAST_CONFIG.streamId || 1}`;
+  const outputUrl = `icecast://${encodeURIComponent(SHOUTCAST_CONFIG.username)}:${encodeURIComponent(SHOUTCAST_CONFIG.password)}@${SHOUTCAST_CONFIG.host}:${SHOUTCAST_CONFIG.port}${mount}`;
+
   const ffmpegArgs = [
-    '-re', // Read input at native frame rate
-    '-i', filePath, // Input file
-    '-acodec', 'libmp3lame', // MP3 encoder
-    '-ab', `${SHOUTCAST_CONFIG.bitrate}k`, // Audio bitrate
-    '-ar', SHOUTCAST_CONFIG.sampleRate.toString(), // Sample rate
-    '-ac', SHOUTCAST_CONFIG.channels.toString(), // Channels
-    '-f', 'mp3', // Output format MP3
-    '-' // Output to stdout (pipe)
+    '-re',
+    '-i', filePath,
+    '-vn',
+    '-c:a', 'libmp3lame',
+    '-b:a', `${SHOUTCAST_CONFIG.bitrate}k`,
+    '-ar', SHOUTCAST_CONFIG.sampleRate.toString(),
+    '-ac', SHOUTCAST_CONFIG.channels.toString(),
+    '-content_type', 'audio/mpeg',
+    '-f', 'mp3',
+    outputUrl
   ];
-  
-  console.log('🎧 FFmpeg başlatılıyor (TCP Pipe Mode):', ffmpegArgs.join(' '));
-  
+
+  console.log('🎧 FFmpeg başlatılıyor (icecast output):', ffmpegArgs.join(' '));
   ffmpegProcess = spawn('ffmpeg', ffmpegArgs);
-  
-  // Create TCP connection to Shoutcast server
-  let isAuthenticated = false;
-  
-  shoutcastConnection = net.connect(SHOUTCAST_CONFIG.port, SHOUTCAST_CONFIG.host, () => {
-    console.log(`📡 Shoutcast sunucusuna bağlanıldı: ${SHOUTCAST_CONFIG.host}:${SHOUTCAST_CONFIG.port}`);
-    
-    // Send Shoutcast V1 authentication
-    // Format: PASSWORD\r\n
-    const authData = `${SHOUTCAST_CONFIG.password}\r\n`;
-    shoutcastConnection.write(authData);
-    console.log('🔐 Authentication gönderildi:', authData.replace(/\r\n/, '<CRLF>'));
-  });
-  
-  // Handle Shoutcast connection events
-  shoutcastConnection.on('data', (data) => {
-    const response = data.toString().trim();
-    console.log('📡 Shoutcast yanıtı:', response);
-    
-    // After receiving OK or any response, start piping
-    if (!isAuthenticated) {
-      isAuthenticated = true;
-      console.log('✅ Authentication başarılı, stream başlıyor...');
-      
-      // NOW pipe FFmpeg output to Shoutcast
-      ffmpegProcess.stdout.pipe(shoutcastConnection);
-    }
-  });
-  
+
   shoutcastConnection.on('error', (error) => {
     console.error('❌ Shoutcast bağlantı hatası:', error.message);
   });
-  
+
   shoutcastConnection.on('close', () => {
     console.log('🔌 Shoutcast bağlantısı kapandı');
   });
-  
+
   // Handle FFmpeg stderr (progress info)
   ffmpegProcess.stderr.on('data', (data) => {
     const output = data.toString();
-    console.log('📡 FFmpeg:', output.trim());
+    // Reduce log noise; print key lines only
+    if (/size=|time=|bitrate=/.test(output)) {
+      console.log('📡 FFmpeg:', output.trim());
+    }
   });
-  
+
   ffmpegProcess.on('close', (code) => {
     console.log(`✅ Şarkı bitti: ${song.title} (exit code: ${code})`);
-    
+
     // Eğer hata varsa (exit code != 0), yayını durdur
     if (code !== 0) {
       console.error(`❌ FFmpeg başarısız oldu (exit code: ${code}). Yayın durduruluyor...`);
       stopBroadcast();
-      io.emit('broadcast error', { 
-        message: 'Yayın sunucusuna bağlanılamadı. Lütfen tekrar deneyin.' 
+      io.emit('broadcast error', {
+        message: 'Yayın sunucusuna bağlanılamadı. Lütfen tekrar deneyin.'
       });
       return;
     }
-    
+
     // Add to history
     const historyEntry = {
       song: song.title,
@@ -785,14 +929,14 @@ function streamToShoutcast(filePath, song) {
       playedAt: new Date().toISOString(),
       filename: song.filename
     };
-    
+
     playHistory.push(historyEntry);
     if (playHistory.length > maxHistorySize) {
       playHistory.shift();
     }
-    
+
     io.emit('song played', historyEntry);
-    
+
     // Auto-delete if enabled (sadece başarılı çalmadan sonra)
     if (song.autoDelete) {
       try {
@@ -802,15 +946,15 @@ function streamToShoutcast(filePath, song) {
         console.error('Silme hatası:', err);
       }
     }
-    
+
     // Play next song
     currentSongIndex++;
-    
+
     if (isBroadcasting) {
       setTimeout(() => playNextSong(), 1000); // 1 second gap
     }
   });
-  
+
   ffmpegProcess.on('error', (error) => {
     console.error('❌ FFmpeg process error:', error);
     currentSongIndex++;

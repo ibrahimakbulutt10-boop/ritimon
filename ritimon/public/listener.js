@@ -213,7 +213,7 @@ function requestSong() {
 }
 
 function openChat() {
-    window.open('chat.html', '_blank', 'width=800,height=600');
+    window.open('chat-room.html', '_blank', 'width=1000,height=720');
 }
 
 // Helper Functions
