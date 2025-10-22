@@ -250,20 +250,18 @@ app.get('/radio', (req, res) => {
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
 
-    const listenerPath = SHOUTCAST_CONFIG.version === 'v2'
-      ? `/stream/${SHOUTCAST_CONFIG.streamId}`
-      : '/;';
-
     const upstream = http.get({
-      host: SHOUTCAST_CONFIG.host,
-      port: SHOUTCAST_CONFIG.port,
-      path: listenerPath,
+      host: '88.150.230.110',
+      port: 37836,
+      path: '/stream',
       headers: {
         'Icy-MetaData': '1',
         'User-Agent': 'RitimON-FM-Proxy'
       }
     }, (upRes) => {
-      // Pass through audio data
+      if (upRes.statusCode && upRes.statusCode >= 400) {
+        res.statusCode = upRes.statusCode;
+      }
       upRes.on('error', (err) => {
         console.error('Upstream stream error:', err.message);
         if (!res.headersSent) {
