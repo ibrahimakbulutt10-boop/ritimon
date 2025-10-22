@@ -485,7 +485,7 @@
         currentDJName.textContent = savedNickname;
         
         socket.emit('join', { nickname: savedNickname });
-        socket.emit('dj login', { nickname: savedNickname });
+        socket.emit('dj login', { nickname: savedNickname, password: savedPassword });
         
         addSystemMessage(`✅ Otomatik giriş: ${savedNickname}`);
       }
@@ -514,13 +514,23 @@
         currentDJName.textContent = nickname;
         
         socket.emit('join', { nickname });
-        socket.emit('dj login', { nickname });
+        socket.emit('dj login', { nickname, password });
         
         addSystemMessage(`✅ DJ ${nickname} olarak giriş yaptınız!`);
       } else {
         loginError.textContent = '❌ Hatalı şifre! (4545 veya 4561)';
       }
     }
+
+    // Login error feedback
+    socket.on('login error', (data) => {
+      const loginError = document.getElementById('loginError');
+      if (loginError) {
+        loginError.textContent = data?.message || 'Giriş hatası';
+      }
+      loginPanel.style.display = 'block';
+      djControls.style.display = 'none';
+    });
 
     // Stream Controls
     function startStream() {
