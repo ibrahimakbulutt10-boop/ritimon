@@ -710,7 +710,7 @@ function streamToShoutcast(filePath, song) {
     '-b:a', '128k', // Fixed bitrate for compatibility
     '-f', 'mp3', // Output format
     '-legacy_icecast', '1', // Use legacy Icecast protocol
-    `icecast://source:${SHOUTCAST_CONFIG.password}@${SHOUTCAST_CONFIG.host}:${SHOUTCAST_CONFIG.port}/`
+   `http://source:${SHOUTCAST_CONFIG.password}@${SHOUTCAST_CONFIG.host}:${SHOUTCAST_CONFIG.port}/`
   ];
   
   console.log('🎧 FFmpeg başlatılıyor (Shoutcast V1 - Legacy Mode):', ffmpegArgs.join(' '));
@@ -783,3 +783,4 @@ server.listen(PORT, () => {
   console.log(`📊 API Status: http://localhost:${PORT}/api/status`);
   console.log(`📡 Broadcast Ready: ${SHOUTCAST_CONFIG.host}:${SHOUTCAST_CONFIG.port}`);
 });
+
