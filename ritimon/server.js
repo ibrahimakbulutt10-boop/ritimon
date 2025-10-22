@@ -109,7 +109,7 @@ app.get('/chat-room', (req, res) => {
 });
 
 app.get('/dj', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'dj.html'));
+  res.sendFile(path.join(__dirname, 'public', 'dj-control.html'));
 });
 
 app.get('/dj-control', (req, res) => {
