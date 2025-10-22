@@ -824,7 +824,11 @@ function streamToShoutcast(filePath, song) {
 
         console.log('✅ Authentication başarılı, stream başlıyor...');
         // Pipe FFmpeg output to Shoutcast
-        ffmpegProcess.stdout.pipe(shoutcastConnection);
+        try {
+          ffmpegProcess.stdout.pipe(shoutcastConnection);
+        } catch (err) {
+          console.error('Pipe error:', err.message);
+        }
       } else if (/Invalid password|ERROR/i.test(response)) {
         console.error('❌ Shoutcast kimlik doğrulama başarısız');
         stopBroadcast();
