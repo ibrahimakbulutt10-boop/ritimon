@@ -4,7 +4,7 @@ const nickname = localStorage.getItem('nickname') || 'Anonim';
 let onlineUsers = new Set();
 
 // Radio Stream Configuration
-const RADIO_STREAM_URL = 'https://ritimon.radiostream321.com';
+const RADIO_STREAM_URL = '/radio';
 const radioAudio = new Audio(RADIO_STREAM_URL);
 radioAudio.volume = 0.5;
 let isRadioPlaying = false;
@@ -382,3 +382,4 @@ socket.on('userBanned', (data) => {
 window.addEventListener('beforeunload', function() {
     socket.emit('leave', { nickname });
 });
+
