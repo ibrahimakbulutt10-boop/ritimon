@@ -101,7 +101,8 @@
         }
 
         .chat-messages-container {
-            flex: 1;
+            flex: 0 0 80%;
+            max-width: 80%;
             background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(10px);
             border-radius: 15px;
@@ -146,7 +147,8 @@
         }
 
         .users-panel {
-            width: 300px;
+            flex: 0 0 20%;
+            max-width: 20%;
             background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(10px);
             border-radius: 15px;
@@ -411,6 +413,13 @@
             </div>
             <div id="playlistList" style="display:flex; flex-direction:column; gap:6px; max-height:200px; overflow:auto; border:1px dashed rgba(255,255,255,0.2); padding:8px; border-radius:8px;"></div>
         </div>
+    </div>
+
+    <!-- Context Menu for user actions -->
+    <div id="contextMenu" class="context-menu" style="display:none; position:absolute; z-index:9999; background:rgba(0,0,0,0.8); color:#fff; border:1px solid rgba(255,255,255,0.2); border-radius:8px; min-width:180px; box-shadow:0 8px 32px rgba(0,0,0,0.3);">
+        <div class="context-menu-item" onclick="toggleBanUser()" style="padding:10px 12px; cursor:pointer; border-bottom:1px solid rgba(255,255,255,0.1);">🚫 Ban ↔ Unban</div>
+        <div class="context-menu-item" onclick="warnUser()" style="padding:10px 12px; cursor:pointer; border-bottom:1px solid rgba(255,255,255,0.1);">⚠️ Uyar</div>
+        <div class="context-menu-item" onclick="muteUser()" style="padding:10px 12px; cursor:pointer;">🔇 Sustur</div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
