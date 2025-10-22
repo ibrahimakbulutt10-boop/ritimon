@@ -90,7 +90,9 @@ const SHOUTCAST_CONFIG = {
   sampleRate: 44100,
   channels: 2
 };
-
+app.get('/radio', (req, res) => {
+  res.redirect(302, 'https://ritimon.radiostream321.com');
+});
 // Routes
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
@@ -828,4 +830,5 @@ server.listen(PORT, () => {
   console.log(`📊 API Status: http://localhost:${PORT}/api/status`);
   console.log(`📡 Broadcast Ready: ${SHOUTCAST_CONFIG.host}:${SHOUTCAST_CONFIG.port}`);
 });
+
 
