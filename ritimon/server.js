@@ -78,9 +78,9 @@ let currentSongIndex = -1;
 let ffmpegProcess = null;
 let shoutcastConnection = null;
 
-// Shoutcast Server Configuration (Listen2MyRadio - Shoutcast v2)
+// Shoutcast Server Configuration
 const SHOUTCAST_CONFIG = {
-  version: 'v2', // 'v1' or 'v2'
+  version: 'v1', // 'v1' or 'v2'
   host: 'uk4freenew.listen2myradio.com',
   port: 26713,
   username: 'source',
@@ -905,10 +905,10 @@ function streamToShoutcast(filePath, song) {
           }
           console.log('✅ Authentication başarılı, stream başlıyor...');
           ffmpegProcess.stdout.pipe(shoutcastConnection);
-        } else if (/Invalid password|ERROR/i.test(response)) {
-          console.error('❌ Shoutcast v1 kimlik doğrulama başarısız');
+        } else if (/Invalid|ERROR|BADPASS|ERR/i.test(response)) {
+          console.error('❌ Shoutcast v1 kimlik doğrulama başarısız veya hata:', response.trim());
           stopBroadcast();
-          io.emit('broadcast error', { message: 'Shoutcast kimlik doğrulama başarısız' });
+          io.emit('broadcast error', { message: 'Shoutcast v1 kimlik doğrulama başarısız' });
         }
       }
     });
