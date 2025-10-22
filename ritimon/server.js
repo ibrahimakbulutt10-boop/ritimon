@@ -22,6 +22,8 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
+// Serve uploaded audio files for preview/playback
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -126,6 +128,15 @@ app.get('/api/status', (req, res) => {
     isLive: isLive,
     uptime: Math.floor((Date.now() - serverStartTime) / 1000)
   });
+});
+
+// Online users (used by some clients)
+app.get('/api/users', (req, res) => {
+  try {
+    return res.json(Array.from(onlineUsers.values()));
+  } catch (err) {
+    return res.status(500).json({ error: 'Kullanıcı listesi alınamadı' });
+  }
 });
 
 // File upload endpoint
@@ -308,6 +319,37 @@ io.on('connection', (socket) => {
     console.log(`${data.nickname} DJ olarak giriş yaptı`);
   });
 
+  // Compatibility: some older clients emit 'activeDJ' instead of 'dj login'
+  socket.on('activeDJ', (payload) => {
+    const nickname = typeof payload === 'string' ? payload : payload?.nickname;
+    if (!nickname) return;
+
+    let user = onlineUsers.get(socket.id);
+    if (!user) {
+      user = {
+        id: socket.id,
+        nickname,
+        joinTime: new Date().toISOString(),
+        isOnline: true,
+        isDJ: false,
+        warnings: 0
+      };
+      onlineUsers.set(socket.id, user);
+      io.emit('userJoined', user);
+    }
+
+    activeDJs.set(socket.id, {
+      nickname,
+      loginTime: new Date().toISOString()
+    });
+    user.isDJ = true;
+    onlineUsers.set(socket.id, user);
+
+    io.emit('dj login', { nickname });
+    io.emit('userList', Array.from(onlineUsers.values()));
+    console.log(`${nickname} (compat) DJ olarak giriş yaptı`);
+  });
+
   // DJ logout
   socket.on('dj logout', (data) => {
     const user = onlineUsers.get(socket.id);
@@ -338,6 +380,25 @@ io.on('connection', (socket) => {
     });
 
     console.log(`${dj.nickname} şarkı değiştirdi: ${data.song}`);
+  });
+
+  // Compatibility: accept 'now playing' from some clients as a play command
+  socket.on('now playing', (data) => {
+    const dj = activeDJs.get(socket.id);
+    if (!dj) return;
+
+    const song = typeof data === 'string' ? data : data?.song;
+    if (!song) return;
+
+    currentSong = song;
+    currentDJ = dj.nickname;
+    isLive = true;
+
+    io.emit('now playing', {
+      song,
+      dj: dj.nickname
+    });
+    console.log(`${dj.nickname} (compat) şarkı değiştirdi: ${song}`);
   });
 
   // Song played (for history and deletion)
@@ -408,7 +469,8 @@ io.on('connection', (socket) => {
     currentDJ = 'DJ bekleniyor';
     isLive = false;
 
-    io.emit('stop playing', { dj: dj.nickname });
+    // Include both dj and nickname keys for client compatibility
+    io.emit('stop playing', { dj: dj.nickname, nickname: dj.nickname });
     console.log(`${dj.nickname} müzik çalmayı durdurdu`);
   });
 
@@ -700,12 +762,12 @@ function streamToShoutcast(filePath, song) {
   if (ffmpegProcess) {
     ffmpegProcess.kill('SIGKILL');
   }
-  
+
   // Close previous Shoutcast connection if exists
   if (shoutcastConnection) {
     shoutcastConnection.end();
   }
-  
+
   // FFmpeg pipe mode - output MP3 to stdout
   const ffmpegArgs = [
     '-re', // Read input at native frame rate
@@ -717,66 +779,90 @@ function streamToShoutcast(filePath, song) {
     '-f', 'mp3', // Output format MP3
     '-' // Output to stdout (pipe)
   ];
-  
+
   console.log('🎧 FFmpeg başlatılıyor (TCP Pipe Mode):', ffmpegArgs.join(' '));
-  
+
   ffmpegProcess = spawn('ffmpeg', ffmpegArgs);
-  
-  // Create TCP connection to Shoutcast server
+
+  // Create TCP connection to Shoutcast server (v1 protocol)
   let isAuthenticated = false;
-  
+  let headersSent = false;
+
   shoutcastConnection = net.connect(SHOUTCAST_CONFIG.port, SHOUTCAST_CONFIG.host, () => {
     console.log(`📡 Shoutcast sunucusuna bağlanıldı: ${SHOUTCAST_CONFIG.host}:${SHOUTCAST_CONFIG.port}`);
-    
-    // Send Shoutcast V1 authentication
-    // Format: PASSWORD\r\n
+
+    // Send Shoutcast V1 authentication (PASSWORD\r\n)
     const authData = `${SHOUTCAST_CONFIG.password}\r\n`;
     shoutcastConnection.write(authData);
-    console.log('🔐 Authentication gönderildi:', authData.replace(/\r\n/, '<CRLF>'));
+    console.log('🔐 Authentication gönderildi');
   });
-  
+
   // Handle Shoutcast connection events
   shoutcastConnection.on('data', (data) => {
-    const response = data.toString().trim();
-    console.log('📡 Shoutcast yanıtı:', response);
-    
-    // After receiving OK or any response, start piping
+    const response = data.toString();
+    console.log('📡 Shoutcast yanıtı:', response.trim());
+
     if (!isAuthenticated) {
-      isAuthenticated = true;
-      console.log('✅ Authentication başarılı, stream başlıyor...');
-      
-      // NOW pipe FFmpeg output to Shoutcast
-      ffmpegProcess.stdout.pipe(shoutcastConnection);
+      // Typical responses: 'OK2' or 'OK' (success), 'Invalid password' (failure)
+      if (/^OK/.test(response)) {
+        isAuthenticated = true;
+        // Send required ICY headers before streaming
+        if (!headersSent) {
+          const icyHeaders = [
+            `icy-name:${SHOUTCAST_CONFIG.name}`,
+            `icy-genre:${SHOUTCAST_CONFIG.genre}`,
+            `icy-url:${SHOUTCAST_CONFIG.url}`,
+            'icy-pub:1',
+            `icy-br:${SHOUTCAST_CONFIG.bitrate}`,
+            'content-type:audio/mpeg',
+            '',
+            ''
+          ].join('\r\n');
+          shoutcastConnection.write(icyHeaders);
+          headersSent = true;
+        }
+
+        console.log('✅ Authentication başarılı, stream başlıyor...');
+        // Pipe FFmpeg output to Shoutcast
+        ffmpegProcess.stdout.pipe(shoutcastConnection);
+      } else if (/Invalid password|ERROR/i.test(response)) {
+        console.error('❌ Shoutcast kimlik doğrulama başarısız');
+        stopBroadcast();
+        io.emit('broadcast error', { message: 'Shoutcast kimlik doğrulama başarısız' });
+      }
     }
   });
-  
+
   shoutcastConnection.on('error', (error) => {
     console.error('❌ Shoutcast bağlantı hatası:', error.message);
   });
-  
+
   shoutcastConnection.on('close', () => {
     console.log('🔌 Shoutcast bağlantısı kapandı');
   });
-  
+
   // Handle FFmpeg stderr (progress info)
   ffmpegProcess.stderr.on('data', (data) => {
     const output = data.toString();
-    console.log('📡 FFmpeg:', output.trim());
+    // Reduce log noise; print key lines only
+    if (/size=|time=|bitrate=/.test(output)) {
+      console.log('📡 FFmpeg:', output.trim());
+    }
   });
-  
+
   ffmpegProcess.on('close', (code) => {
     console.log(`✅ Şarkı bitti: ${song.title} (exit code: ${code})`);
-    
+
     // Eğer hata varsa (exit code != 0), yayını durdur
     if (code !== 0) {
       console.error(`❌ FFmpeg başarısız oldu (exit code: ${code}). Yayın durduruluyor...`);
       stopBroadcast();
-      io.emit('broadcast error', { 
-        message: 'Yayın sunucusuna bağlanılamadı. Lütfen tekrar deneyin.' 
+      io.emit('broadcast error', {
+        message: 'Yayın sunucusuna bağlanılamadı. Lütfen tekrar deneyin.'
       });
       return;
     }
-    
+
     // Add to history
     const historyEntry = {
       song: song.title,
@@ -785,14 +871,14 @@ function streamToShoutcast(filePath, song) {
       playedAt: new Date().toISOString(),
       filename: song.filename
     };
-    
+
     playHistory.push(historyEntry);
     if (playHistory.length > maxHistorySize) {
       playHistory.shift();
     }
-    
+
     io.emit('song played', historyEntry);
-    
+
     // Auto-delete if enabled (sadece başarılı çalmadan sonra)
     if (song.autoDelete) {
       try {
@@ -802,15 +888,15 @@ function streamToShoutcast(filePath, song) {
         console.error('Silme hatası:', err);
       }
     }
-    
+
     // Play next song
     currentSongIndex++;
-    
+
     if (isBroadcasting) {
       setTimeout(() => playNextSong(), 1000); // 1 second gap
     }
   });
-  
+
   ffmpegProcess.on('error', (error) => {
     console.error('❌ FFmpeg process error:', error);
     currentSongIndex++;
