@@ -5,7 +5,7 @@ const urlsToCache = [
   '/index.html',
   '/chat.html',
   '/chat-room.html',
-  '/dj.html',
+  '/dj-control.html',
   '/listener.html',
   '/style.css',
   '/chat.css',
