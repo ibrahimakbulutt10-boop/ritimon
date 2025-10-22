@@ -723,22 +723,31 @@ function streamToShoutcast(filePath, song) {
   ffmpegProcess = spawn('ffmpeg', ffmpegArgs);
   
   // Create TCP connection to Shoutcast server
+  let isAuthenticated = false;
+  
   shoutcastConnection = net.connect(SHOUTCAST_CONFIG.port, SHOUTCAST_CONFIG.host, () => {
     console.log(`📡 Shoutcast sunucusuna bağlanıldı: ${SHOUTCAST_CONFIG.host}:${SHOUTCAST_CONFIG.port}`);
     
     // Send Shoutcast V1 authentication
-    // Format: PASSWORD\r\n (very simple for Shoutcast V1)
+    // Format: PASSWORD\r\n
     const authData = `${SHOUTCAST_CONFIG.password}\r\n`;
     shoutcastConnection.write(authData);
-    console.log('🔐 Authentication gönderildi');
+    console.log('🔐 Authentication gönderildi:', authData.replace(/\r\n/, '<CRLF>'));
   });
-  
-  // Pipe FFmpeg output (stdout) to Shoutcast connection
-  ffmpegProcess.stdout.pipe(shoutcastConnection);
   
   // Handle Shoutcast connection events
   shoutcastConnection.on('data', (data) => {
-    console.log('📡 Shoutcast yanıtı:', data.toString().trim());
+    const response = data.toString().trim();
+    console.log('📡 Shoutcast yanıtı:', response);
+    
+    // After receiving OK or any response, start piping
+    if (!isAuthenticated) {
+      isAuthenticated = true;
+      console.log('✅ Authentication başarılı, stream başlıyor...');
+      
+      // NOW pipe FFmpeg output to Shoutcast
+      ffmpegProcess.stdout.pipe(shoutcastConnection);
+    }
   });
   
   shoutcastConnection.on('error', (error) => {
