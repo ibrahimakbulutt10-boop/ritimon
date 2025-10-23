@@ -134,7 +134,83 @@
         <label>🔊 Ses: <button onclick="toggleSound()">🔈</button></label>
       </div>
     </div>
+<script>
+  const socket = io();
+  const player = document.getElementById('radioPlayer');
 
+  function togglePlay() {
+    if (player.paused) player.play();
+    else player.pause();
+  }
+
+  function changeVolume(value) {
+    player.volume = value;
+  }
+
+  function toggleSound() {
+    player.muted = !player.muted;
+  }
+
+  function joinDJ() {
+    const nickname = document.getElementById('nicknameInput').value.trim();
+    const password = prompt('DJ Şifresi:');
+    if (password === '4545' || password === '4561') {
+      localStorage.setItem('nickname', nickname);
+      localStorage.setItem('isDJ', 'true');
+      socket.emit('joinChat', nickname);
+      alert('DJ girişi başarılı!');
+    } else {
+      alert('❌ Hatalı şifre!');
+    }
+  }
+
+  function sendMessage() {
+    const message = document.getElementById('chatInput').value.trim();
+    const nickname = localStorage.getItem('nickname');
+    if (message && nickname) {
+      socket.emit('chatMessage', { message });
+      document.getElementById('chatInput').value = '';
+    }
+  }
+
+  function addEmoji(emoji) {
+    const input = document.getElementById('chatInput');
+    input.value += emoji;
+    input.focus();
+  }
+
+  document.getElementById('colorPicker').addEventListener('input', (e) => {
+    document.getElementById('chatMessages').style.color = e.target.value;
+  });
+
+  document.getElementById('fontSizePicker').addEventListener('input', (e) => {
+    document.getElementById('chatMessages').style.fontSize = e.target.value + 'px';
+  });
+
+  socket.on('chatMessage', (data) => {
+    const msgBox = document.getElementById('chatMessages');
+    const bubble = document.createElement('div');
+    bubble.className = 'message-bubble';
+    bubble.innerHTML = `<strong>${data.username}:</strong> ${data.message}`;
+    msgBox.appendChild(bubble);
+    msgBox.scrollTop = msgBox.scrollHeight;
+  });
+
+  socket.on('userList', (users) => {
+    const list = document.getElementById('listenerList');
+    list.innerHTML = '';
+    users.forEach((username) => {
+      const li = document.createElement('li');
+      li.textContent = username;
+      list.appendChild(li);
+    });
+  });
+
+  socket.on('activeDJs', (djList) => {
+    const djName = djList.length > 0 ? djList[0] : 'Bilinmiyor';
+    document.getElementById('activeDJ').textContent = djName;
+  });
+</script>
     <div class="chat-messages" id="chatMessages"></div>
 
     <div class="chat-input">
@@ -183,5 +259,6 @@
   </script>
 </body>
 </html>
+
 
 
