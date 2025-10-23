@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: ritimon-fm
+    env: node
+    region: oregon
+    plan: free
+    rootDir: .  # ← Bu satır kritik!
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+    # FFmpeg will be installed via Aptfile
