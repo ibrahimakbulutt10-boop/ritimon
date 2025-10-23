@@ -93,11 +93,37 @@
     <button onclick="joinDJ()">🎙️ DJ Girişi</button>
   </div>
 
-  <div class="chat-panel">
-    <h2>Sohbet</h2>
-    <textarea id="chatInput" placeholder="Mesajınızı yazın..."></textarea>
-    <button onclick="sendMessage()">💬 Gönder</button>
+     <div class="chat-container">
+  <div class="chat-main">
+    <div class="chat-header">
+      <h2>🎙️ Yayındaki DJ: <span id="activeDJ">Bilinmiyor</span></h2>
+      <div class="chat-controls">
+        <label>🎨 Renk: <input type="color" id="colorPicker" /></label>
+        <label>🔠 Boyut: <input type="range" min="12" max="24" id="fontSizePicker" /></label>
+        <label>🔊 Ses: <button onclick="toggleSound()">🔈</button></label>
+      </div>
+    </div>
+
     <div class="chat-messages" id="chatMessages"></div>
+
+    <div class="chat-input">
+      <textarea id="chatInput" placeholder="Mesajınızı yazın..." rows="3"></textarea>
+      <div class="chat-actions">
+        <button onclick="sendMessage()" class="send-button">💬 Gönder</button>
+        <div class="emoji-panel">
+          <button onclick="addEmoji('😊')">😊</button>
+          <button onclick="addEmoji('🔥')">🔥</button>
+          <button onclick="addEmoji('🎶')">🎶</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chat-sidebar">
+    <h3>RitimON Dinleyicileri</h3>
+    <ul id="listenerList"></ul>
+  </div>
+</div>
   </div>
 
   <div class="listener-panel">
@@ -165,3 +191,4 @@
   </script>
 </body>
 </html>
+
