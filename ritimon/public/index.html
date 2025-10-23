@@ -4,264 +4,209 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>RitimON FM</title>
-  <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#ff4081" />
-  <link rel="icon" type="image/x-icon" href="favicon.ico" />
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <script src="/socket.io/socket.io.js"></script>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" />
   <style>
     body {
-      font-family: 'Inter', sans-serif;
-      background: linear-gradient(to right, #1e1e2f, #2c2c3f);
-      color: white;
-      padding: 20px;
-    }
-
-    h1 {
+      margin: 0;
       font-family: 'Orbitron', sans-serif;
+      background: linear-gradient(to right, #0f0f0f, #1a1a1a);
+      color: white;
+    }
+    header {
       text-align: center;
-      font-size: 2.5rem;
-      margin-bottom: 20px;
-    }
-
-    .panel {
-      background: rgba(255,255,255,0.05);
-      border-radius: 15px;
       padding: 20px;
-      margin-bottom: 20px;
-      backdrop-filter: blur(10px);
+      font-size: 2rem;
+      color: #ff4081;
     }
-
-    .chat-container {
+    .container {
       display: flex;
-      gap: 20px;
-      max-width: 1000px;
-      margin: auto;
-    }
-
-    .chat-main {
-      flex: 4;
-      background: rgba(255,255,255,0.05);
-      border-radius: 15px;
+      flex-wrap: wrap;
+      justify-content: space-around;
       padding: 20px;
-      backdrop-filter: blur(10px);
     }
-
-    .chat-sidebar {
-      flex: 1;
+    .chat-box, .dj-panel {
       background: rgba(255,255,255,0.05);
-      border-radius: 15px;
+      border-radius: 10px;
       padding: 20px;
+      margin: 10px;
+      flex: 1 1 400px;
+      max-width: 600px;
+    }
+    #chatMessages {
+      height: 300px;
       overflow-y: auto;
-      backdrop-filter: blur(10px);
-    }
-
-    .chat-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      background: #111;
+      padding: 10px;
+      border-radius: 8px;
       margin-bottom: 10px;
     }
-
-    .chat-controls label {
-      margin-right: 10px;
-      font-size: 0.9rem;
+    .message-bubble {
+      margin-bottom: 8px;
     }
-
-    .chat-messages {
-      max-height: 400px;
-      overflow-y: auto;
-      margin: 15px 0;
-      font-size: 16px;
-      line-height: 1.4;
-    }
-
-    .chat-input {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .chat-actions {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 10px;
-      flex-wrap: wrap;
-    }
-
-    .send-button {
-      padding: 10px 20px;
-      font-size: 1.2rem;
-      background: #ff4081;
-      border: none;
-      border-radius: 10px;
-      color: white;
+    .nickname {
+      font-weight: bold;
+      color: #ff4081;
       cursor: pointer;
-      transition: background 0.3s;
     }
-
-    .send-button:hover {
-      background: #e91e63;
+    .emoji-panel {
+      margin-top: 10px;
     }
-
-    .emoji-panel button {
-      font-size: 1.5rem;
+    .emoji-panel span {
+      cursor: pointer;
+      font-size: 1.2rem;
+      margin: 5px;
+    }
+    .dj-menu {
+      position: absolute;
+      background: #222;
+      border: 1px solid #ff4081;
+      border-radius: 8px;
+      padding: 10px;
+      display: none;
+      z-index: 999;
+    }
+    .dj-menu button {
       background: none;
       border: none;
+      color: white;
+      padding: 5px;
+      width: 100%;
+      text-align: left;
       cursor: pointer;
-      margin: 5px;
-      transition: transform 0.2s;
     }
-
-    .emoji-panel button:hover {
-      transform: scale(1.3);
-    }
-
-    .message-bubble {
-      padding: 8px;
-      margin-bottom: 5px;
-      background: rgba(255,255,255,0.1);
-      border-radius: 8px;
+    .dj-menu button:hover {
+      background: #ff4081;
     }
   </style>
 </head>
 <body>
-  <h1>🎧 RitimON FM</h1>
-
-  <div class="panel">
-    <h2>Radyo Yayını</h2>
-    <audio id="radioPlayer" controls autoplay>
-      <source src="http://uk2freenew.listen2myradio.com:37836/" type="audio/mpeg">
-      Tarayıcınız ses oynatmayı desteklemiyor.
-    </audio>
-    <button onclick="togglePlay()">⏯️ Başlat/Durdur</button>
-    <input type="range" min="0" max="1" step="0.01" onchange="changeVolume(this.value)" />
-  </div>
-
-  <div class="panel">
-    <h2>DJ Paneli</h2>
-    <input type="text" id="nicknameInput" placeholder="DJ takma adınız" maxlength="20" />
-    <button onclick="joinDJ()">🎙️ DJ Girişi</button>
-  </div>
-
-  <div class="chat-container">
-    <div class="chat-main">
-      <div class="chat-header">
-        <h2>🎙️ Yayındaki DJ: <span id="activeDJ">Bilinmiyor</span></h2>
-        <div class="chat-controls">
-          <label>🎨 Renk: <input type="color" id="colorPicker" /></label>
-          <label>🔠 Boyut: <input type="range" min="12" max="24" id="fontSizePicker" /></label>
-          <label>🔊 Ses: <button onclick="toggleSound()">🔈</button></label>
-        </div>
-      </div>
-
-      <div class="chat-messages" id="chatMessages"></div>
-
-      <div class="chat-input">
-        <textarea id="chatInput" placeholder="Mesajınızı yazın..." rows="3"></textarea>
-        <div class="chat-actions">
-          <button onclick="sendMessage()" class="send-button">💬 Gönder</button>
-          <div class="emoji-panel">
-            <button onclick="addEmoji('😊')">😊</button>
-            <button onclick="addEmoji('🔥')">🔥</button>
-            <button onclick="addEmoji('🎶')">🎶</button>
-            <button onclick="addEmoji('😂')">😂</button>
-            <button onclick="addEmoji('❤️')">❤️</button>
-            <button onclick="addEmoji('👍')">👍</button>
-            <button onclick="addEmoji('🥳')">🥳</button>
-            <button onclick="addEmoji('😎')">😎</button>
-            <button onclick="addEmoji('💯')">💯</button>
-            <button onclick="addEmoji('🎧')">🎧</button>
-          </div>
-        </div>
+  <header>🎧 RitimON FM</header>
+  <div class="container">
+    <div class="chat-box">
+      <div id="chatMessages"></div>
+      <textarea id="chatInput" placeholder="Mesajınızı yazın..." rows="3" style="width:100%;"></textarea>
+      <button onclick="sendMessage()">💬 Gönder</button>
+      <div class="emoji-panel">
+        <span>😀</span><span>😂</span><span>😍</span><span>😎</span><span>😢</span><span>😡</span>
       </div>
     </div>
-
-    <div class="chat-sidebar">
-      <h3>RitimON Dinleyicileri</h3>
-      <ul id="listenerList"></ul>
+    <div class="dj-panel">
+      <input type="text" id="nicknameInput" placeholder="DJ takma adınız" />
+      <button onclick="joinDJ()">🎙️ DJ Girişi</button>
+      <div>
+        <h3>🎵 Şarkı Yükle</h3>
+        <div id="dropZone" style="border:2px dashed #ff4081; padding:20px; text-align:center;">Dosyayı buraya sürükleyin</div>
+      </div>
+      <button id="pushToTalk">🎤 Bas-Konuş</button>
+      <input type="text" id="themeUrlInput" placeholder="Tema CSS URL'si" />
+      <button onclick="applyTheme()">🎨 Temayı Uygula</button>
+      <button onclick="clearChat()">🧹 Sohbeti Temizle</button>
     </div>
   </div>
-
+  <div id="djMenu" class="dj-menu"></div>
+  <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
-    const player = document.getElementById('radioPlayer');
-
-    function togglePlay() {
-      if (player.paused) player.play();
-      else player.pause();
-    }
-
-    function changeVolume(value) {
-      player.volume = value;
-    }
-
-    function toggleSound() {
-      player.muted = !player.muted;
-    }
-
-    function joinDJ() {
-      const nickname = document.getElementById('nicknameInput').value.trim();
-      const password = prompt('DJ Şifresi:');
-      if (password === '4545' || password === '4561') {
-        localStorage.setItem('nickname', nickname);
-        localStorage.setItem('isDJ', 'true');
-        socket.emit('joinChat', nickname);
-        alert('DJ girişi başarılı!');
-      } else {
-        alert('❌ Hatalı şifre!');
+    const emojiPanel = document.querySelector('.emoji-panel');
+    emojiPanel.addEventListener('click', e => {
+      if (e.target.tagName === 'SPAN') {
+        document.getElementById('chatInput').value += e.target.textContent;
       }
-    }
+    });
 
     function sendMessage() {
-      const message = document.getElementById('chatInput').value.trim();
-      const nickname = localStorage.getItem('nickname');
-      if (message && nickname) {
-        socket.emit('chatMessage', { message });
-        document.getElementById('chatInput').value = '';
-      }
+      const msg = document.getElementById('chatInput').value;
+      const nickname = localStorage.getItem('nickname') || 'Anonim';
+      socket.emit('chatMessage', { username: nickname, message: msg });
+      document.getElementById('chatInput').value = '';
     }
 
-    function addEmoji(emoji) {
-      const input = document.getElementById('chatInput');
-      input.value += emoji;
-      input.focus();
-    }
-
-    document.getElementById('colorPicker').addEventListener('input', (e) => {
-      document.getElementById('chatMessages').style.color = e.target.value;
-    });
-
-    document.getElementById('fontSizePicker').addEventListener('input', (e) => {
-      document.getElementById('chatMessages').style.fontSize = e.target.value + 'px';
-    });
-
-    socket.on('chatMessage', (data) => {
-      const msgBox = document.getElementById('chatMessages');
-      const bubble = document.createElement('div');
-          socket.on('chatMessage', (data) => {
+    socket.on('chatMessage', data => {
       const msgBox = document.getElementById('chatMessages');
       const bubble = document.createElement('div');
       bubble.className = 'message-bubble';
-      bubble.innerHTML = `<strong>${data.username}:</strong> ${data.message}`;
+      bubble.innerHTML = `<span class="nickname" data-user="${data.username}">${data.username}</span>: ${data.message}`;
       msgBox.appendChild(bubble);
       msgBox.scrollTop = msgBox.scrollHeight;
     });
 
-    socket.on('userList', (users) => {
-      const list = document.getElementById('listenerList');
-      list.innerHTML = '';
-      users.forEach((username) => {
-        const li = document.createElement('li');
-        li.textContent = username;
-        list.appendChild(li);
-      });
+    function joinDJ() {
+      const nickname = document.getElementById('nicknameInput').value;
+      localStorage.setItem('nickname', nickname);
+      localStorage.setItem('isDJ', 'true');
+    }
+
+    function clearChat() {
+      if (localStorage.getItem('isDJ') === 'true') {
+        socket.emit('clearChat');
+      }
+    }
+
+    socket.on('clearChat', () => {
+      document.getElementById('chatMessages').innerHTML = '';
     });
 
-    socket.on('activeDJs', (djList) => {
-      const djName = djList.length > 0 ? djList[0] : 'Bilinmiyor';
-      document.getElementById('activeDJ').textContent = djName;
+    function applyTheme() {
+      const url = document.getElementById('themeUrlInput').value.trim();
+      if (url) {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = url;
+        document.head.appendChild(link);
+      }
+    }
+
+    const dropZone = document.getElementById('dropZone');
+    dropZone.addEventListener('dragover', e => e.preventDefault());
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      const file = e.dataTransfer.files[0];
+      alert(`Yüklenen dosya: ${file.name}`);
     });
+
+    const micButton = document.getElementById('pushToTalk');
+    micButton.addEventListener('mousedown', () => console.log('🎤 Yayın başladı'));
+    micButton.addEventListener('mouseup', () => console.log('🎤 Yayın durdu'));
+
+    document.addEventListener('contextmenu', e => {
+      if (e.target.classList.contains('nickname')) {
+        e.preventDefault();
+        const username = e.target.dataset.user;
+        showContextMenu(e.pageX, e.pageY, username);
+      }
+    });
+
+    function showContextMenu(x, y, username) {
+      if (localStorage.getItem('isDJ') !== 'true') return;
+      const menu = document.getElementById('djMenu');
+      menu.innerHTML = `
+        <button onclick="banUser('${username}')">🚫 Banla</button>
+        <button onclick="clearMessages('${username}')">🧹 Mesajlarını Sil</button>
+        <button onclick="assignColor('${username}')">🎨 Renk Ata</button>
+      `;
+      menu.style.left = x + 'px';
+      menu.style.top = y + 'px';
+      menu.style.display = 'block';
+    }
+
+    document.addEventListener('click', () => {
+      document.getElementById('djMenu').style.display = 'none';
+    });
+
+    function banUser(username) {
+      socket.emit('banUser', username);
+    }
+
+    function clearMessages(username) {
+      const bubbles = document.querySelectorAll('.message-bubble');
+      bubbles.forEach(b => {
+        if (b.textContent.startsWith(username)) b.remove();
+      });
+    }
+
+    function assignColor(username) {
+      alert(`${username} için renk atanacak (örnek işlem)`);
+    }
   </script>
 </body>
 </html>
