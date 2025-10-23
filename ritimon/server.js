@@ -1,46 +1,48 @@
 const express = require('express');
 const http = require('http');
 const path = require('path');
-const { Server } = require('socket.io');
+const socketIO = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = socketIO(server);
 
 const PORT = process.env.PORT || 3000;
 
 app.use(express.static(path.join(__dirname, 'public')));
 
 let users = [];
-let djs = [];
 
 io.on('connection', (socket) => {
-  console.log('🔌 Yeni bağlantı:', socket.id);
-
-  socket.on('joinChat', (nickname) => {
-    if (!users.includes(nickname)) users.push(nickname);
-    if (!djs.includes(nickname)) djs.push(nickname);
-    io.emit('userList', users);
-    io.emit('activeDJs', djs);
-  });
+  console.log('Yeni bağlantı:', socket.id);
 
   socket.on('chatMessage', (data) => {
-    const nickname = socket.nickname || 'Anonim';
+    io.emit('chatMessage', data);
+    if (!users.includes(data.username)) {
+      users.push(data.username);
+      io.emit('userList', users);
+    }
+  });
+
+  socket.on('clearChat', () => {
+    io.emit('clearChat');
+  });
+
+  socket.on('banUser', (username) => {
+    users = users.filter(u => u !== username);
+    io.emit('userList', users);
     io.emit('chatMessage', {
-      username: nickname,
-      message: data.message
+      username: 'Sistem',
+      message: `${username} yayından çıkarıldı 🚫`
     });
   });
 
   socket.on('disconnect', () => {
-    console.log('❌ Bağlantı kapandı:', socket.id);
-    // Kullanıcıyı listeden çıkarma (geliştirilebilir)
-    // Şu anlık sadece yayını güncelliyoruz
-    io.emit('userList', users);
-    io.emit('activeDJs', djs);
+    console.log('Bağlantı kesildi:', socket.id);
+    // Kullanıcı adıyla eşleştirme yapılmadığı için listeyi temizlemiyoruz
   });
 });
 
 server.listen(PORT, () => {
-  console.log(`🚀 Sunucu ${PORT} portunda çalışıyor`);
+  console.log(`Sunucu çalışıyor: http://localhost:${PORT}`);
 });
