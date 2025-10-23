@@ -672,30 +672,53 @@
         }
 
         // DJ Management
-        function addDJ() {
+        async function addDJ() {
             const name = document.getElementById('djName').value.trim();
             const password = document.getElementById('djPassword').value.trim();
-            
             if (!name || !password) {
                 alert('Lütfen DJ adı ve şifre girin!');
                 return;
             }
-            
-            // Add to DJ list
-            const djList = document.getElementById('djList');
-            const djItem = document.createElement('div');
-            djItem.className = 'dj-item';
-            djItem.innerHTML = `
-                <span class="dj-name">${name}</span>
-                <span class="dj-status">Eklendi</span>
-            `;
-            djList.appendChild(djItem);
-            
-            // Clear form
-            document.getElementById('djName').value = '';
-            document.getElementById('djPassword').value = '';
-            
-            alert(`DJ ${name} başarıyla eklendi!`);
+            try {
+                const res = await fetch('/api/djs', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nickname: name })
+                });
+                if (!res.ok) throw new Error('DJ eklenemedi');
+                await loadDJs();
+                document.getElementById('djName').value = '';
+                document.getElementById('djPassword').value = '';
+                alert(`DJ ${name} kaydedildi`);
+            } catch (e) {
+                alert('DJ eklenirken hata oluştu');
+                console.error(e);
+            }
+        }
+
+        async function loadDJs() {
+            try {
+                const res = await fetch('/api/djs');
+                if (!res.ok) return;
+                const djs = await res.json();
+                const djList = document.getElementById('djList');
+                djList.innerHTML = '';
+                if (!djs || djs.length === 0) {
+                    djList.innerHTML = '<div style="opacity:0.7;">Kayıtlı DJ yok</div>';
+                    return;
+                }
+                djs.forEach(dj => {
+                    const djItem = document.createElement('div');
+                    djItem.className = 'dj-item';
+                    djItem.innerHTML = `
+                        <span class="dj-name">${dj.nickname}</span>
+                        <span class="dj-status" style="${dj.isLive ? 'background: rgba(78,205,196,0.2); color:#4ecdc4;' : ''}">${dj.isLive ? 'Canlı' : 'Kayıtlı'}</span>
+                    `;
+                    djList.appendChild(djItem);
+                });
+            } catch (e) {
+                console.error('DJ listesi alınamadı', e);
+            }
         }
 
         // Chat
@@ -780,6 +803,9 @@
                 document.getElementById('uptime').textContent = Math.floor(data.uptime / 3600);
             })
             .catch(error => console.error('İstatistik yüklenemedi:', error));
+
+        // Load persistent DJ list on page load
+        loadDJs();
     </script>
 </body>
 </html>
