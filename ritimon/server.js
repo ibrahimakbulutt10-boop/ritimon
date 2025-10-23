@@ -1,7 +1,7 @@
 const express = require('express');
 const http = require('http');
-const { Server } = require('socket.io');
 const path = require('path');
+const { Server } = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
@@ -9,61 +9,38 @@ const io = new Server(server);
 
 const PORT = process.env.PORT || 3000;
 
-// Serve static files from /public
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Listener and DJ tracking
-let listeners = new Set();
-let djList = new Set();
-let startTime = Date.now();
+let users = [];
+let djs = [];
 
-// API endpoint for status
-app.get('/api/status', (req, res) => {
-  res.json({
-    online: listeners.size,
-    activeDJs: Array.from(djList),
-    uptime: Math.floor((Date.now() - startTime) / 1000)
-  });
-});
-
-// Socket.io events
 io.on('connection', (socket) => {
-  let username = null;
+  console.log('🔌 Yeni bağlantı:', socket.id);
 
-  socket.on('joinChat', (name) => {
-    username = name || 'Anonim';
-    listeners.add(username);
-    io.emit('listenerCount', listeners.size);
-    io.emit('userList', Array.from(listeners));
+  socket.on('joinChat', (nickname) => {
+    if (!users.includes(nickname)) users.push(nickname);
+    if (!djs.includes(nickname)) djs.push(nickname);
+    io.emit('userList', users);
+    io.emit('activeDJs', djs);
   });
 
   socket.on('chatMessage', (data) => {
-    if (username) {
-      io.emit('chatMessage', {
-        username,
-        message: data.message
-      });
-    }
+    const nickname = socket.nickname || 'Anonim';
+    io.emit('chatMessage', {
+      username: nickname,
+      message: data.message
+    });
   });
 
   socket.on('disconnect', () => {
-    if (username) {
-      listeners.delete(username);
-      djList.delete(username);
-      io.emit('listenerCount', listeners.size);
-      io.emit('userList', Array.from(listeners));
-    }
-  });
-
-  socket.on('djLogin', (name) => {
-    if (name) {
-      djList.add(name);
-      io.emit('activeDJs', Array.from(djList));
-    }
+    console.log('❌ Bağlantı kapandı:', socket.id);
+    // Kullanıcıyı listeden çıkarma (geliştirilebilir)
+    // Şu anlık sadece yayını güncelliyoruz
+    io.emit('userList', users);
+    io.emit('activeDJs', djs);
   });
 });
 
-// Start server
 server.listen(PORT, () => {
-  console.log(`✅ RitimON FM sunucusu ${PORT} portunda çalışıyor`);
+  console.log(`🚀 Sunucu ${PORT} portunda çalışıyor`);
 });
