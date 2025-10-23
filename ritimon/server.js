@@ -26,7 +26,8 @@ const HISTORY_FILE = path.join(__dirname, 'song_history.json');
 // ✅ Express CORS Middleware eklendi
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Project-Id, X-Encrypted-Yw-ID, X-Is-Login, X-Yw-Env');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   if (req.method === 'OPTIONS') {
     return res.sendStatus(200);
   }
@@ -170,3 +171,4 @@ server.listen(PORT, () => {
   console.log(`Server ${PORT} portunda çalışıyor`);
   console.log(`Stream URL: ${STREAM_URL}`);
 });
+
