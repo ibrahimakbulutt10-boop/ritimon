@@ -627,8 +627,8 @@
       return v / 100;
     }
     duckSlider?.addEventListener('input', () => { if (duckValue) duckValue.textContent = `${duckSlider.value}%`; });
-    let duckTimer;
-    socket.on('dj:voiceStart', ({ mime }) => { try { initPTT(mime || 'audio/webm;codecs=opus'); radio.volume = getDuckVolume(); clearTimeout(duckTimer); } catch (_) {} });
+    let duckTimer; let duckActive = 0; let savedRadioVolume = null;
+    socket.on('dj:voiceStart', ({ mime }) => { try { initPTT(mime || 'audio/webm;codecs=opus'); clearTimeout(duckTimer); if (duckActive === 0) savedRadioVolume = radio.volume; duckActive++; radio.volume = getDuckVolume(); } catch (_) {} });
     socket.on('dj:voiceChunk', ({ audio }) => {
       try {
         const buf = new Uint8Array(audio.data || audio);
@@ -640,7 +640,10 @@
       try { if (mediaSource && mediaSource.readyState === 'open') mediaSource.endOfStream(); } catch (_) {}
       const minMs = Math.max(0, parseInt(document.getElementById('duckMinMs')?.value || '800', 10));
       clearTimeout(duckTimer);
-      duckTimer = setTimeout(() => { radio.volume = 1.0; }, minMs);
+      duckActive = Math.max(0, duckActive - 1);
+      if (duckActive === 0) {
+        duckTimer = setTimeout(() => { radio.volume = savedRadioVolume ?? 1.0; savedRadioVolume = null; }, minMs);
+      }
     });
   </script>
   
