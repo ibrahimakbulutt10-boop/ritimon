@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>RitimON FM</title>
+  <link rel="manifest" href="/manifest.json" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" />
   <style>
     body {
@@ -24,7 +25,7 @@
       justify-content: space-around;
       padding: 20px;
     }
-    .chat-box, .dj-panel {
+    .chat-box, .dj-panel, .user-list {
       background: rgba(255,255,255,0.05);
       border-radius: 10px;
       padding: 20px;
@@ -81,6 +82,7 @@
 </head>
 <body>
   <div id="nowPlaying">🎶 Şu an çalan: Yükleniyor...</div>
+  <audio id="radioPlayer" controls style="width:100%; max-width: 600px; display:block; margin: 0 auto 10px;" src="/radio"></audio>
   <header>🎧 RitimON FM</header>
   <div class="container">
     <div class="chat-box">
@@ -91,9 +93,14 @@
         <span>😀</span><span>😂</span><span>😍</span><span>😎</span><span>😢</span><span>😡</span>
       </div>
     </div>
+    <div class="user-list">
+      <h3>👥 Kullanıcılar (<span id="userCount">0</span>)</h3>
+      <ul id="users" style="list-style:none; padding-left:0; margin:0;"></ul>
+    </div>
     <div class="dj-panel">
-      <input type="text" id="nicknameInput" placeholder="DJ takma adınız" />
-      <button onclick="joinDJ()">🎙️ DJ Girişi</button>
+      <input type="text" id="nicknameInput" placeholder="Takma adınız" />
+      <input type="password" id="djPassword" placeholder="DJ şifresi (opsiyonel)" />
+      <button onclick="joinDJ()">🎙️ Giriş</button>
       <div>
         <h3>🎵 Şarkı Yükle</h3>
         <div id="dropZone" style="border:2px dashed #ff4081; padding:20px; text-align:center;">Dosyayı buraya sürükleyin</div>
@@ -132,9 +139,21 @@
     });
 
     function joinDJ() {
-      const nickname = document.getElementById('nicknameInput').value;
+      const nickname = document.getElementById('nicknameInput').value.trim() || 'Anonim';
       localStorage.setItem('nickname', nickname);
-      localStorage.setItem('isDJ', 'true');
+      socket.emit('setNickname', nickname);
+      const pass = document.getElementById('djPassword').value.trim();
+      if (pass) {
+        socket.emit('djLogin', { password: pass }, (res) => {
+          if (res && res.ok) {
+            localStorage.setItem('isDJ', 'true');
+            alert('DJ girişi başarılı');
+          } else {
+            localStorage.removeItem('isDJ');
+            alert('DJ girişi başarısız');
+          }
+        });
+      }
     }
 
     function clearChat() {
@@ -145,6 +164,26 @@
 
     socket.on('clearChat', () => {
       document.getElementById('chatMessages').innerHTML = '';
+    });
+
+    socket.on('announcement', (data) => {
+      const msgBox = document.getElementById('chatMessages');
+      const bubble = document.createElement('div');
+      bubble.className = 'message-bubble';
+      bubble.style.color = '#ffd166';
+      bubble.textContent = `📢 Duyuru: ${data.message}`;
+      msgBox.appendChild(bubble);
+      msgBox.scrollTop = msgBox.scrollHeight;
+    });
+
+    socket.on('userBanned', (username) => {
+      const msgBox = document.getElementById('chatMessages');
+      const bubble = document.createElement('div');
+      bubble.className = 'message-bubble';
+      bubble.style.color = '#ef476f';
+      bubble.textContent = `🚫 ${username} banlandı.`;
+      msgBox.appendChild(bubble);
+      msgBox.scrollTop = msgBox.scrollHeight;
     });
 
     function applyTheme() {
@@ -208,15 +247,31 @@
     function assignColor(username) {
       alert(`${username} için renk atanacak (örnek işlem)`);
     }
+    // User list updates
+    socket.emit('setNickname', localStorage.getItem('nickname') || 'Anonim');
+    socket.on('userList', (payload) => {
+      const list = payload && payload.users ? payload : { users: [], count: 0 };
+      const ul = document.getElementById('users');
+      ul.innerHTML = '';
+      list.users.forEach(u => {
+        const li = document.createElement('li');
+        li.textContent = u;
+        ul.appendChild(li);
+      });
+      document.getElementById('userCount').textContent = list.count || list.users.length;
+    });
   </script>
-  <script src="/socket.io/socket.io.js"></script>
-<script>
-  const socket = io();
-
-  socket.on('currentSong', (song) => {
-    document.getElementById('nowPlaying').textContent = "🎶 Şu an çalan: " + song;
-  });
-</script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      });
+    }
+    // Reuse existing socket
+    socket.on('currentSong', (song) => {
+      document.getElementById('nowPlaying').textContent = '🎶 Şu an çalan: ' + song;
+    });
+  </script>
   
 </body>
 </html>
