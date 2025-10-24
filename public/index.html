@@ -611,7 +611,7 @@
         } catch (_) {}
       });
     }
-    socket.on('dj:voiceStart', ({ mime }) => { try { initPTT(mime || 'audio/webm;codecs=opus'); } catch (_) {} });
+    socket.on('dj:voiceStart', ({ mime }) => { try { initPTT(mime || 'audio/webm;codecs=opus'); radio.volume = 0.25; } catch (_) {} });
     socket.on('dj:voiceChunk', ({ audio }) => {
       try {
         const buf = new Uint8Array(audio.data || audio);
@@ -619,7 +619,7 @@
         else pttQueue.push(buf);
       } catch (_) {}
     });
-    socket.on('dj:voiceEnd', () => { try { if (mediaSource && mediaSource.readyState === 'open') mediaSource.endOfStream(); } catch (_) {} });
+    socket.on('dj:voiceEnd', () => { try { if (mediaSource && mediaSource.readyState === 'open') mediaSource.endOfStream(); } catch (_) {} radio.volume = 1.0; });
   </script>
   
 </body>
