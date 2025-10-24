@@ -1,7 +1,7 @@
 {
   "name": "ritimon-fm",
   "version": "1.0.0",
-  "description": "RitimON FM chat ve DJ paneli",
+  "description": "RitimON FM canlı yayın ve sohbet sunucusu",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
