@@ -28,6 +28,11 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/cursor/project-re-organization-and-feature-refinement-b59d'
     steps:
-      - name: Trigger Render deploy
+      - name: Trigger Render deploy via Hook
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
         run: |
-          echo "Render auto-deploys on push via render.yaml; nothing to do here."
+          if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
+            echo "RENDER_DEPLOY_HOOK_URL secret is not set." && exit 1
+          fi
+          curl -fsS -X POST "$RENDER_DEPLOY_HOOK_URL"
