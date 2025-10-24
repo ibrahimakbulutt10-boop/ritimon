@@ -132,6 +132,10 @@
         <input type="range" id="duckSlider" min="0" max="100" value="25" />
         <span id="duckValue" class="muted">25%</span>
       </div>
+      <div style="margin-top:6px; display:flex; align-items:center; gap:8px; justify-content:center;">
+        <label for="duckMinMs" style="color: var(--muted);">Minimum duck süresi (ms)</label>
+        <input type="number" id="duckMinMs" value="800" min="0" step="100" style="width:110px;" />
+      </div>
     </div>
     <div style="min-width:240px; text-align:right;">
       <button id="ctaChat" class="btn-primary">💬 Sohbete Giriş — RitimON’da sohbet</button>
@@ -623,7 +627,8 @@
       return v / 100;
     }
     duckSlider?.addEventListener('input', () => { if (duckValue) duckValue.textContent = `${duckSlider.value}%`; });
-    socket.on('dj:voiceStart', ({ mime }) => { try { initPTT(mime || 'audio/webm;codecs=opus'); radio.volume = getDuckVolume(); } catch (_) {} });
+    let duckTimer;
+    socket.on('dj:voiceStart', ({ mime }) => { try { initPTT(mime || 'audio/webm;codecs=opus'); radio.volume = getDuckVolume(); clearTimeout(duckTimer); } catch (_) {} });
     socket.on('dj:voiceChunk', ({ audio }) => {
       try {
         const buf = new Uint8Array(audio.data || audio);
@@ -631,7 +636,12 @@
         else pttQueue.push(buf);
       } catch (_) {}
     });
-    socket.on('dj:voiceEnd', () => { try { if (mediaSource && mediaSource.readyState === 'open') mediaSource.endOfStream(); } catch (_) {} radio.volume = 1.0; });
+    socket.on('dj:voiceEnd', () => {
+      try { if (mediaSource && mediaSource.readyState === 'open') mediaSource.endOfStream(); } catch (_) {}
+      const minMs = Math.max(0, parseInt(document.getElementById('duckMinMs')?.value || '800', 10));
+      clearTimeout(duckTimer);
+      duckTimer = setTimeout(() => { radio.volume = 1.0; }, minMs);
+    });
   </script>
   
 </body>
