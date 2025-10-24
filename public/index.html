@@ -101,6 +101,9 @@
     .anim-blink { animation: blink 1.2s steps(2, start) infinite, rotateText 8s linear infinite; }
     .anim-neon { animation: neon 1.2s ease-in-out infinite alternate; }
     #chatMessages img.chat-image { max-width: 100%; display:block; border-radius: 8px; margin-top:6px; object-fit: contain; }
+    /* Lightbox */
+    #lightboxOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; align-items: center; justify-content: center; z-index: 9999; }
+    #lightboxOverlay img { max-width: 95vw; max-height: 95vh; border-radius: 8px; box-shadow: 0 0 24px rgba(0,0,0,0.6); }
   </style>
 </head>
 <body>
@@ -161,6 +164,7 @@
     </div>
   </div>
   <div id="djMenu" class="dj-menu"></div>
+  <div id="lightboxOverlay"><img alt="görüntü" src="" /></div>
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
@@ -194,9 +198,17 @@
       // Görsel yüksekliğini chat kutusunun %80'i ile sınırla
       const chatBox = document.getElementById('chatMessages');
       const maxH = Math.floor(chatBox.clientHeight * 0.8);
-      bubble.innerHTML = `<span class="nickname" data-user="${data.username}">${data.username}</span> gönderdi:<br/><img class="chat-image" src="${data.url}" alt="görüntü" loading="lazy" referrerpolicy="no-referrer" />`;
+      bubble.innerHTML = `<span class=\"nickname\" data-user=\"${data.username}\">${data.username}</span> gönderdi:<br/><img class=\"chat-image\" src=\"${data.url}\" alt=\"görüntü\" loading=\"lazy\" referrerpolicy=\"no-referrer\" />`;
       const img = bubble.querySelector('img.chat-image');
       img.style.maxHeight = maxH + 'px';
+      // Lightbox açma
+      img.style.cursor = 'zoom-in';
+      img.addEventListener('click', () => {
+        const overlay = document.getElementById('lightboxOverlay');
+        const big = overlay.querySelector('img');
+        big.src = img.src;
+        overlay.style.display = 'flex';
+      });
       msgBox.appendChild(bubble);
       msgBox.scrollTop = msgBox.scrollHeight;
     });
@@ -274,6 +286,13 @@
     document.getElementById('ctaChat').addEventListener('click', () => {
       const el = document.querySelector('.chat-box');
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    // Lightbox kapama
+    document.getElementById('lightboxOverlay').addEventListener('click', () => {
+      const overlay = document.getElementById('lightboxOverlay');
+      overlay.style.display = 'none';
+      overlay.querySelector('img').src = '';
     });
 
     // DJ - send image URL to chat
