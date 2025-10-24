@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DJ Paneli - RitimON FM</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" />
+  <style>
+    body { margin: 0; font-family: 'Orbitron', sans-serif; background: #0e0e12; color: #fff; }
+    header { padding: 16px 20px; font-size: 1.4rem; color: #ff4081; display:flex; justify-content:space-between; align-items:center; }
+    main { display:grid; grid-template-columns: 1.3fr 1fr; gap: 16px; padding: 16px; }
+    section { background: rgba(255,255,255,0.06); border-radius: 10px; padding: 12px; }
+    h3 { margin: 6px 0 10px; color: #ffd166; font-size: 1.1rem; }
+    input, button, textarea { font-family: inherit; }
+    input, textarea { width: 100%; padding: 8px; border-radius: 8px; border: 1px solid #ffffff22; background: #121219; color: #fff; }
+    button { padding: 8px 12px; border-radius: 8px; border: 1px solid #ffffff22; background: #ff4081; color: #fff; cursor: pointer; }
+    .row { display:flex; gap:8px; align-items:center; }
+    .grid2 { display:grid; grid-template-columns: 1fr auto; gap: 8px; }
+    .grid3 { display:grid; grid-template-columns: 1fr 1fr auto; gap: 8px; }
+    ul { list-style: none; padding-left: 0; margin: 0; }
+    .list { max-height: 260px; overflow:auto; background:#0b0b14; border-radius:8px; padding:8px; }
+    .muted { color:#ffffff99; font-size: 0.9rem; }
+    .pill { display:inline-block; padding:2px 6px; border:1px solid #ffffff33; border-radius:6px; margin-left:6px; font-size:0.8rem; }
+    .msg { border-bottom:1px dashed #ffffff22; padding:6px 0; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>🎧 DJ Paneli - RitimON FM</div>
+    <div class="muted">DJ şifresi: <strong>4545</strong> (env DJ_PASSWORD)</div>
+  </header>
+  <main>
+    <section>
+      <h3>Yayın Kontrolleri</h3>
+      <div class="grid2">
+        <input id="announceText" placeholder="📢 Duyuru (280 karakter)" />
+        <button id="btnAnnounce">Gönder</button>
+      </div>
+      <div class="grid2" style="margin-top:8px;">
+        <input id="pinText" placeholder="📌 Sabit Mesaj (Pin)" />
+        <button id="btnPin">Pinle</button>
+      </div>
+      <div class="row" style="margin-top:8px;">
+        <button id="btnClear">🧹 Sohbeti Temizle</button>
+      </div>
+    </section>
+
+    <section>
+      <h3>Görsel ve Renk</h3>
+      <div class="grid2">
+        <input id="imageUrl" placeholder="🖼️ Resim URL (jpg/png/gif/webp)" />
+        <button id="sendImage">Gönder</button>
+      </div>
+      <div class="grid3" style="margin-top:8px;">
+        <input id="colorUsername" placeholder="🎨 Kullanıcı adı" />
+        <input id="colorHex" placeholder="#RRGGBB" />
+        <button id="btnSetColor">Renk Ata</button>
+      </div>
+    </section>
+
+    <section>
+      <h3>Moderasyon</h3>
+      <div class="grid2">
+        <input id="deleteMsgId" type="number" placeholder="🗑️ Mesaj ID" />
+        <button id="btnDeleteMsg">Mesaj Sil</button>
+      </div>
+      <div class="grid2" style="margin-top:8px;">
+        <input id="deleteByUser" placeholder="🧹 Kullanıcı — mesajları sil" />
+        <button id="btnDeleteByUser">Sil</button>
+      </div>
+    </section>
+
+    <section>
+      <h3>Canlı Bilgiler</h3>
+      <div class="row"><div class="muted">Yayındaki DJ:</div><div id="onAir" class="pill">-</div></div>
+      <div class="row" style="margin-top:6px;"><div class="muted">Aktif DJ'ler:</div><div id="djNames" class="pill">-</div></div>
+      <div class="row" style="margin-top:6px;"><div class="muted">Kullanıcılar:</div><div id="userCount" class="pill">0</div></div>
+      <div class="list" id="msgList" style="margin-top:8px;"></div>
+    </section>
+  </main>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    // Require DJ login if not yet
+    (function ensureDJ() {
+      if (localStorage.getItem('isDJ') === 'true') return;
+      const pass = prompt('DJ şifresi?');
+      if (!pass) return;
+      socket.emit('djLogin', { password: pass }, (res) => {
+        if (res && res.ok) {
+          localStorage.setItem('isDJ', 'true');
+          alert('DJ girişi başarılı');
+        } else {
+          alert('DJ girişi başarısız');
+        }
+      });
+    })();
+
+    function addMsgRow(it) {
+      const list = document.getElementById('msgList');
+      const div = document.createElement('div');
+      div.className = 'msg';
+      div.dataset.id = it.id || '';
+      if (it.type === 'text') {
+        div.textContent = `#${it.id} ${it.username}: ${it.message}`;
+      } else if (it.type === 'image') {
+        div.innerHTML = `#${it.id} ${it.username}: <a href="${it.url}" target="_blank">[resim]</a>`;
+      } else if (it.type === 'announcement') {
+        div.textContent = `#${it.id} 📢 ${it.message}`;
+      }
+      list.prepend(div);
+      while (list.children.length > 50) list.removeChild(list.lastChild);
+    }
+
+    socket.on('chatMessage', (d) => addMsgRow({ id: d.id, type: 'text', username: d.username, message: d.message }));
+    socket.on('chatImage', (d) => addMsgRow({ id: d.id, type: 'image', username: d.username, url: d.url }));
+    socket.on('announcement', (d) => addMsgRow({ id: d.id, type: 'announcement', message: d.message }));
+    socket.on('chatHistory', (items) => { (items||[]).forEach(addMsgRow); });
+
+    socket.on('onAir', (name) => document.getElementById('onAir').textContent = name || '-');
+    socket.on('djList', (names) => document.getElementById('djNames').textContent = (names||[]).join(' • ') || '-');
+    socket.on('userList', (p) => document.getElementById('userCount').textContent = (p && p.count) || 0);
+
+    // Controls
+    document.getElementById('btnAnnounce').onclick = () => {
+      if (localStorage.getItem('isDJ') !== 'true') return alert('DJ girişi yapın');
+      const t = document.getElementById('announceText').value.trim();
+      if (!t) return; socket.emit('dj:announce', t); document.getElementById('announceText').value='';
+    };
+    document.getElementById('btnPin').onclick = () => {
+      if (localStorage.getItem('isDJ') !== 'true') return alert('DJ girişi yapın');
+      socket.emit('dj:pin', document.getElementById('pinText').value.trim());
+    };
+    document.getElementById('btnClear').onclick = () => {
+      if (localStorage.getItem('isDJ') !== 'true') return alert('DJ girişi yapın');
+      socket.emit('clearChat');
+    };
+    document.getElementById('sendImage').onclick = () => {
+      if (localStorage.getItem('isDJ') !== 'true') return alert('DJ girişi yapın');
+      const url = document.getElementById('imageUrl').value.trim();
+      if (!url) return; socket.emit('chatImage', { url }); document.getElementById('imageUrl').value='';
+    };
+    document.getElementById('btnSetColor').onclick = () => {
+      if (localStorage.getItem('isDJ') !== 'true') return alert('DJ girişi yapın');
+      const username = document.getElementById('colorUsername').value.trim();
+      const color = document.getElementById('colorHex').value.trim();
+      if (!username || !color) return; socket.emit('dj:setColor', { username, color });
+    };
+    document.getElementById('btnDeleteMsg').onclick = () => {
+      if (localStorage.getItem('isDJ') !== 'true') return alert('DJ girişi yapın');
+      const id = parseInt(document.getElementById('deleteMsgId').value, 10);
+      if (!id) return; socket.emit('dj:deleteMessage', { id });
+    };
+    document.getElementById('btnDeleteByUser').onclick = () => {
+      if (localStorage.getItem('isDJ') !== 'true') return alert('DJ girişi yapın');
+      const username = document.getElementById('deleteByUser').value.trim();
+      if (!username) return; socket.emit('dj:deleteByUser', { username });
+    };
+  </script>
+</body>
+</html>
