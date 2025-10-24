@@ -590,6 +590,18 @@
     socket.on('dj:stop', () => {
       radio.pause();
     });
+
+    // Receive PTT voice clip and play once
+    const pttAudio = new Audio();
+    socket.on('dj:voice', ({ mime, audio }) => {
+      try {
+        const bytes = new Uint8Array(audio.data || audio);
+        const blob = new Blob([bytes], { type: mime || 'audio/webm' });
+        const url = URL.createObjectURL(blob);
+        pttAudio.src = url;
+        pttAudio.play().catch(() => {});
+      } catch (_) {}
+    });
   </script>
   
 </body>

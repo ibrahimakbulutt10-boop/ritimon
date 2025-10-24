@@ -22,6 +22,7 @@
     .muted { color:#ffffff99; font-size: 0.9rem; }
     .pill { display:inline-block; padding:2px 6px; border:1px solid #ffffff33; border-radius:6px; margin-left:6px; font-size:0.8rem; }
     .msg { border-bottom:1px dashed #ffffff22; padding:6px 0; }
+    .row-wrap { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
   </style>
 </head>
 <body>
@@ -42,6 +43,10 @@
       </div>
       <div class="row" style="margin-top:8px;">
         <button id="btnClear">🧹 Sohbeti Temizle</button>
+      </div>
+      <div class="row-wrap" style="margin-top:8px;">
+        <button id="btnPTT">🎤 Bas-Konuş</button>
+        <span class="muted" id="pttStatus">Hazır</span>
       </div>
     </section>
 
@@ -191,6 +196,34 @@
       const username = document.getElementById('deleteByUser').value.trim();
       if (!username) return; socket.emit('dj:deleteByUser', { username });
     };
+
+    // Push-to-talk (PTT) - kısa ses klibi gönder
+    const pttBtn = document.getElementById('btnPTT');
+    const pttStatus = document.getElementById('pttStatus');
+    let mediaRecorder;
+    let chunks = [];
+    async function ensureMic() {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mr = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      mr.ondataavailable = e => { if (e.data && e.data.size > 0) chunks.push(e.data); };
+      mr.onstop = async () => {
+        const blob = new Blob(chunks, { type: mr.mimeType }); chunks = [];
+        const arrBuf = await blob.arrayBuffer();
+        socket.emit('dj:voice', { mime: blob.type, audio: new Uint8Array(arrBuf) });
+        pttStatus.textContent = 'Gönderildi';
+        setTimeout(() => pttStatus.textContent = 'Hazır', 1000);
+      };
+      return mr;
+    }
+    pttBtn.addEventListener('mousedown', async () => {
+      if (localStorage.getItem('isDJ') !== 'true') return alert('DJ girişi yapın');
+      if (!mediaRecorder) mediaRecorder = await ensureMic();
+      mediaRecorder.start();
+      pttStatus.textContent = 'Kayıt...';
+    });
+    pttBtn.addEventListener('mouseup', () => {
+      if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
+    });
   </script>
 </body>
 </html>
