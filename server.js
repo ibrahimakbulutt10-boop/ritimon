@@ -1,27 +1,28 @@
 const express = require('express');
 const http = require('http');
 const path = require('path');
-const socketIO = require('socket.io');
+const socketIo = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIO(server);
+const io = socketIo(server);
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 
+// Statik dosyaları sun
 app.use(express.static(path.join(__dirname, 'public')));
 
-let users = [];
+// Ana sayfa
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
+// Socket.io olayları
 io.on('connection', (socket) => {
-  console.log('Yeni bağlantı:', socket.id);
+  console.log('Yeni kullanıcı bağlandı');
 
-  socket.on('chatMessage', (data) => {
-    io.emit('chatMessage', data);
-    if (!users.includes(data.username)) {
-      users.push(data.username);
-      io.emit('userList', users);
-    }
+  socket.on('chatMessage', (msg) => {
+    io.emit('chatMessage', msg);
   });
 
   socket.on('clearChat', () => {
@@ -29,20 +30,19 @@ io.on('connection', (socket) => {
   });
 
   socket.on('banUser', (username) => {
-    users = users.filter(u => u !== username);
-    io.emit('userList', users);
-    io.emit('chatMessage', {
-      username: 'Sistem',
-      message: `${username} yayından çıkarıldı 🚫`
-    });
+    io.emit('banUser', username);
+  });
+
+  socket.on('userList', (list) => {
+    io.emit('userList', list);
   });
 
   socket.on('disconnect', () => {
-    console.log('Bağlantı kesildi:', socket.id);
-    // Kullanıcı adıyla eşleştirme yapılmadığı için listeyi temizlemiyoruz
+    console.log('Kullanıcı ayrıldı');
   });
 });
 
+// Sunucuyu başlat
 server.listen(PORT, () => {
   console.log(`Sunucu çalışıyor: http://localhost:${PORT}`);
 });
