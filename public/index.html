@@ -147,9 +147,13 @@
       <button onclick="joinDJ()">🎙️ Giriş</button>
       <div>
         <h3>🎵 Şarkı Yükle</h3>
-        <div id="dropZone" style="border:2px dashed #ff4081; padding:20px; text-align:center;">Dosyayı buraya sürükleyin</div>
+        <div id="dropZone" style="border:2px dashed var(--accent); padding:20px; text-align:center;">Dosyayı buraya sürükleyin</div>
       </div>
       <button id="pushToTalk">🎤 Bas-Konuş</button>
+      <div style="margin-top:10px; display:flex; gap:6px;">
+        <input type="url" id="imageUrl" placeholder="DJ - Resim URL (jpg, png, gif, webp)" style="flex:1;" />
+        <button class="btn-primary" id="sendImage">🖼️ Gönder</button>
+      </div>
       <input type="text" id="themeUrlInput" placeholder="Tema CSS URL'si" />
       <button onclick="applyTheme()">🎨 Temayı Uygula</button>
       <button onclick="clearChat()">🧹 Sohbeti Temizle</button>
@@ -178,6 +182,15 @@
       const bubble = document.createElement('div');
       bubble.className = 'message-bubble';
       bubble.innerHTML = `<span class="nickname" data-user="${data.username}">${data.username}</span>: ${data.message}`;
+      msgBox.appendChild(bubble);
+      msgBox.scrollTop = msgBox.scrollHeight;
+    });
+
+    socket.on('chatImage', data => {
+      const msgBox = document.getElementById('chatMessages');
+      const bubble = document.createElement('div');
+      bubble.className = 'message-bubble';
+      bubble.innerHTML = `<span class="nickname" data-user="${data.username}">${data.username}</span> gönderdi:<br/><img src="${data.url}" alt="görüntü" style="max-width:100%; border-radius:8px; margin-top:6px;" loading="lazy" referrerpolicy="no-referrer" />`;
       msgBox.appendChild(bubble);
       msgBox.scrollTop = msgBox.scrollHeight;
     });
@@ -256,6 +269,19 @@
       const el = document.querySelector('.chat-box');
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
+
+    // DJ - send image URL to chat
+    const sendImageBtn = document.getElementById('sendImage');
+    if (sendImageBtn) {
+      sendImageBtn.addEventListener('click', () => {
+        if (localStorage.getItem('isDJ') !== 'true') { alert('Sadece DJ resim gönderebilir'); return; }
+        const input = document.getElementById('imageUrl');
+        const url = (input.value || '').trim();
+        if (!url) return;
+        socket.emit('chatImage', { url });
+        input.value = '';
+      });
+    }
 
     // Theme switcher
     document.querySelectorAll('button[data-theme]').forEach(btn => {

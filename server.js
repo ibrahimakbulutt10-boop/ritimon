@@ -93,6 +93,24 @@ io.on('connection', (socket) => {
     io.emit('clearChat');
   });
 
+  socket.on('chatImage', (payload = {}) => {
+    if (!isDJ(socket)) return;
+    const username = (socketIdToUsername.get(socket.id) || 'DJ').slice(0, 32);
+    if (bannedUsernames.has(username)) return;
+    const rawUrl = String(payload.url || '').trim();
+    if (!rawUrl || rawUrl.length > 300) return;
+    try {
+      const u = new URL(rawUrl);
+      if (u.protocol !== 'http:' && u.protocol !== 'https:') return;
+      const lower = u.pathname.toLowerCase();
+      const allowed = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+      if (!allowed.some(ext => lower.endsWith(ext))) return;
+      io.emit('chatImage', { username, url: u.toString() });
+    } catch (_) {
+      return;
+    }
+  });
+
   socket.on('banUser', (usernameRaw) => {
     if (!isDJ(socket)) return;
     const username = String(usernameRaw || '').trim();
