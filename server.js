@@ -30,6 +30,7 @@ const socketIdToLastTypingMs = new Map();
 const socketIdToLastMessageMs = new Map();
 const socketIdToLastText = new Map();
 const messageHistory = [];
+const djVoiceActive = new Set();
 let pinnedMessage = '';
 let nextMessageId = 1;
 const messageIdToReactions = new Map(); // id -> Map(emoji -> count)
@@ -215,6 +216,32 @@ io.on('connection', (socket) => {
     // 2MB sınır
     if (buf.length > 2 * 1024 * 1024) return;
     io.emit('dj:voice', { mime, audio: buf });
+  });
+
+  // Chunked PTT streaming (no duration limit)
+  socket.on('dj:voiceStart', ({ mime } = {}) => {
+    if (!isDJ(socket)) return;
+    if (typeof mime !== 'string') return;
+    const okMime = /^(audio\/webm|audio\/ogg)$/i.test(mime);
+    if (!okMime) return;
+    djVoiceActive.add(socket.id);
+    io.emit('dj:voiceStart', { mime });
+  });
+  socket.on('dj:voiceChunk', ({ mime, audio } = {}) => {
+    if (!isDJ(socket)) return;
+    if (!djVoiceActive.has(socket.id)) return;
+    if (typeof mime !== 'string' || !audio) return;
+    const okMime = /^(audio\/webm|audio\/ogg)$/i.test(mime);
+    if (!okMime) return;
+    const buf = Buffer.isBuffer(audio) ? audio : Buffer.from(audio);
+    // Per-chunk limit 128KB
+    if (buf.length > 128 * 1024) return;
+    io.emit('dj:voiceChunk', { mime, audio: buf });
+  });
+  socket.on('dj:voiceEnd', () => {
+    if (!isDJ(socket)) return;
+    djVoiceActive.delete(socket.id);
+    io.emit('dj:voiceEnd');
   });
 
   socket.on('setAvatar', (urlRaw = '') => {

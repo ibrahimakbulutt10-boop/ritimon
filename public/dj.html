@@ -201,28 +201,29 @@
     const pttBtn = document.getElementById('btnPTT');
     const pttStatus = document.getElementById('pttStatus');
     let mediaRecorder;
-    let chunks = [];
     async function ensureMic() {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mr = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-      mr.ondataavailable = e => { if (e.data && e.data.size > 0) chunks.push(e.data); };
-      mr.onstop = async () => {
-        const blob = new Blob(chunks, { type: mr.mimeType }); chunks = [];
-        const arrBuf = await blob.arrayBuffer();
-        socket.emit('dj:voice', { mime: blob.type, audio: new Uint8Array(arrBuf) });
-        pttStatus.textContent = 'Gönderildi';
-        setTimeout(() => pttStatus.textContent = 'Hazır', 1000);
+      const mime = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/ogg';
+      const mr = new MediaRecorder(stream, { mimeType: mime });
+      mr.onstart = () => { socket.emit('dj:voiceStart', { mime }); };
+      mr.ondataavailable = async (e) => {
+        if (e.data && e.data.size > 0) {
+          const arrBuf = await e.data.arrayBuffer();
+          socket.emit('dj:voiceChunk', { mime, audio: new Uint8Array(arrBuf) });
+        }
       };
+      mr.onstop = () => { socket.emit('dj:voiceEnd'); };
       return mr;
     }
     pttBtn.addEventListener('mousedown', async () => {
       if (localStorage.getItem('isDJ') !== 'true') return alert('DJ girişi yapın');
       if (!mediaRecorder) mediaRecorder = await ensureMic();
-      mediaRecorder.start();
-      pttStatus.textContent = 'Kayıt...';
+      mediaRecorder.start(400); // 400ms chunk
+      pttStatus.textContent = 'Canlı...';
     });
     pttBtn.addEventListener('mouseup', () => {
       if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
+      pttStatus.textContent = 'Hazır';
     });
   </script>
 </body>

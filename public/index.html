@@ -592,16 +592,34 @@
     });
 
     // Receive PTT voice clip and play once
-    const pttAudio = new Audio();
-    socket.on('dj:voice', ({ mime, audio }) => {
+    // PTT streaming - play queue
+    let pttSource; let pttQueue = [];
+    let ctx; let mediaSource; let sourceBuffer;
+    function initPTT(mime) {
+      if (!('MediaSource' in window)) return;
+      ctx = ctx || new AudioContext();
+      mediaSource = new MediaSource();
+      const url = URL.createObjectURL(mediaSource);
+      if (!pttSource) {
+        const audio = new Audio(); audio.autoplay = true; audio.src = url; pttSource = audio;
+      } else { pttSource.src = url; }
+      mediaSource.addEventListener('sourceopen', () => {
+        try {
+          sourceBuffer = mediaSource.addSourceBuffer(mime);
+          sourceBuffer.mode = 'sequence';
+          while (pttQueue.length) sourceBuffer.appendBuffer(pttQueue.shift());
+        } catch (_) {}
+      });
+    }
+    socket.on('dj:voiceStart', ({ mime }) => { try { initPTT(mime || 'audio/webm;codecs=opus'); } catch (_) {} });
+    socket.on('dj:voiceChunk', ({ audio }) => {
       try {
-        const bytes = new Uint8Array(audio.data || audio);
-        const blob = new Blob([bytes], { type: mime || 'audio/webm' });
-        const url = URL.createObjectURL(blob);
-        pttAudio.src = url;
-        pttAudio.play().catch(() => {});
+        const buf = new Uint8Array(audio.data || audio);
+        if (sourceBuffer && !sourceBuffer.updating) sourceBuffer.appendBuffer(buf);
+        else pttQueue.push(buf);
       } catch (_) {}
     });
+    socket.on('dj:voiceEnd', () => { try { if (mediaSource && mediaSource.readyState === 'open') mediaSource.endOfStream(); } catch (_) {} });
   </script>
   
 </body>
