@@ -100,7 +100,7 @@ io.on('connection', (socket) => {
 
   socket.on('djLogin', (payload = {}, ack) => {
     const password = String(payload.password || '');
-    const expected = process.env.DJ_PASSWORD || '4545';
+    const expected = process.env.DJ_PASSWORD || '';
     const ok = password === expected;
     if (ok) djSockets.add(socket.id);
     if (ok) broadcastDJList();

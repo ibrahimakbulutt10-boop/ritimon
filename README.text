@@ -92,7 +92,7 @@ chatapp/
 
 ### DJ Olarak
 1. Ana sayfadan "🎙️ DJ Paneli" butonuna tıklayın
-2. DJ adınızı ve şifreyi girin (şifre: 4545)
+2. DJ adınızı ve şifreyi girin (şifre ortam değişkeni: DJ_PASSWORD)
 3. Yayını başlatın ve müzik çalmaya başlayın
 
 ### Chat Kullanımı
@@ -112,7 +112,7 @@ chatapp/
 
 ## 🔒 Güvenlik
 
-- DJ paneli şifre korumalı (şifre: 4545)
+- DJ paneli şifre korumalı (şifre: DJ_PASSWORD ortam değişkeninde)
 - Kullanıcı adı kontrolü
 - XSS koruması
 - Rate limiting (gelecek güncellemede)
