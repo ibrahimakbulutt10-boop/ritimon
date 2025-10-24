@@ -1,0 +1,38 @@
+name: CI & Deploy
+
+on:
+  push:
+    branches:
+      - cursor/project-re-organization-and-feature-refinement-b59d
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Install deps
+        run: npm ci || npm install
+      - name: Lint
+        run: |
+          echo "No linter configured; skipping"
+      - name: Build
+        run: |
+          echo "No build step; skipping"
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/cursor/project-re-organization-and-feature-refinement-b59d'
+    steps:
+      - name: Trigger Render deploy via Hook
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
+            echo "RENDER_DEPLOY_HOOK_URL secret is not set." && exit 1
+          fi
+          curl -fsS -X POST "$RENDER_DEPLOY_HOOK_URL"

@@ -4,19 +4,34 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>RitimON FM</title>
+  <link rel="manifest" href="/manifest.json" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" />
   <style>
+    :root {
+      --bg1: #0f0f0f;
+      --bg2: #1a1a1a;
+      --text: #ffffff;
+      --muted: #ffffffcc;
+      --accent: #ff4081; /* pink */
+      --notice: #ffd166;
+      --info: #82eaff;
+      --danger: #ef476f;
+    }
+    .theme-purple { --accent: #a855f7; --bg1: #0c0717; --bg2: #1a1030; }
+    .theme-blue { --accent: #3b82f6; --bg1: #06121f; --bg2: #0e2138; }
+    .theme-gold { --accent: #f59e0b; --bg1: #19160a; --bg2: #2a230c; }
+
     body {
       margin: 0;
       font-family: 'Orbitron', sans-serif;
-      background: linear-gradient(to right, #0f0f0f, #1a1a1a);
-      color: white;
+      background: linear-gradient(to right, var(--bg1), var(--bg2));
+      color: var(--text);
     }
     header {
       text-align: center;
       padding: 20px;
       font-size: 2rem;
-      color: #ff4081;
+      color: var(--accent);
     }
     .container {
       display: flex;
@@ -24,7 +39,7 @@
       justify-content: space-around;
       padding: 20px;
     }
-    .chat-box, .dj-panel {
+    .chat-box, .dj-panel, .user-list {
       background: rgba(255,255,255,0.05);
       border-radius: 10px;
       padding: 20px;
@@ -45,7 +60,7 @@
     }
     .nickname {
       font-weight: bold;
-      color: #ff4081;
+      color: var(--accent);
       cursor: pointer;
     }
     .emoji-panel {
@@ -59,7 +74,7 @@
     .dj-menu {
       position: absolute;
       background: #222;
-      border: 1px solid #ff4081;
+      border: 1px solid var(--accent);
       border-radius: 8px;
       padding: 10px;
       display: none;
@@ -75,36 +90,133 @@
       cursor: pointer;
     }
     .dj-menu button:hover {
-      background: #ff4081;
+      background: var(--accent);
     }
+    /* Fullscreen helpers */
+    .fullscreen-active { height: 100vh; overflow: hidden; }
+    .fullscreen-active #chatMessages { height: calc(100vh - 260px); }
+    @keyframes blink { 50% { opacity: 0.2; } }
+    @keyframes neon { 0%, 100% { text-shadow: 0 0 8px var(--accent), 0 0 16px var(--accent);} 50% { text-shadow: 0 0 2px var(--accent), 0 0 4px var(--accent);} }
+    @keyframes rotateText { 0% { transform: rotate(0deg); } 50% { transform: rotate(1deg); } 100% { transform: rotate(0deg); } }
+    @keyframes marquee { 0% { transform: translateX(100%);} 100% { transform: translateX(-100%);} }
+    .accent { color: var(--accent); }
+    .btn-primary { background: var(--accent); color: white; border: none; border-radius: 8px; padding: 10px 14px; cursor: pointer; }
+    .anim-blink { animation: blink 1.2s steps(2, start) infinite, rotateText 8s linear infinite; }
+    .anim-neon { animation: neon 1.2s ease-in-out infinite alternate; }
+    #chatMessages img.chat-image { max-width: 100%; display:block; border-radius: 8px; margin-top:6px; object-fit: contain; }
+    /* Lightbox */
+    #lightboxOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; align-items: center; justify-content: center; z-index: 9999; }
+    #lightboxOverlay img { max-width: 95vw; max-height: 95vh; border-radius: 8px; box-shadow: 0 0 24px rgba(0,0,0,0.6); }
   </style>
 </head>
 <body>
-  <div id="nowPlaying">🎶 Şu an çalan: Yükleniyor...</div>
-  <header>🎧 RitimON FM</header>
+  <header style="display:flex; align-items:center; justify-content:space-between; padding: 20px; gap: 20px; flex-wrap: wrap;">
+    <div style="min-width:240px">
+      <div style="font-size: 2rem;" class="accent" ><span class="anim-neon">RitimON FM</span></div>
+      <div id="slogan" style="color:var(--muted); margin-top:6px; white-space:nowrap; overflow:hidden; position:relative;">
+        <span id="sloganText" class="anim-blink" style="display:inline-block; transform-origin:left center;">Listelerde değil, RUHUNUZDA yankılanır</span>
+      </div>
+      <div style="margin-top:8px; display:flex; gap:8px; flex-wrap: wrap;">
+        <button class="btn-primary" data-theme="default">Tema: Pembe</button>
+        <button class="btn-primary" data-theme="purple">Mor</button>
+        <button class="btn-primary" data-theme="blue">Mavi</button>
+        <button class="btn-primary" data-theme="gold">Altın</button>
+      </div>
+    </div>
+    <div style="text-align:center; flex:1; min-width:260px">
+      <div id="nowPlaying" style="margin-bottom:8px;">🎶 Şu an çalan: Yükleniyor...</div>
+      <div id="onAirDJ" style="font-size:1.1rem; color:#82eaff;">Yayındaki DJ: -</div>
+      <audio id="radioPlayer" controls style="width:100%; max-width: 520px; display:block; margin: 10px auto 0;" src="/radio"></audio>
+      <div style="margin-top:6px; display:flex; align-items:center; gap:8px; justify-content:center;">
+        <label for="duckSlider" style="color: var(--muted);">Konuşma sırasında müzik seviyesi</label>
+        <input type="range" id="duckSlider" min="0" max="100" value="25" />
+        <span id="duckValue" class="muted">25%</span>
+      </div>
+      <div style="margin-top:6px; display:flex; align-items:center; gap:8px; justify-content:center;">
+        <label for="duckMinMs" style="color: var(--muted);">Minimum duck süresi (ms)</label>
+        <input type="number" id="duckMinMs" value="800" min="0" step="100" style="width:110px;" />
+      </div>
+    </div>
+    <div style="min-width:240px; text-align:right; display:flex; flex-direction:column; gap:8px; align-items:flex-end;">
+      <button id="ctaChat" class="btn-primary">💬 Sohbete Giriş — RitimON’da sohbet</button>
+      <button id="ctaListen" class="btn-primary" style="background:#3b82f6">▶ Press here</button>
+      <div style="font-size:0.9rem; color: var(--muted); text-align:right;">
+        Yalnızca aşağıdaki bağlantılardan dinleyebilirsiniz:
+        <div><a href="https://ritimon.radio12345.com" target="_blank">ritimon.radio12345.com</a></div>
+        <div><a href="https://ritimon.radiostream321.com" target="_blank">ritimon.radiostream321.com</a></div>
+        <div><a href="https://ritimon.radiostream123.com" target="_blank">ritimon.radiostream123.com</a></div>
+      </div>
+    </div>
+  </header>
+  <div style="width:100%; overflow:hidden; border-top:1px solid #ffffff1a; border-bottom:1px solid #ffffff1a; padding:8px 0;">
+    <div id="djMarquee" style="white-space:nowrap; animation: marquee 18s linear infinite; color:#ffd166;">DJ'ler: -</div>
+  </div>
   <div class="container">
-    <div class="chat-box">
+    <div style="flex-basis:100%; display:flex; gap:10px; justify-content:center;">
+      <a href="/blog.html" class="btn-primary" style="text-decoration:none;">📝 Blog</a>
+      <a href="/gallery.html" class="btn-primary" style="text-decoration:none;">🖼️ Galeri</a>
+      <a href="/dj.html" class="btn-primary" style="text-decoration:none;">🎙️ DJ Paneli</a>
+    </div>
+    <div id="chatArea">
+      <div class="top-actions" style="text-align:right; margin: 0 10px 10px;">
+        <button id="toggleFs" class="btn-primary">⛶ Tam Ekran</button>
+      </div>
+      <div style="display:flex; flex-wrap: wrap; justify-content: space-around;">
+        <div class="chat-box">
       <div id="chatMessages"></div>
+      <div id="pinned" style="margin-top:8px; color: var(--notice);"></div>
+      <div id="typing" style="margin-top:4px; color: var(--muted); font-size: 0.9rem;"></div>
       <textarea id="chatInput" placeholder="Mesajınızı yazın..." rows="3" style="width:100%;"></textarea>
       <button onclick="sendMessage()">💬 Gönder</button>
       <div class="emoji-panel">
         <span>😀</span><span>😂</span><span>😍</span><span>😎</span><span>😢</span><span>😡</span>
       </div>
+        </div>
+        <div class="user-list">
+      <h3>👥 Kullanıcılar (<span id="userCount">0</span>)</h3>
+      <ul id="users" style="list-style:none; padding-left:0; margin:0;"></ul>
+        </div>
+      </div>
     </div>
     <div class="dj-panel">
-      <input type="text" id="nicknameInput" placeholder="DJ takma adınız" />
-      <button onclick="joinDJ()">🎙️ DJ Girişi</button>
+      <input type="text" id="nicknameInput" placeholder="Takma adınız" />
+      <input type="password" id="djPassword" placeholder="DJ şifresi (opsiyonel)" />
+      <button onclick="joinDJ()">🎙️ Giriş</button>
       <div>
         <h3>🎵 Şarkı Yükle</h3>
-        <div id="dropZone" style="border:2px dashed #ff4081; padding:20px; text-align:center;">Dosyayı buraya sürükleyin</div>
+        <div id="dropZone" style="border:2px dashed var(--accent); padding:20px; text-align:center;">Dosyayı buraya sürükleyin</div>
       </div>
       <button id="pushToTalk">🎤 Bas-Konuş</button>
+      <div style="margin-top:10px; display:flex; gap:6px;">
+        <input type="url" id="imageUrl" placeholder="DJ - Resim URL (jpg, png, gif, webp)" style="flex:1;" />
+        <button class="btn-primary" id="sendImage">🖼️ Gönder</button>
+      </div>
+      <div class="dj-tools" style="margin-top:14px; display:grid; grid-template-columns: 1fr auto; gap: 8px;">
+        <input type="text" id="announceText" placeholder="📢 Duyuru (280 karakter)" />
+        <button class="btn-primary" id="btnAnnounce">Gönder</button>
+
+        <input type="text" id="pinText" placeholder="📌 Sabit Mesaj (Pin)" />
+        <button class="btn-primary" id="btnPin">Pinle</button>
+
+        <input type="text" id="colorUsername" placeholder="🎨 Renk Ata — Kullanıcı adı" />
+        <input type="text" id="colorHex" placeholder="#RRGGBB" />
+        <div style="grid-column: 1 / span 2; text-align:right;">
+          <button class="btn-primary" id="btnSetColor">Renk Ata</button>
+        </div>
+
+        <input type="number" id="deleteMsgId" placeholder="🗑️ Mesaj ID" />
+        <button class="btn-primary" id="btnDeleteMsg">Mesaj Sil</button>
+
+        <input type="text" id="deleteByUser" placeholder="🧹 Kullanıcı adı — Mesajları Sil" />
+        <button class="btn-primary" id="btnDeleteByUser">Sil</button>
+      </div>
       <input type="text" id="themeUrlInput" placeholder="Tema CSS URL'si" />
       <button onclick="applyTheme()">🎨 Temayı Uygula</button>
       <button onclick="clearChat()">🧹 Sohbeti Temizle</button>
     </div>
   </div>
   <div id="djMenu" class="dj-menu"></div>
+  <div id="lightboxOverlay"><img alt="görüntü" src="" /></div>
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
@@ -126,15 +238,57 @@
       const msgBox = document.getElementById('chatMessages');
       const bubble = document.createElement('div');
       bubble.className = 'message-bubble';
-      bubble.innerHTML = `<span class="nickname" data-user="${data.username}">${data.username}</span>: ${data.message}`;
+      bubble.dataset.id = data.id || '';
+      const nameColor = window.__userMeta?.[data.username]?.color || '';
+      const avatar = window.__userMeta?.[data.username]?.avatarUrl || '';
+      const nameHtml = `<span class=\"nickname\" data-user=\"${data.username}\" style=\"${nameColor ? `color:${nameColor}` : ''}\">${data.username}</span>`;
+      const avatarHtml = avatar ? `<img src=\"${avatar}\" alt=\"avatar\" style=\"width:20px;height:20px;border-radius:50%;vertical-align:middle;margin-right:6px;\" />` : '';
+      bubble.innerHTML = `${avatarHtml}${nameHtml}: ${data.message}`;
+      addReactionsUI(bubble, data.id);
+      msgBox.appendChild(bubble);
+      msgBox.scrollTop = msgBox.scrollHeight;
+    });
+
+    socket.on('chatImage', data => {
+      const msgBox = document.getElementById('chatMessages');
+      const bubble = document.createElement('div');
+      bubble.className = 'message-bubble';
+      bubble.dataset.id = data.id || '';
+      // Görsel yüksekliğini chat kutusunun %80'i ile sınırla
+      const chatBox = document.getElementById('chatMessages');
+      const maxH = Math.floor(chatBox.clientHeight * 0.8);
+      bubble.innerHTML = `<span class=\"nickname\" data-user=\"${data.username}\">${data.username}</span> gönderdi:<br/><img class=\"chat-image\" src=\"${data.url}\" alt=\"görüntü\" loading=\"lazy\" referrerpolicy=\"no-referrer\" />`;
+      const img = bubble.querySelector('img.chat-image');
+      img.style.maxHeight = maxH + 'px';
+      // Lightbox açma
+      img.style.cursor = 'zoom-in';
+      img.addEventListener('click', () => {
+        const overlay = document.getElementById('lightboxOverlay');
+        const big = overlay.querySelector('img');
+        big.src = img.src;
+        overlay.style.display = 'flex';
+      });
+      addReactionsUI(bubble, data.id);
       msgBox.appendChild(bubble);
       msgBox.scrollTop = msgBox.scrollHeight;
     });
 
     function joinDJ() {
-      const nickname = document.getElementById('nicknameInput').value;
+      const nickname = document.getElementById('nicknameInput').value.trim() || 'Anonim';
       localStorage.setItem('nickname', nickname);
-      localStorage.setItem('isDJ', 'true');
+      socket.emit('setNickname', nickname);
+      const pass = document.getElementById('djPassword').value.trim();
+      if (pass) {
+        socket.emit('djLogin', { password: pass }, (res) => {
+          if (res && res.ok) {
+            localStorage.setItem('isDJ', 'true');
+            alert('DJ girişi başarılı');
+          } else {
+            localStorage.removeItem('isDJ');
+            alert('DJ girişi başarısız');
+          }
+        });
+      }
     }
 
     function clearChat() {
@@ -147,6 +301,60 @@
       document.getElementById('chatMessages').innerHTML = '';
     });
 
+    socket.on('announcement', (data) => {
+      const msgBox = document.getElementById('chatMessages');
+      const bubble = document.createElement('div');
+      bubble.className = 'message-bubble';
+      bubble.style.color = '#ffd166';
+      bubble.dataset.id = data.id || '';
+      bubble.textContent = `📢 Duyuru: ${data.message}`;
+      addReactionsUI(bubble, data.id);
+      msgBox.appendChild(bubble);
+      msgBox.scrollTop = msgBox.scrollHeight;
+    });
+    socket.on('reactionUpdate', ({ id, counts }) => {
+      const node = document.querySelector(`.message-bubble[data-id=\"${id}\"]`);
+      if (!node) return;
+      const bar = node.querySelector('.reactions');
+      if (!bar) return;
+      bar.innerHTML = '';
+      Object.entries(counts || {}).forEach(([k,v]) => {
+        const span = document.createElement('span');
+        span.textContent = `${k} ${v}`;
+        span.style.marginRight = '6px';
+        bar.appendChild(span);
+      });
+    });
+    socket.on('deleteMessage', ({ id }) => {
+      const node = document.querySelector(`.message-bubble[data-id=\"${id}\"]`);
+      if (node) node.remove();
+    });
+    socket.on('deleteByUser', ({ username }) => {
+      document.querySelectorAll('.message-bubble').forEach(n => {
+        if (n.textContent.startsWith(username)) n.remove();
+      });
+    });
+    socket.on('userMeta', (meta) => {
+      window.__userMeta = window.__userMeta || {};
+      const m = window.__userMeta[meta.username] || {};
+      if (meta.avatarUrl) m.avatarUrl = meta.avatarUrl;
+      if (meta.color) m.color = meta.color;
+      window.__userMeta[meta.username] = m;
+    });
+    socket.on('userMetaInit', (all) => {
+      window.__userMeta = all || {};
+    });
+
+    socket.on('userBanned', (username) => {
+      const msgBox = document.getElementById('chatMessages');
+      const bubble = document.createElement('div');
+      bubble.className = 'message-bubble';
+      bubble.style.color = '#ef476f';
+      bubble.textContent = `🚫 ${username} banlandı.`;
+      msgBox.appendChild(bubble);
+      msgBox.scrollTop = msgBox.scrollHeight;
+    });
+
     function applyTheme() {
       const url = document.getElementById('themeUrlInput').value.trim();
       if (url) {
@@ -155,6 +363,69 @@
         link.href = url;
         document.head.appendChild(link);
       }
+    }
+
+    // DJ tools handlers
+    const btnAnnounce = document.getElementById('btnAnnounce');
+    if (btnAnnounce) btnAnnounce.addEventListener('click', () => {
+      if (localStorage.getItem('isDJ') !== 'true') return alert('DJ girişi yapın');
+      const text = document.getElementById('announceText').value.trim();
+      if (!text) return;
+      socket.emit('dj:announce', text);
+      document.getElementById('announceText').value = '';
+    });
+
+    const btnPin = document.getElementById('btnPin');
+    if (btnPin) btnPin.addEventListener('click', () => {
+      if (localStorage.getItem('isDJ') !== 'true') return alert('DJ girişi yapın');
+      const text = document.getElementById('pinText').value.trim();
+      socket.emit('dj:pin', text);
+    });
+
+    const btnSetColor = document.getElementById('btnSetColor');
+    if (btnSetColor) btnSetColor.addEventListener('click', () => {
+      if (localStorage.getItem('isDJ') !== 'true') return alert('DJ girişi yapın');
+      const username = document.getElementById('colorUsername').value.trim();
+      const color = document.getElementById('colorHex').value.trim();
+      if (!username || !color) return;
+      socket.emit('dj:setColor', { username, color });
+    });
+
+    const btnDeleteMsg = document.getElementById('btnDeleteMsg');
+    if (btnDeleteMsg) btnDeleteMsg.addEventListener('click', () => {
+      if (localStorage.getItem('isDJ') !== 'true') return alert('DJ girişi yapın');
+      const id = parseInt(document.getElementById('deleteMsgId').value, 10);
+      if (!id) return;
+      socket.emit('dj:deleteMessage', { id });
+    });
+
+    const btnDeleteByUser = document.getElementById('btnDeleteByUser');
+    if (btnDeleteByUser) btnDeleteByUser.addEventListener('click', () => {
+      if (localStorage.getItem('isDJ') !== 'true') return alert('DJ girişi yapın');
+      const username = document.getElementById('deleteByUser').value.trim();
+      if (!username) return;
+      socket.emit('dj:deleteByUser', { username });
+    });
+
+    function addReactionsUI(bubble, id) {
+      if (!id) return;
+      const bar = document.createElement('div');
+      bar.className = 'reactions';
+      bar.style.marginTop = '6px';
+      const emojis = ['😀','❤️','🔥','👍','👏','🎵'];
+      emojis.forEach(e => {
+        const btn = document.createElement('button');
+        btn.textContent = e;
+        btn.style.marginRight = '6px';
+        btn.style.background = 'transparent';
+        btn.style.border = '1px solid #ffffff33';
+        btn.style.borderRadius = '6px';
+        btn.style.color = 'white';
+        btn.style.cursor = 'pointer';
+        btn.addEventListener('click', () => socket.emit('react', { id, emoji: e }));
+        bar.appendChild(btn);
+      });
+      bubble.appendChild(bar);
     }
 
     const dropZone = document.getElementById('dropZone');
@@ -168,6 +439,88 @@
     const micButton = document.getElementById('pushToTalk');
     micButton.addEventListener('mousedown', () => console.log('🎤 Yayın başladı'));
     micButton.addEventListener('mouseup', () => console.log('🎤 Yayın durdu'));
+
+    document.getElementById('ctaChat').addEventListener('click', () => {
+      const el = document.querySelector('.chat-box');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    document.getElementById('ctaListen').addEventListener('click', () => {
+      window.open('https://ritimon.radio12345.com', '_blank');
+    });
+
+    // Fullscreen toggle for chat area
+    const toggleFsBtn = document.getElementById('toggleFs');
+    const chatArea = document.getElementById('chatArea');
+    if (toggleFsBtn && chatArea) {
+      toggleFsBtn.addEventListener('click', async () => {
+        try {
+          if (!document.fullscreenElement) {
+            await (chatArea.requestFullscreen ? chatArea.requestFullscreen() : chatArea.webkitRequestFullscreen?.());
+            document.body.classList.add('fullscreen-active');
+            toggleFsBtn.textContent = '⛶ Tam Ekrandan Çık';
+          } else {
+            await (document.exitFullscreen ? document.exitFullscreen() : document.webkitExitFullscreen?.());
+            document.body.classList.remove('fullscreen-active');
+            toggleFsBtn.textContent = '⛶ Tam Ekran';
+          }
+        } catch (_) {}
+      });
+      document.addEventListener('fullscreenchange', () => {
+        if (!document.fullscreenElement) {
+          document.body.classList.remove('fullscreen-active');
+          toggleFsBtn.textContent = '⛶ Tam Ekran';
+        }
+      });
+    }
+
+    // Lightbox kapama
+    document.getElementById('lightboxOverlay').addEventListener('click', () => {
+      const overlay = document.getElementById('lightboxOverlay');
+      overlay.style.display = 'none';
+      overlay.querySelector('img').src = '';
+    });
+
+    // DJ - send image URL to chat
+    const sendImageBtn = document.getElementById('sendImage');
+    if (sendImageBtn) {
+      sendImageBtn.addEventListener('click', () => {
+        if (localStorage.getItem('isDJ') !== 'true') { alert('Sadece DJ resim gönderebilir'); return; }
+        const input = document.getElementById('imageUrl');
+        const url = (input.value || '').trim();
+        if (!url) return;
+        socket.emit('chatImage', { url });
+        input.value = '';
+      });
+    }
+
+    // Theme switcher
+    document.querySelectorAll('button[data-theme]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const theme = btn.getAttribute('data-theme');
+        document.body.classList.remove('theme-purple', 'theme-blue', 'theme-gold');
+        if (theme === 'purple') document.body.classList.add('theme-purple');
+        if (theme === 'blue') document.body.classList.add('theme-blue');
+        if (theme === 'gold') document.body.classList.add('theme-gold');
+      });
+    });
+
+    // Typing indicator
+    const typingEl = document.getElementById('typing');
+    const chatInputEl = document.getElementById('chatInput');
+    let lastTypingSent = 0;
+    chatInputEl.addEventListener('input', () => {
+      const now = Date.now();
+      if (now - lastTypingSent > 1200) {
+        socket.emit('typing');
+        lastTypingSent = now;
+      }
+    });
+    socket.on('typing', ({ username }) => {
+      if (!typingEl) return;
+      typingEl.textContent = `${username} yazıyor...`;
+      clearTimeout(window.__typingTimer);
+      window.__typingTimer = setTimeout(() => typingEl.textContent = '', 1200);
+    });
 
     document.addEventListener('contextmenu', e => {
       if (e.target.classList.contains('nickname')) {
@@ -208,15 +561,106 @@
     function assignColor(username) {
       alert(`${username} için renk atanacak (örnek işlem)`);
     }
-  </script>
-  <script src="/socket.io/socket.io.js"></script>
-<script>
-  const socket = io();
+    // User list updates
+    socket.emit('setNickname', localStorage.getItem('nickname') || 'Anonim');
+    socket.on('userList', (payload) => {
+      const list = payload && payload.users ? payload : { users: [], count: 0 };
+      const ul = document.getElementById('users');
+      ul.innerHTML = '';
+      list.users.forEach(u => {
+        const li = document.createElement('li');
+        li.textContent = u;
+        ul.appendChild(li);
+      });
+      document.getElementById('userCount').textContent = list.count || list.users.length;
+    });
+    // DJ and marquee updates
+    socket.on('djList', (names) => {
+      const text = (names && names.length) ? `DJ'ler: ${names.join(' • ')}` : `DJ'ler: -`;
+      const el = document.getElementById('djMarquee');
+      if (el) el.textContent = text;
+    });
+    socket.on('onAir', (name) => {
+      const el = document.getElementById('onAirDJ');
+      if (el) el.textContent = `Yayındaki DJ: ${name || '-'}`;
+    });
 
-  socket.on('currentSong', (song) => {
-    document.getElementById('nowPlaying').textContent = "🎶 Şu an çalan: " + song;
-  });
-</script>
+    // Initial fetch for DJs
+    fetch('/api/djs').then(r => r.json()).then(({ names }) => {
+      const el = document.getElementById('djMarquee');
+      if (el && Array.isArray(names)) {
+        el.textContent = names.length ? `DJ'ler: ${names.join(' • ')}` : `DJ'ler: -`;
+      }
+    }).catch(() => {});
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      });
+    }
+    // Reuse existing socket
+    socket.on('currentSong', (song) => {
+      document.getElementById('nowPlaying').textContent = '🎶 Şu an çalan: ' + song;
+    });
+
+    // DJ playback control (optional client-side)
+    const radio = document.getElementById('radioPlayer');
+    socket.on('dj:play', ({ url }) => {
+      if (!url) return;
+      radio.src = url;
+      radio.play().catch(() => {});
+    });
+    socket.on('dj:stop', () => {
+      radio.pause();
+    });
+
+    // Receive PTT voice clip and play once
+    // PTT streaming - play queue
+    let pttSource; let pttQueue = [];
+    let ctx; let mediaSource; let sourceBuffer;
+    function initPTT(mime) {
+      if (!('MediaSource' in window)) return;
+      ctx = ctx || new AudioContext();
+      mediaSource = new MediaSource();
+      const url = URL.createObjectURL(mediaSource);
+      if (!pttSource) {
+        const audio = new Audio(); audio.autoplay = true; audio.src = url; pttSource = audio;
+      } else { pttSource.src = url; }
+      mediaSource.addEventListener('sourceopen', () => {
+        try {
+          sourceBuffer = mediaSource.addSourceBuffer(mime);
+          sourceBuffer.mode = 'sequence';
+          while (pttQueue.length) sourceBuffer.appendBuffer(pttQueue.shift());
+        } catch (_) {}
+      });
+    }
+    const duckSlider = document.getElementById('duckSlider');
+    const duckValue = document.getElementById('duckValue');
+    function getDuckVolume() {
+      const v = Math.max(0, Math.min(100, parseInt(duckSlider?.value || '25', 10)));
+      return v / 100;
+    }
+    duckSlider?.addEventListener('input', () => { if (duckValue) duckValue.textContent = `${duckSlider.value}%`; });
+    let duckTimer; let duckActive = 0; let savedRadioVolume = null;
+    socket.on('dj:voiceStart', ({ mime }) => { try { initPTT(mime || 'audio/webm;codecs=opus'); clearTimeout(duckTimer); if (duckActive === 0) savedRadioVolume = radio.volume; duckActive++; radio.volume = getDuckVolume(); } catch (_) {} });
+    socket.on('dj:voiceChunk', ({ audio }) => {
+      try {
+        const buf = new Uint8Array(audio.data || audio);
+        if (sourceBuffer && !sourceBuffer.updating) sourceBuffer.appendBuffer(buf);
+        else pttQueue.push(buf);
+      } catch (_) {}
+    });
+    socket.on('dj:voiceEnd', () => {
+      try { if (mediaSource && mediaSource.readyState === 'open') mediaSource.endOfStream(); } catch (_) {}
+      const minMs = Math.max(0, parseInt(document.getElementById('duckMinMs')?.value || '800', 10));
+      clearTimeout(duckTimer);
+      duckActive = Math.max(0, duckActive - 1);
+      if (duckActive === 0) {
+        duckTimer = setTimeout(() => { radio.volume = savedRadioVolume ?? 1.0; savedRadioVolume = null; }, minMs);
+      }
+    });
+  </script>
   
 </body>
 </html>
