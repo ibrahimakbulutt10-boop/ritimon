@@ -1,0 +1,33 @@
+name: CI & Deploy
+
+on:
+  push:
+    branches:
+      - cursor/project-re-organization-and-feature-refinement-b59d
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Install deps
+        run: npm ci || npm install
+      - name: Lint
+        run: |
+          echo "No linter configured; skipping"
+      - name: Build
+        run: |
+          echo "No build step; skipping"
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/cursor/project-re-organization-and-feature-refinement-b59d'
+    steps:
+      - name: Trigger Render deploy
+        run: |
+          echo "Render auto-deploys on push via render.yaml; nothing to do here."
