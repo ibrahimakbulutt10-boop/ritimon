@@ -170,6 +170,25 @@
         <input type="url" id="imageUrl" placeholder="DJ - Resim URL (jpg, png, gif, webp)" style="flex:1;" />
         <button class="btn-primary" id="sendImage">🖼️ Gönder</button>
       </div>
+      <div class="dj-tools" style="margin-top:14px; display:grid; grid-template-columns: 1fr auto; gap: 8px;">
+        <input type="text" id="announceText" placeholder="📢 Duyuru (280 karakter)" />
+        <button class="btn-primary" id="btnAnnounce">Gönder</button>
+
+        <input type="text" id="pinText" placeholder="📌 Sabit Mesaj (Pin)" />
+        <button class="btn-primary" id="btnPin">Pinle</button>
+
+        <input type="text" id="colorUsername" placeholder="🎨 Renk Ata — Kullanıcı adı" />
+        <input type="text" id="colorHex" placeholder="#RRGGBB" />
+        <div style="grid-column: 1 / span 2; text-align:right;">
+          <button class="btn-primary" id="btnSetColor">Renk Ata</button>
+        </div>
+
+        <input type="number" id="deleteMsgId" placeholder="🗑️ Mesaj ID" />
+        <button class="btn-primary" id="btnDeleteMsg">Mesaj Sil</button>
+
+        <input type="text" id="deleteByUser" placeholder="🧹 Kullanıcı adı — Mesajları Sil" />
+        <button class="btn-primary" id="btnDeleteByUser">Sil</button>
+      </div>
       <input type="text" id="themeUrlInput" placeholder="Tema CSS URL'si" />
       <button onclick="applyTheme()">🎨 Temayı Uygula</button>
       <button onclick="clearChat()">🧹 Sohbeti Temizle</button>
@@ -324,6 +343,48 @@
         document.head.appendChild(link);
       }
     }
+
+    // DJ tools handlers
+    const btnAnnounce = document.getElementById('btnAnnounce');
+    if (btnAnnounce) btnAnnounce.addEventListener('click', () => {
+      if (localStorage.getItem('isDJ') !== 'true') return alert('DJ girişi yapın');
+      const text = document.getElementById('announceText').value.trim();
+      if (!text) return;
+      socket.emit('dj:announce', text);
+      document.getElementById('announceText').value = '';
+    });
+
+    const btnPin = document.getElementById('btnPin');
+    if (btnPin) btnPin.addEventListener('click', () => {
+      if (localStorage.getItem('isDJ') !== 'true') return alert('DJ girişi yapın');
+      const text = document.getElementById('pinText').value.trim();
+      socket.emit('dj:pin', text);
+    });
+
+    const btnSetColor = document.getElementById('btnSetColor');
+    if (btnSetColor) btnSetColor.addEventListener('click', () => {
+      if (localStorage.getItem('isDJ') !== 'true') return alert('DJ girişi yapın');
+      const username = document.getElementById('colorUsername').value.trim();
+      const color = document.getElementById('colorHex').value.trim();
+      if (!username || !color) return;
+      socket.emit('dj:setColor', { username, color });
+    });
+
+    const btnDeleteMsg = document.getElementById('btnDeleteMsg');
+    if (btnDeleteMsg) btnDeleteMsg.addEventListener('click', () => {
+      if (localStorage.getItem('isDJ') !== 'true') return alert('DJ girişi yapın');
+      const id = parseInt(document.getElementById('deleteMsgId').value, 10);
+      if (!id) return;
+      socket.emit('dj:deleteMessage', { id });
+    });
+
+    const btnDeleteByUser = document.getElementById('btnDeleteByUser');
+    if (btnDeleteByUser) btnDeleteByUser.addEventListener('click', () => {
+      if (localStorage.getItem('isDJ') !== 'true') return alert('DJ girişi yapın');
+      const username = document.getElementById('deleteByUser').value.trim();
+      if (!username) return;
+      socket.emit('dj:deleteByUser', { username });
+    });
 
     function addReactionsUI(bubble, id) {
       if (!id) return;
