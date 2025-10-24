@@ -4,86 +4,28 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>RitimON FM</title>
+  <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" />
-   <link rel="manifest" href="/manifest.json">
   <style>
-    body {
-      margin: 0;
-      font-family: 'Orbitron', sans-serif;
-      background: linear-gradient(to right, #0f0f0f, #1a1a1a);
-      color: white;
-    }
-    header {
-      text-align: center;
-      padding: 20px;
-      font-size: 2rem;
-      color: #ff4081;
-    }
-    .container {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-around;
-      padding: 20px;
-    }
-    .chat-box, .dj-panel {
-      background: rgba(255,255,255,0.05);
-      border-radius: 10px;
-      padding: 20px;
-      margin: 10px;
-      flex: 1 1 400px;
-      max-width: 600px;
-    }
-    #chatMessages {
-      height: 300px;
-      overflow-y: auto;
-      background: #111;
-      padding: 10px;
-      border-radius: 8px;
-      margin-bottom: 10px;
-    }
-    .message-bubble {
-      margin-bottom: 8px;
-    }
-    .nickname {
-      font-weight: bold;
-      color: #ff4081;
-      cursor: pointer;
-    }
-    .emoji-panel {
-      margin-top: 10px;
-    }
-    .emoji-panel span {
-      cursor: pointer;
-      font-size: 1.2rem;
-      margin: 5px;
-    }
-    .dj-menu {
-      position: absolute;
-      background: #222;
-      border: 1px solid #ff4081;
-      border-radius: 8px;
-      padding: 10px;
-      display: none;
-      z-index: 999;
-    }
-    .dj-menu button {
-      background: none;
-      border: none;
-      color: white;
-      padding: 5px;
-      width: 100%;
-      text-align: left;
-      cursor: pointer;
-    }
-    .dj-menu button:hover {
-      background: #ff4081;
-    }
+    body { margin:0; font-family:'Orbitron',sans-serif; background:linear-gradient(to right,#0f0f0f,#1a1a1a); color:#fff; }
+    header { text-align:center; padding:20px; font-size:2rem; color:#ff4081; }
+    .container { display:flex; flex-wrap:wrap; justify-content:space-around; padding:20px; }
+    .chat-box,.dj-panel { background:rgba(255,255,255,0.05); border-radius:10px; padding:20px; margin:10px; flex:1 1 400px; max-width:600px; }
+    #chatMessages { height:300px; overflow-y:auto; background:#111; padding:10px; border-radius:8px; margin-bottom:10px; }
+    .message-bubble { margin-bottom:8px; }
+    .nickname { font-weight:bold; color:#ff4081; cursor:pointer; }
+    .emoji-panel { margin-top:10px; }
+    .emoji-panel span { cursor:pointer; font-size:1.2rem; margin:5px; }
+    .dj-menu { position:absolute; background:#222; border:1px solid #ff4081; border-radius:8px; padding:10px; display:none; z-index:999; }
+    .dj-menu button { background:none; border:none; color:#fff; padding:5px; width:100%; text-align:left; cursor:pointer; }
+    .dj-menu button:hover { background:#ff4081; }
   </style>
 </head>
 <body>
   <div id="nowPlaying">🎶 Şu an çalan: Yükleniyor...</div>
   <audio id="radioPlayer" controls style="width:100%;max-width:600px;display:block;margin:10px auto 0;" src="/radio"></audio>
   <header>🎧 RitimON FM</header>
+
   <div class="container">
     <div class="chat-box">
       <div id="chatMessages"></div>
@@ -93,6 +35,7 @@
         <span>😀</span><span>😂</span><span>😍</span><span>😎</span><span>😢</span><span>😡</span>
       </div>
     </div>
+
     <div class="dj-panel">
       <input type="text" id="nicknameInput" placeholder="DJ takma adınız" />
       <button onclick="joinDJ()">🎙️ DJ Girişi</button>
@@ -106,9 +49,13 @@
       <button onclick="clearChat()">🧹 Sohbeti Temizle</button>
     </div>
   </div>
+
   <div id="djMenu" class="dj-menu"></div>
+
   <script src="/socket.io/socket.io.js"></script>
   <script>
+    const socket = io();
+
     const emojiPanel = document.querySelector('.emoji-panel');
     emojiPanel.addEventListener('click', e => {
       if (e.target.tagName === 'SPAN') {
@@ -133,7 +80,7 @@
     });
 
     function joinDJ() {
-      const nickname = document.getElementById('nicknameInput').value;
+      const nickname = document.getElementById('nicknameInput').value || 'DJ';
       localStorage.setItem('nickname', nickname);
       localStorage.setItem('isDJ', 'true');
     }
@@ -209,18 +156,18 @@
     function assignColor(username) {
       alert(`${username} için renk atanacak (örnek işlem)`);
     }
-  </script>
-  <script src="/socket.io/socket.io.js"></script>
-<script>
-  const socket = io();
 
-  socket.on('currentSong', (song) => {
-    document.getElementById('nowPlaying').textContent = "🎶 Şu an çalan: " + song;
-      if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js').catch(() => {});
-  });
-</script>
-  
+    // Şu an çalan
+    socket.on('currentSong', (song) => {
+      document.getElementById('nowPlaying').textContent = '🎶 Şu an çalan: ' + song;
+    });
+
+    // Service Worker kaydı
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      });
+    }
+  </script>
 </body>
 </html>
