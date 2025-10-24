@@ -24,8 +24,12 @@ const bannedUsernames = new Set();
 const djSockets = new Set();
 const socketIdToLastTypingMs = new Map();
 const socketIdToLastMessageMs = new Map();
+const socketIdToLastText = new Map();
 const messageHistory = [];
 let pinnedMessage = '';
+let nextMessageId = 1;
+const messageIdToReactions = new Map(); // id -> Map(emoji -> count)
+const usernameToMeta = new Map(); // username -> { avatarUrl?: string, color?: string }
 
 function computeUserList() {
   return Array.from(usernameToSocketIds.keys()).sort();
@@ -66,6 +70,12 @@ io.on('connection', (socket) => {
   if (pinnedMessage) {
     socket.emit('pinned', pinnedMessage);
   }
+  // Şu anki kullanıcı meta bilgisini gönder
+  if (usernameToMeta.size > 0) {
+    const meta = {};
+    for (const [u, m] of usernameToMeta.entries()) meta[u] = m;
+    socket.emit('userMetaInit', meta);
+  }
 
   socket.on('setNickname', (nicknameRaw) => {
     const nickname = String(nicknameRaw || '').trim().slice(0, 32) || 'Anonim';
@@ -101,12 +111,28 @@ io.on('connection', (socket) => {
     const now = Date.now();
     const last = socketIdToLastMessageMs.get(socket.id) || 0;
     if (now - last < 500) return;
+    // Aynı metni 5 sn içinde tekrar etmeyi engelle
+    const lastText = socketIdToLastText.get(socket.id) || '';
+    if (lastText === message && now - last < 5000) return;
     socketIdToLastMessageMs.set(socket.id, now);
-    const payload = { type: 'text', username, message, at: now };
-    io.emit('chatMessage', { username, message });
+    socketIdToLastText.set(socket.id, message);
+    const id = nextMessageId++;
+    const payload = { id, type: 'text', username, message, at: now };
+    io.emit('chatMessage', { id, username, message });
     // Geçmişe ekle
     messageHistory.push(payload);
     if (messageHistory.length > 50) messageHistory.shift();
+
+    // Link önizleme (ilk http/s URL)
+    try {
+      const urlMatch = message.match(/https?:\/\/[^\s]+/i);
+      if (urlMatch) {
+        const urlStr = urlMatch[0];
+        if (!isPrivateUrl(urlStr)) fetchLinkPreview(urlStr, (preview) => {
+          if (preview) io.emit('linkPreview', { id, url: urlStr, ...preview });
+        });
+      }
+    } catch (_) {}
   });
 
   socket.on('clearChat', () => {
@@ -127,10 +153,11 @@ io.on('connection', (socket) => {
       const allowed = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
       if (!allowed.some(ext => lower.endsWith(ext))) return;
       const url = u.toString();
-      io.emit('chatImage', { username, url });
+      const id = nextMessageId++;
+      io.emit('chatImage', { id, username, url });
       // Geçmişe ekle
       const now = Date.now();
-      messageHistory.push({ type: 'image', username, url, at: now });
+      messageHistory.push({ id, type: 'image', username, url, at: now });
       if (messageHistory.length > 50) messageHistory.shift();
     } catch (_) {
       return;
@@ -150,9 +177,10 @@ io.on('connection', (socket) => {
     const message = String(text || '').trim().slice(0, 280);
     if (!message) return;
     const now = Date.now();
-    io.emit('announcement', { message, at: now });
+    const id = nextMessageId++;
+    io.emit('announcement', { id, message, at: now });
     // Geçmişe ekle
-    messageHistory.push({ type: 'announcement', message, at: now });
+    messageHistory.push({ id, type: 'announcement', message, at: now });
     if (messageHistory.length > 50) messageHistory.shift();
   });
 
@@ -170,6 +198,68 @@ io.on('connection', (socket) => {
     if (now - last < 1500) return; // Flood koruma
     socketIdToLastTypingMs.set(socket.id, now);
     socket.broadcast.emit('typing', { username, at: now });
+  });
+
+  socket.on('setAvatar', (urlRaw = '') => {
+    const username = (socketIdToUsername.get(socket.id) || 'Anonim').slice(0, 32);
+    try {
+      const u = new URL(String(urlRaw).trim());
+      if (u.protocol !== 'http:' && u.protocol !== 'https:') return;
+      const lower = u.pathname.toLowerCase();
+      const allowed = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+      if (!allowed.some(ext => lower.endsWith(ext))) return;
+      const url = u.toString();
+      const prev = usernameToMeta.get(username) || {};
+      prev.avatarUrl = url;
+      usernameToMeta.set(username, prev);
+      io.emit('userMeta', { username, avatarUrl: url });
+    } catch (_) {}
+  });
+
+  socket.on('dj:setColor', ({ username: targetUser, color } = {}) => {
+    if (!isDJ(socket)) return;
+    const u = String(targetUser || '').trim().slice(0, 32);
+    const c = String(color || '').trim();
+    if (!u || !/^#?[0-9a-fA-F]{6}$/.test(c)) return;
+    const hex = c.startsWith('#') ? c : `#${c}`;
+    const prev = usernameToMeta.get(u) || {};
+    prev.color = hex;
+    usernameToMeta.set(u, prev);
+    io.emit('userMeta', { username: u, color: hex });
+  });
+
+  socket.on('react', ({ id, emoji } = {}) => {
+    if (!id || typeof emoji !== 'string' || !emoji) return;
+    const allowed = new Set(['😀','❤️','🔥','👍','👏','🎵']);
+    if (!allowed.has(emoji)) return;
+    if (!messageIdToReactions.has(id)) messageIdToReactions.set(id, new Map());
+    const map = messageIdToReactions.get(id);
+    map.set(emoji, (map.get(emoji) || 0) + 1);
+    const counts = {};
+    for (const [k, v] of map.entries()) counts[k] = v;
+    io.emit('reactionUpdate', { id, counts });
+  });
+
+  socket.on('dj:deleteMessage', ({ id } = {}) => {
+    if (!isDJ(socket) || !id) return;
+    // remove from history
+    const idx = messageHistory.findIndex(m => m.id === id);
+    if (idx >= 0) messageHistory.splice(idx, 1);
+    messageIdToReactions.delete(id);
+    io.emit('deleteMessage', { id });
+  });
+
+  socket.on('dj:deleteByUser', ({ username: target } = {}) => {
+    if (!isDJ(socket)) return;
+    const u = String(target || '').trim();
+    if (!u) return;
+    for (let i = messageHistory.length - 1; i >= 0; i--) {
+      if (messageHistory[i].username === u) {
+        messageIdToReactions.delete(messageHistory[i].id);
+        messageHistory.splice(i, 1);
+      }
+    }
+    io.emit('deleteByUser', { username: u });
   });
 
   socket.on('disconnect', () => {

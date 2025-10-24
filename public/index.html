@@ -143,6 +143,8 @@
       <div style="display:flex; flex-wrap: wrap; justify-content: space-around;">
         <div class="chat-box">
       <div id="chatMessages"></div>
+      <div id="pinned" style="margin-top:8px; color: var(--notice);"></div>
+      <div id="typing" style="margin-top:4px; color: var(--muted); font-size: 0.9rem;"></div>
       <textarea id="chatInput" placeholder="Mesajınızı yazın..." rows="3" style="width:100%;"></textarea>
       <button onclick="sendMessage()">💬 Gönder</button>
       <div class="emoji-panel">
@@ -196,7 +198,13 @@
       const msgBox = document.getElementById('chatMessages');
       const bubble = document.createElement('div');
       bubble.className = 'message-bubble';
-      bubble.innerHTML = `<span class="nickname" data-user="${data.username}">${data.username}</span>: ${data.message}`;
+      bubble.dataset.id = data.id || '';
+      const nameColor = window.__userMeta?.[data.username]?.color || '';
+      const avatar = window.__userMeta?.[data.username]?.avatarUrl || '';
+      const nameHtml = `<span class=\"nickname\" data-user=\"${data.username}\" style=\"${nameColor ? `color:${nameColor}` : ''}\">${data.username}</span>`;
+      const avatarHtml = avatar ? `<img src=\"${avatar}\" alt=\"avatar\" style=\"width:20px;height:20px;border-radius:50%;vertical-align:middle;margin-right:6px;\" />` : '';
+      bubble.innerHTML = `${avatarHtml}${nameHtml}: ${data.message}`;
+      addReactionsUI(bubble, data.id);
       msgBox.appendChild(bubble);
       msgBox.scrollTop = msgBox.scrollHeight;
     });
@@ -205,6 +213,7 @@
       const msgBox = document.getElementById('chatMessages');
       const bubble = document.createElement('div');
       bubble.className = 'message-bubble';
+      bubble.dataset.id = data.id || '';
       // Görsel yüksekliğini chat kutusunun %80'i ile sınırla
       const chatBox = document.getElementById('chatMessages');
       const maxH = Math.floor(chatBox.clientHeight * 0.8);
@@ -219,6 +228,7 @@
         big.src = img.src;
         overlay.style.display = 'flex';
       });
+      addReactionsUI(bubble, data.id);
       msgBox.appendChild(bubble);
       msgBox.scrollTop = msgBox.scrollHeight;
     });
@@ -256,9 +266,43 @@
       const bubble = document.createElement('div');
       bubble.className = 'message-bubble';
       bubble.style.color = '#ffd166';
+      bubble.dataset.id = data.id || '';
       bubble.textContent = `📢 Duyuru: ${data.message}`;
+      addReactionsUI(bubble, data.id);
       msgBox.appendChild(bubble);
       msgBox.scrollTop = msgBox.scrollHeight;
+    });
+    socket.on('reactionUpdate', ({ id, counts }) => {
+      const node = document.querySelector(`.message-bubble[data-id=\"${id}\"]`);
+      if (!node) return;
+      const bar = node.querySelector('.reactions');
+      if (!bar) return;
+      bar.innerHTML = '';
+      Object.entries(counts || {}).forEach(([k,v]) => {
+        const span = document.createElement('span');
+        span.textContent = `${k} ${v}`;
+        span.style.marginRight = '6px';
+        bar.appendChild(span);
+      });
+    });
+    socket.on('deleteMessage', ({ id }) => {
+      const node = document.querySelector(`.message-bubble[data-id=\"${id}\"]`);
+      if (node) node.remove();
+    });
+    socket.on('deleteByUser', ({ username }) => {
+      document.querySelectorAll('.message-bubble').forEach(n => {
+        if (n.textContent.startsWith(username)) n.remove();
+      });
+    });
+    socket.on('userMeta', (meta) => {
+      window.__userMeta = window.__userMeta || {};
+      const m = window.__userMeta[meta.username] || {};
+      if (meta.avatarUrl) m.avatarUrl = meta.avatarUrl;
+      if (meta.color) m.color = meta.color;
+      window.__userMeta[meta.username] = m;
+    });
+    socket.on('userMetaInit', (all) => {
+      window.__userMeta = all || {};
     });
 
     socket.on('userBanned', (username) => {
@@ -279,6 +323,27 @@
         link.href = url;
         document.head.appendChild(link);
       }
+    }
+
+    function addReactionsUI(bubble, id) {
+      if (!id) return;
+      const bar = document.createElement('div');
+      bar.className = 'reactions';
+      bar.style.marginTop = '6px';
+      const emojis = ['😀','❤️','🔥','👍','👏','🎵'];
+      emojis.forEach(e => {
+        const btn = document.createElement('button');
+        btn.textContent = e;
+        btn.style.marginRight = '6px';
+        btn.style.background = 'transparent';
+        btn.style.border = '1px solid #ffffff33';
+        btn.style.borderRadius = '6px';
+        btn.style.color = 'white';
+        btn.style.cursor = 'pointer';
+        btn.addEventListener('click', () => socket.emit('react', { id, emoji: e }));
+        bar.appendChild(btn);
+      });
+      bubble.appendChild(bar);
     }
 
     const dropZone = document.getElementById('dropZone');
@@ -352,6 +417,24 @@
         if (theme === 'blue') document.body.classList.add('theme-blue');
         if (theme === 'gold') document.body.classList.add('theme-gold');
       });
+    });
+
+    // Typing indicator
+    const typingEl = document.getElementById('typing');
+    const chatInputEl = document.getElementById('chatInput');
+    let lastTypingSent = 0;
+    chatInputEl.addEventListener('input', () => {
+      const now = Date.now();
+      if (now - lastTypingSent > 1200) {
+        socket.emit('typing');
+        lastTypingSent = now;
+      }
+    });
+    socket.on('typing', ({ username }) => {
+      if (!typingEl) return;
+      typingEl.textContent = `${username} yazıyor...`;
+      clearTimeout(window.__typingTimer);
+      window.__typingTimer = setTimeout(() => typingEl.textContent = '', 1200);
     });
 
     document.addEventListener('contextmenu', e => {
