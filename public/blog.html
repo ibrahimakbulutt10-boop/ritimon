@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Blog - RitimON FM</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" />
+  <style>
+    body { margin:0; font-family: 'Orbitron', sans-serif; background: #0f0f0f; color: #fff; }
+    header { padding: 20px; color: #ff4081; font-size: 1.6rem; }
+    main { padding: 16px; max-width: 900px; margin: 0 auto; }
+    .post { background: rgba(255,255,255,0.06); border-radius: 10px; padding: 14px; margin-bottom: 12px; }
+    .muted { color:#ffffff99; font-size: 0.9rem; }
+    a.btn { display:inline-block; padding: 8px 12px; border-radius:8px; background:#3b82f6; color:#fff; text-decoration:none; }
+  </style>
+</head>
+<body>
+  <header>📝 Blog - RitimON FM</header>
+  <main>
+    <p class="muted">Zorunlu içerik talebi nedeniyle bu sayfa hazırlandı. Yeni yazılar yakında.</p>
+    <div class="post">
+      <h3>Merhaba Dünya</h3>
+      <div class="muted">Tarih: <span id="today"></span></div>
+      <p>RitimON FM yeniden yayında! Bizi dinlemeye devam edin.</p>
+    </div>
+    <a href="/" class="btn">← Ana sayfa</a>
+  </main>
+  <script>document.getElementById('today').textContent = new Date().toLocaleDateString('tr-TR');</script>
+</body>
+</html>

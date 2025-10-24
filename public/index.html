@@ -137,14 +137,26 @@
         <input type="number" id="duckMinMs" value="800" min="0" step="100" style="width:110px;" />
       </div>
     </div>
-    <div style="min-width:240px; text-align:right;">
+    <div style="min-width:240px; text-align:right; display:flex; flex-direction:column; gap:8px; align-items:flex-end;">
       <button id="ctaChat" class="btn-primary">💬 Sohbete Giriş — RitimON’da sohbet</button>
+      <button id="ctaListen" class="btn-primary" style="background:#3b82f6">▶ Dinlemek için buraya basın</button>
+      <div style="font-size:0.9rem; color: var(--muted); text-align:right;">
+        Yalnızca aşağıdaki bağlantılardan dinleyebilirsiniz:
+        <div><a href="https://ritimon.radio12345.com" target="_blank">ritimon.radio12345.com</a></div>
+        <div><a href="https://ritimon.radiostream321.com" target="_blank">ritimon.radiostream321.com</a></div>
+        <div><a href="https://ritimon.radiostream123.com" target="_blank">ritimon.radiostream123.com</a></div>
+      </div>
     </div>
   </header>
   <div style="width:100%; overflow:hidden; border-top:1px solid #ffffff1a; border-bottom:1px solid #ffffff1a; padding:8px 0;">
     <div id="djMarquee" style="white-space:nowrap; animation: marquee 18s linear infinite; color:#ffd166;">DJ'ler: -</div>
   </div>
   <div class="container">
+    <div style="flex-basis:100%; display:flex; gap:10px; justify-content:center;">
+      <a href="/blog.html" class="btn-primary" style="text-decoration:none;">📝 Blog</a>
+      <a href="/gallery.html" class="btn-primary" style="text-decoration:none;">🖼️ Galeri</a>
+      <a href="/dj.html" class="btn-primary" style="text-decoration:none;">🎙️ DJ Paneli</a>
+    </div>
     <div id="chatArea">
       <div class="top-actions" style="text-align:right; margin: 0 10px 10px;">
         <button id="toggleFs" class="btn-primary">⛶ Tam Ekran</button>
@@ -431,6 +443,9 @@
     document.getElementById('ctaChat').addEventListener('click', () => {
       const el = document.querySelector('.chat-box');
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    document.getElementById('ctaListen').addEventListener('click', () => {
+      window.open('https://ritimon.radio12345.com', '_blank');
     });
 
     // Fullscreen toggle for chat area
