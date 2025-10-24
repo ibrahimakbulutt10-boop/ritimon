@@ -80,6 +80,7 @@
   </style>
 </head>
 <body>
+  <div id="nowPlaying">🎶 Şu an çalan: Yükleniyor...</div>
   <header>🎧 RitimON FM</header>
   <div class="container">
     <div class="chat-box">
@@ -208,6 +209,15 @@
       alert(`${username} için renk atanacak (örnek işlem)`);
     }
   </script>
+  <script src="/socket.io/socket.io.js"></script>
+<script>
+  const socket = io();
+
+  socket.on('currentSong', (song) => {
+    document.getElementById('nowPlaying').textContent = "🎶 Şu an çalan: " + song;
+  });
+</script>
+  
 </body>
 </html>
 
