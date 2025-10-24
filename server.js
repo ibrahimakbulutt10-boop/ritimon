@@ -204,6 +204,19 @@ io.on('connection', (socket) => {
     socket.broadcast.emit('typing', { username, at: now });
   });
 
+  // DJ push-to-talk: kısa ses kliplerini yayınla
+  socket.on('dj:voice', ({ mime, audio } = {}) => {
+    if (!isDJ(socket)) return;
+    if (typeof mime !== 'string' || !audio) return;
+    const okMime = /^(audio\/webm|audio\/ogg|audio\/mpeg|audio\/mp3)$/i.test(mime);
+    if (!okMime) return;
+    // audio beklenen: Buffer (binary)
+    const buf = Buffer.isBuffer(audio) ? audio : Buffer.from(audio);
+    // 2MB sınır
+    if (buf.length > 2 * 1024 * 1024) return;
+    io.emit('dj:voice', { mime, audio: buf });
+  });
+
   socket.on('setAvatar', (urlRaw = '') => {
     const username = (socketIdToUsername.get(socket.id) || 'Anonim').slice(0, 32);
     try {
