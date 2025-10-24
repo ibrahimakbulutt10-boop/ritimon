@@ -225,6 +225,21 @@
       if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
       pttStatus.textContent = 'Hazır';
     });
+    // Mobile touch support
+    pttBtn.addEventListener('touchstart', async (e) => {
+      e.preventDefault();
+      if (localStorage.getItem('isDJ') !== 'true') return alert('DJ girişi yapın');
+      if (!mediaRecorder) mediaRecorder = await ensureMic();
+      mediaRecorder.start(400);
+      pttStatus.textContent = 'Canlı...';
+    }, { passive: false });
+    const stopPTT = (e) => {
+      if (e) e.preventDefault();
+      if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
+      pttStatus.textContent = 'Hazır';
+    };
+    pttBtn.addEventListener('touchend', stopPTT, { passive: false });
+    pttBtn.addEventListener('touchcancel', stopPTT, { passive: false });
   </script>
 </body>
 </html>
