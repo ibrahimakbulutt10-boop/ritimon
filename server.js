@@ -35,6 +35,22 @@ function isDJ(socket) {
   return djSockets.has(socket.id);
 }
 
+function getDJNames() {
+  const names = new Set();
+  for (const id of djSockets) {
+    const name = socketIdToUsername.get(id) || 'DJ';
+    if (name) names.add(name);
+  }
+  return Array.from(names).sort();
+}
+
+function broadcastDJList() {
+  const names = getDJNames();
+  io.emit('djList', names);
+  const onAir = names[0] || null;
+  io.emit('onAir', onAir);
+}
+
 // Socket.io olayları
 io.on('connection', (socket) => {
   console.log('Yeni kullanıcı bağlandı');
@@ -51,6 +67,7 @@ io.on('connection', (socket) => {
     if (!usernameToSocketIds.has(nickname)) usernameToSocketIds.set(nickname, new Set());
     usernameToSocketIds.get(nickname).add(socket.id);
     broadcastUserList();
+    if (djSockets.has(socket.id)) broadcastDJList();
   });
 
   socket.on('djLogin', (payload = {}, ack) => {
@@ -58,6 +75,7 @@ io.on('connection', (socket) => {
     const expected = process.env.DJ_PASSWORD || '4545';
     const ok = password === expected;
     if (ok) djSockets.add(socket.id);
+    if (ok) broadcastDJList();
     if (typeof ack === 'function') ack({ ok });
   });
 
@@ -103,6 +121,7 @@ io.on('connection', (socket) => {
     djSockets.delete(socket.id);
     console.log('Kullanıcı ayrıldı');
     broadcastUserList();
+    broadcastDJList();
   });
 });
 
@@ -196,7 +215,7 @@ app.get('/api/users', (_req, res) => {
 });
 
 app.get('/api/djs', (_req, res) => {
-  res.json({ count: djSockets.size });
+  res.json({ count: djSockets.size, names: getDJNames() });
 });
 
 // ---- Radio proxy ----

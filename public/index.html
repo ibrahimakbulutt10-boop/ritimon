@@ -78,12 +78,31 @@
     .dj-menu button:hover {
       background: #ff4081;
     }
+    @keyframes blink { 50% { opacity: 0.2; } }
+    @keyframes rotateText { 0% { transform: rotate(0deg); } 50% { transform: rotate(1deg); } 100% { transform: rotate(0deg); } }
+    @keyframes marquee { 0% { transform: translateX(100%);} 100% { transform: translateX(-100%);} }
   </style>
 </head>
 <body>
-  <div id="nowPlaying">🎶 Şu an çalan: Yükleniyor...</div>
-  <audio id="radioPlayer" controls style="width:100%; max-width: 600px; display:block; margin: 0 auto 10px;" src="/radio"></audio>
-  <header>🎧 RitimON FM</header>
+  <header style="display:flex; align-items:center; justify-content:space-between; padding: 20px; gap: 20px; flex-wrap: wrap;">
+    <div style="min-width:240px">
+      <div style="font-size: 2rem; color:#ff4081; font-weight:700;">RitimON FM</div>
+      <div id="slogan" style="color:#ffffffcc; margin-top:6px; white-space:nowrap; overflow:hidden; position:relative;">
+        <span id="sloganText" style="display:inline-block; animation: blink 1.2s steps(2, start) infinite, rotateText 8s linear infinite; transform-origin:left center;">Listelerde değil, RUHUNUZDA yankılanır</span>
+      </div>
+    </div>
+    <div style="text-align:center; flex:1; min-width:260px">
+      <div id="nowPlaying" style="margin-bottom:8px;">🎶 Şu an çalan: Yükleniyor...</div>
+      <div id="onAirDJ" style="font-size:1.1rem; color:#82eaff;">Yayındaki DJ: -</div>
+      <audio id="radioPlayer" controls style="width:100%; max-width: 520px; display:block; margin: 10px auto 0;" src="/radio"></audio>
+    </div>
+    <div style="min-width:240px; text-align:right;">
+      <button id="ctaChat" style="background:#ff4081; color:white; border:none; border-radius:8px; padding:10px 14px; cursor:pointer;">💬 Sohbete Giriş — RitimON’da sohbet</button>
+    </div>
+  </header>
+  <div style="width:100%; overflow:hidden; border-top:1px solid #ffffff1a; border-bottom:1px solid #ffffff1a; padding:8px 0;">
+    <div id="djMarquee" style="white-space:nowrap; animation: marquee 18s linear infinite; color:#ffd166;">DJ'ler: -</div>
+  </div>
   <div class="container">
     <div class="chat-box">
       <div id="chatMessages"></div>
@@ -208,6 +227,11 @@
     micButton.addEventListener('mousedown', () => console.log('🎤 Yayın başladı'));
     micButton.addEventListener('mouseup', () => console.log('🎤 Yayın durdu'));
 
+    document.getElementById('ctaChat').addEventListener('click', () => {
+      const el = document.querySelector('.chat-box');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
     document.addEventListener('contextmenu', e => {
       if (e.target.classList.contains('nickname')) {
         e.preventDefault();
@@ -260,6 +284,24 @@
       });
       document.getElementById('userCount').textContent = list.count || list.users.length;
     });
+    // DJ and marquee updates
+    socket.on('djList', (names) => {
+      const text = (names && names.length) ? `DJ'ler: ${names.join(' • ')}` : `DJ'ler: -`;
+      const el = document.getElementById('djMarquee');
+      if (el) el.textContent = text;
+    });
+    socket.on('onAir', (name) => {
+      const el = document.getElementById('onAirDJ');
+      if (el) el.textContent = `Yayındaki DJ: ${name || '-'}`;
+    });
+
+    // Initial fetch for DJs
+    fetch('/api/djs').then(r => r.json()).then(({ names }) => {
+      const el = document.getElementById('djMarquee');
+      if (el && Array.isArray(names)) {
+        el.textContent = names.length ? `DJ'ler: ${names.join(' • ')}` : `DJ'ler: -`;
+      }
+    }).catch(() => {});
   </script>
   <script>
     if ('serviceWorker' in navigator) {
