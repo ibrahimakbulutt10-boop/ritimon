@@ -109,7 +109,6 @@
   <div id="djMenu" class="dj-menu"></div>
   <script src="/socket.io/socket.io.js"></script>
   <script>
-    const socket = io();
     const emojiPanel = document.querySelector('.emoji-panel');
     emojiPanel.addEventListener('click', e => {
       if (e.target.tagName === 'SPAN') {
@@ -217,9 +216,11 @@
 
   socket.on('currentSong', (song) => {
     document.getElementById('nowPlaying').textContent = "🎶 Şu an çalan: " + song;
+      if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
   });
 </script>
   
 </body>
 </html>
-
