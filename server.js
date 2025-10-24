@@ -22,6 +22,10 @@ const socketIdToUsername = new Map();
 const usernameToSocketIds = new Map();
 const bannedUsernames = new Set();
 const djSockets = new Set();
+const socketIdToLastTypingMs = new Map();
+const socketIdToLastMessageMs = new Map();
+const messageHistory = [];
+let pinnedMessage = '';
 
 function computeUserList() {
   return Array.from(usernameToSocketIds.keys()).sort();
@@ -55,6 +59,14 @@ function broadcastDJList() {
 io.on('connection', (socket) => {
   console.log('Yeni kullanıcı bağlandı');
 
+  // Yeni bağlanan kullanıcılara geçmiş mesajları ve sabit mesajı gönder
+  if (messageHistory.length > 0) {
+    socket.emit('chatHistory', messageHistory);
+  }
+  if (pinnedMessage) {
+    socket.emit('pinned', pinnedMessage);
+  }
+
   socket.on('setNickname', (nicknameRaw) => {
     const nickname = String(nicknameRaw || '').trim().slice(0, 32) || 'Anonim';
     const prev = socketIdToUsername.get(socket.id);
@@ -85,7 +97,16 @@ io.on('connection', (socket) => {
     const username = (msg.username || socketIdToUsername.get(socket.id) || 'Anonim').slice(0, 32);
     if (!message) return;
     if (bannedUsernames.has(username)) return;
+    // Basit hız sınırlama: 500ms'den sık mesajları reddet
+    const now = Date.now();
+    const last = socketIdToLastMessageMs.get(socket.id) || 0;
+    if (now - last < 500) return;
+    socketIdToLastMessageMs.set(socket.id, now);
+    const payload = { type: 'text', username, message, at: now };
     io.emit('chatMessage', { username, message });
+    // Geçmişe ekle
+    messageHistory.push(payload);
+    if (messageHistory.length > 50) messageHistory.shift();
   });
 
   socket.on('clearChat', () => {
@@ -105,7 +126,12 @@ io.on('connection', (socket) => {
       const lower = u.pathname.toLowerCase();
       const allowed = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
       if (!allowed.some(ext => lower.endsWith(ext))) return;
-      io.emit('chatImage', { username, url: u.toString() });
+      const url = u.toString();
+      io.emit('chatImage', { username, url });
+      // Geçmişe ekle
+      const now = Date.now();
+      messageHistory.push({ type: 'image', username, url, at: now });
+      if (messageHistory.length > 50) messageHistory.shift();
     } catch (_) {
       return;
     }
@@ -123,7 +149,27 @@ io.on('connection', (socket) => {
     if (!isDJ(socket)) return;
     const message = String(text || '').trim().slice(0, 280);
     if (!message) return;
-    io.emit('announcement', { message, at: Date.now() });
+    const now = Date.now();
+    io.emit('announcement', { message, at: now });
+    // Geçmişe ekle
+    messageHistory.push({ type: 'announcement', message, at: now });
+    if (messageHistory.length > 50) messageHistory.shift();
+  });
+
+  socket.on('dj:pin', (text = '') => {
+    if (!isDJ(socket)) return;
+    const next = String(text).trim().slice(0, 280);
+    pinnedMessage = next;
+    io.emit('pinned', pinnedMessage);
+  });
+
+  socket.on('typing', () => {
+    const username = (socketIdToUsername.get(socket.id) || 'Anonim').slice(0, 32);
+    const now = Date.now();
+    const last = socketIdToLastTypingMs.get(socket.id) || 0;
+    if (now - last < 1500) return; // Flood koruma
+    socketIdToLastTypingMs.set(socket.id, now);
+    socket.broadcast.emit('typing', { username, at: now });
   });
 
   socket.on('disconnect', () => {
