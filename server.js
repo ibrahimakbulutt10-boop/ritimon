@@ -2,6 +2,9 @@ const express = require('express');
 const http = require('http');
 const path = require('path');
 const socketIo = require('socket.io');
+const multer = require('multer');
+const os = require('os');
+const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
@@ -11,6 +14,7 @@ const PORT = process.env.PORT || 10000;
 
 // Statik dosyaları sun
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/uploads', express.static(path.join(os.tmpdir(), 'ritimon-uploads')));
 
 // Ana sayfa
 app.get('/', (req, res) => {
@@ -398,4 +402,39 @@ app.get('/radio', (req, res) => {
     res.end();
   });
   upstream.end();
+});
+
+// ---- DJ upload endpoint (temp storage) ----
+const uploadDir = path.join(os.tmpdir(), 'ritimon-uploads');
+fs.mkdirSync(uploadDir, { recursive: true });
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, uploadDir),
+    filename: (_req, file, cb) => cb(null, Date.now() + '-' + file.originalname.replace(/\s+/g, '_')),
+  }),
+  fileFilter: (_req, file, cb) => {
+    const ok = /^audio\/(mpeg|mp3|wav|ogg|aac)$/i.test(file.mimetype);
+    cb(ok ? null : new Error('invalid type'), ok);
+  },
+  limits: { fileSize: 20 * 1024 * 1024 } // 20MB
+});
+
+app.post('/api/dj/upload', upload.single('audio'), (req, res) => {
+  const url = `/uploads/${path.basename(req.file.path)}`;
+  return res.json({ ok: true, url });
+});
+
+// ---- DJ playback control over sockets ----
+io.on('connection', (socket) => {
+  // ... existing listeners above remain ...
+  socket.on('dj:play', ({ url } = {}) => {
+    if (!isDJ(socket)) return;
+    if (!url || typeof url !== 'string') return;
+    if (!/^https?:\/\//i.test(url) && !url.startsWith('/uploads/')) return;
+    io.emit('dj:play', { url });
+  });
+  socket.on('dj:stop', () => {
+    if (!isDJ(socket)) return;
+    io.emit('dj:stop');
+  });
 });

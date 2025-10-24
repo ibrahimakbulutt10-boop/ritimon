@@ -579,6 +579,17 @@
     socket.on('currentSong', (song) => {
       document.getElementById('nowPlaying').textContent = '🎶 Şu an çalan: ' + song;
     });
+
+    // DJ playback control (optional client-side)
+    const radio = document.getElementById('radioPlayer');
+    socket.on('dj:play', ({ url }) => {
+      if (!url) return;
+      radio.src = url;
+      radio.play().catch(() => {});
+    });
+    socket.on('dj:stop', () => {
+      radio.pause();
+    });
   </script>
   
 </body>

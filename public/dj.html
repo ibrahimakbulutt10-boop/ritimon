@@ -51,6 +51,15 @@
         <input id="imageUrl" placeholder="🖼️ Resim URL (jpg/png/gif/webp)" />
         <button id="sendImage">Gönder</button>
       </div>
+      <div class="grid2" style="margin-top:8px;">
+        <input type="file" id="audioFile" accept="audio/*" />
+        <button id="btnUploadAudio">Yükle</button>
+      </div>
+      <div class="row" style="margin-top:8px;">
+        <input id="audioUrl" placeholder="🎵 Çalınacak URL (/uploads/... veya http/s)" />
+        <button id="btnPlay">Çal</button>
+        <button id="btnStop">Durdur</button>
+      </div>
       <div class="grid3" style="margin-top:8px;">
         <input id="colorUsername" placeholder="🎨 Kullanıcı adı" />
         <input id="colorHex" placeholder="#RRGGBB" />
@@ -147,6 +156,30 @@
       const username = document.getElementById('colorUsername').value.trim();
       const color = document.getElementById('colorHex').value.trim();
       if (!username || !color) return; socket.emit('dj:setColor', { username, color });
+    };
+    document.getElementById('btnUploadAudio').onclick = async () => {
+      if (localStorage.getItem('isDJ') !== 'true') return alert('DJ girişi yapın');
+      const file = document.getElementById('audioFile').files[0];
+      if (!file) return;
+      const fd = new FormData();
+      fd.append('audio', file);
+      const res = await fetch('/api/dj/upload', { method: 'POST', body: fd });
+      const json = await res.json().catch(() => ({}));
+      if (json && json.url) {
+        document.getElementById('audioUrl').value = json.url;
+        alert('Yüklendi: ' + json.url);
+      } else {
+        alert('Yükleme başarısız');
+      }
+    };
+    document.getElementById('btnPlay').onclick = () => {
+      if (localStorage.getItem('isDJ') !== 'true') return alert('DJ girişi yapın');
+      const url = document.getElementById('audioUrl').value.trim();
+      if (!url) return; socket.emit('dj:play', { url });
+    };
+    document.getElementById('btnStop').onclick = () => {
+      if (localStorage.getItem('isDJ') !== 'true') return alert('DJ girişi yapın');
+      socket.emit('dj:stop');
     };
     document.getElementById('btnDeleteMsg').onclick = () => {
       if (localStorage.getItem('isDJ') !== 'true') return alert('DJ girişi yapın');
