@@ -1,5 +1,6 @@
 const express = require('express');
 const http = require('http');
+const https = require('https');
 const path = require('path');
 const socketIo = require('socket.io');
 const multer = require('multer');
@@ -323,16 +324,43 @@ io.on('connection', (socket) => {
   });
 });
 
+// ---- Stream configuration helpers ----
+function getStreamConfig() {
+  const url = process.env.STREAM_URL;
+  if (url) {
+    try {
+      const u = new URL(url);
+      return {
+        protocol: u.protocol || 'http:',
+        host: u.hostname,
+        port: u.port ? parseInt(u.port) : (u.protocol === 'https:' ? 443 : 80),
+        path: u.pathname + (u.search || ''),
+      };
+    } catch (_) {}
+  }
+  return {
+    protocol: (process.env.STREAM_PROTOCOL || 'http') + ':',
+    host: process.env.STREAM_HOST || '88.150.230.110',
+    port: parseInt(process.env.STREAM_PORT || '37836'),
+    path: process.env.STREAM_PATH || '/stream',
+  };
+}
+
+function getHttpModule(protocol) {
+  return protocol === 'https:' ? https : http;
+}
+
 // 🎶 Şarkı bilgisi çekme fonksiyonu
 function fetchCurrentSong(callback) {
+  const cfg = getStreamConfig();
   const options = {
-    host: '88.150.230.110',
-    port: 37836,
-    path: '/stream',
+    host: cfg.host,
+    port: cfg.port,
+    path: cfg.path,
     headers: { 'Icy-MetaData': 1 }
   };
 
-  const req = http.get(options, (res) => {
+  const req = getHttpModule(cfg.protocol).get(options, (res) => {
     const icyMetaInt = parseInt(res.headers['icy-metaint']);
     if (!icyMetaInt) { callback(null); res.destroy(); return; }
 
@@ -420,17 +448,18 @@ app.get('/api/djs', (_req, res) => {
 app.get('/radio', (req, res) => {
   res.setHeader('Content-Type', 'audio/mpeg');
   res.setHeader('Cache-Control', 'no-cache');
+  const cfg = getStreamConfig();
   const options = {
-    host: '88.150.230.110',
-    port: 37836,
-    path: '/stream',
+    host: cfg.host,
+    port: cfg.port,
+    path: cfg.path,
     headers: {
       // Disable ICY metadata in audio stream for browsers
       'Icy-MetaData': 0,
       'User-Agent': req.headers['user-agent'] || 'RitimON-FM-Proxy'
     }
   };
-  const upstream = http.request(options, (upstreamRes) => {
+  const upstream = getHttpModule(cfg.protocol).request(options, (upstreamRes) => {
     // Forward key headers if present
     const contentType = upstreamRes.headers['content-type'];
     if (contentType) res.setHeader('Content-Type', contentType);
