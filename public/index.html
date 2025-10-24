@@ -92,6 +92,9 @@
     .dj-menu button:hover {
       background: var(--accent);
     }
+    /* Fullscreen helpers */
+    .fullscreen-active { height: 100vh; overflow: hidden; }
+    .fullscreen-active #chatMessages { height: calc(100vh - 260px); }
     @keyframes blink { 50% { opacity: 0.2; } }
     @keyframes neon { 0%, 100% { text-shadow: 0 0 8px var(--accent), 0 0 16px var(--accent);} 50% { text-shadow: 0 0 2px var(--accent), 0 0 4px var(--accent);} }
     @keyframes rotateText { 0% { transform: rotate(0deg); } 50% { transform: rotate(1deg); } 100% { transform: rotate(0deg); } }
@@ -133,17 +136,24 @@
     <div id="djMarquee" style="white-space:nowrap; animation: marquee 18s linear infinite; color:#ffd166;">DJ'ler: -</div>
   </div>
   <div class="container">
-    <div class="chat-box">
+    <div id="chatArea">
+      <div class="top-actions" style="text-align:right; margin: 0 10px 10px;">
+        <button id="toggleFs" class="btn-primary">⛶ Tam Ekran</button>
+      </div>
+      <div style="display:flex; flex-wrap: wrap; justify-content: space-around;">
+        <div class="chat-box">
       <div id="chatMessages"></div>
       <textarea id="chatInput" placeholder="Mesajınızı yazın..." rows="3" style="width:100%;"></textarea>
       <button onclick="sendMessage()">💬 Gönder</button>
       <div class="emoji-panel">
         <span>😀</span><span>😂</span><span>😍</span><span>😎</span><span>😢</span><span>😡</span>
       </div>
-    </div>
-    <div class="user-list">
+        </div>
+        <div class="user-list">
       <h3>👥 Kullanıcılar (<span id="userCount">0</span>)</h3>
       <ul id="users" style="list-style:none; padding-left:0; margin:0;"></ul>
+        </div>
+      </div>
     </div>
     <div class="dj-panel">
       <input type="text" id="nicknameInput" placeholder="Takma adınız" />
@@ -287,6 +297,31 @@
       const el = document.querySelector('.chat-box');
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
+
+    // Fullscreen toggle for chat area
+    const toggleFsBtn = document.getElementById('toggleFs');
+    const chatArea = document.getElementById('chatArea');
+    if (toggleFsBtn && chatArea) {
+      toggleFsBtn.addEventListener('click', async () => {
+        try {
+          if (!document.fullscreenElement) {
+            await (chatArea.requestFullscreen ? chatArea.requestFullscreen() : chatArea.webkitRequestFullscreen?.());
+            document.body.classList.add('fullscreen-active');
+            toggleFsBtn.textContent = '⛶ Tam Ekrandan Çık';
+          } else {
+            await (document.exitFullscreen ? document.exitFullscreen() : document.webkitExitFullscreen?.());
+            document.body.classList.remove('fullscreen-active');
+            toggleFsBtn.textContent = '⛶ Tam Ekran';
+          }
+        } catch (_) {}
+      });
+      document.addEventListener('fullscreenchange', () => {
+        if (!document.fullscreenElement) {
+          document.body.classList.remove('fullscreen-active');
+          toggleFsBtn.textContent = '⛶ Tam Ekran';
+        }
+      });
+    }
 
     // Lightbox kapama
     document.getElementById('lightboxOverlay').addEventListener('click', () => {
