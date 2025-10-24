@@ -127,6 +127,11 @@
       <div id="nowPlaying" style="margin-bottom:8px;">🎶 Şu an çalan: Yükleniyor...</div>
       <div id="onAirDJ" style="font-size:1.1rem; color:#82eaff;">Yayındaki DJ: -</div>
       <audio id="radioPlayer" controls style="width:100%; max-width: 520px; display:block; margin: 10px auto 0;" src="/radio"></audio>
+      <div style="margin-top:6px; display:flex; align-items:center; gap:8px; justify-content:center;">
+        <label for="duckSlider" style="color: var(--muted);">Konuşma sırasında müzik seviyesi</label>
+        <input type="range" id="duckSlider" min="0" max="100" value="25" />
+        <span id="duckValue" class="muted">25%</span>
+      </div>
     </div>
     <div style="min-width:240px; text-align:right;">
       <button id="ctaChat" class="btn-primary">💬 Sohbete Giriş — RitimON’da sohbet</button>
@@ -611,7 +616,14 @@
         } catch (_) {}
       });
     }
-    socket.on('dj:voiceStart', ({ mime }) => { try { initPTT(mime || 'audio/webm;codecs=opus'); radio.volume = 0.25; } catch (_) {} });
+    const duckSlider = document.getElementById('duckSlider');
+    const duckValue = document.getElementById('duckValue');
+    function getDuckVolume() {
+      const v = Math.max(0, Math.min(100, parseInt(duckSlider?.value || '25', 10)));
+      return v / 100;
+    }
+    duckSlider?.addEventListener('input', () => { if (duckValue) duckValue.textContent = `${duckSlider.value}%`; });
+    socket.on('dj:voiceStart', ({ mime }) => { try { initPTT(mime || 'audio/webm;codecs=opus'); radio.volume = getDuckVolume(); } catch (_) {} });
     socket.on('dj:voiceChunk', ({ audio }) => {
       try {
         const buf = new Uint8Array(audio.data || audio);
